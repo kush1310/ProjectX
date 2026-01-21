@@ -2,10 +2,10 @@
  * Password Strength Indicator Component
  * 
  * Features:
- * - Real-time strength calculation
- * - Animated strength bars
- * - Requirement checklist with icons
- * - LightswindUI inspired design
+ * - Progress bar only (no individual checkmarks visible)
+ * - Static rules text displayed
+ * - 8-15 character validation
+ * - Uppercase, lowercase, number, special required
  */
 
 import { motion } from 'framer-motion';
@@ -16,63 +16,67 @@ interface PasswordStrengthProps {
   showRequirements?: boolean;
 }
 
-interface Requirement {
-  label: string;
-  met: boolean;
-  regex: RegExp;
-}
-
 export default function PasswordStrength({ password, showRequirements = true }: PasswordStrengthProps) {
   
-  // Calculate password strength and requirements
+  // Calculate password strength (internal - user doesn't see individual checks)
   const analysis = useMemo(() => {
-    const requirements: Requirement[] = [
-      { label: 'At least 8 characters', met: password.length >= 8, regex: /.{8,}/ },
-      { label: 'One uppercase letter', met: /[A-Z]/.test(password), regex: /[A-Z]/ },
-      { label: 'One lowercase letter', met: /[a-z]/.test(password), regex: /[a-z]/ },
-      { label: 'One number', met: /[0-9]/.test(password), regex: /[0-9]/ },
-      { label: 'One special character', met: /[^A-Za-z0-9]/.test(password), regex: /[^A-Za-z0-9]/ },
-    ];
+    // Check all requirements
+    const checks = {
+      minLength: password.length >= 8,
+      maxLength: password.length <= 15,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[^A-Za-z0-9]/.test(password),
+    };
 
-    const metCount = requirements.filter(r => r.met).length;
+    // Count met requirements (excluding maxLength as it's a limit not requirement)
+    const metCount = [
+      checks.minLength,
+      checks.hasUppercase,
+      checks.hasLowercase,
+      checks.hasNumber,
+      checks.hasSpecial,
+    ].filter(Boolean).length;
     
-    let strength: 'none' | 'weak' | 'fair' | 'good' | 'strong' = 'none';
+    // Length check
+    const lengthValid = password.length >= 8 && password.length <= 15;
+    
+    // Calculate strength percentage (0-100)
+    let percentage = 0;
     let strengthLabel = '';
-    let strengthColor = 'bg-dark-200';
-    let textColor = 'text-dark-400';
-    let barsActive = 0;
-
+    let barColor = 'bg-gray-200';
+    
     if (password.length === 0) {
-      strength = 'none';
+      percentage = 0;
       strengthLabel = '';
-      barsActive = 0;
+    } else if (!lengthValid && password.length > 15) {
+      percentage = 25;
+      strengthLabel = 'Too Long';
+      barColor = 'bg-red-500';
     } else if (metCount <= 1) {
-      strength = 'weak';
+      percentage = 20;
       strengthLabel = 'Weak';
-      strengthColor = 'bg-red-500';
-      textColor = 'text-red-500';
-      barsActive = 1;
-    } else if (metCount <= 2) {
-      strength = 'fair';
+      barColor = 'bg-red-500';
+    } else if (metCount === 2) {
+      percentage = 40;
       strengthLabel = 'Fair';
-      strengthColor = 'bg-orange-500';
-      textColor = 'text-orange-500';
-      barsActive = 2;
-    } else if (metCount <= 4) {
-      strength = 'good';
+      barColor = 'bg-orange-500';
+    } else if (metCount === 3) {
+      percentage = 60;
       strengthLabel = 'Good';
-      strengthColor = 'bg-yellow-500';
-      textColor = 'text-yellow-500';
-      barsActive = 3;
-    } else {
-      strength = 'strong';
+      barColor = 'bg-yellow-500';
+    } else if (metCount === 4) {
+      percentage = 80;
       strengthLabel = 'Strong';
-      strengthColor = 'bg-green-500';
-      textColor = 'text-green-500';
-      barsActive = 4;
+      barColor = 'bg-green-400';
+    } else if (metCount === 5) {
+      percentage = 100;
+      strengthLabel = 'Excellent';
+      barColor = 'bg-green-500';
     }
 
-    return { requirements, strength, strengthLabel, strengthColor, textColor, barsActive };
+    return { percentage, strengthLabel, barColor, checks };
   }, [password]);
 
   if (password.length === 0) return null;
@@ -84,68 +88,38 @@ export default function PasswordStrength({ password, showRequirements = true }: 
       exit={{ opacity: 0, height: 0 }}
       className="mt-2 space-y-2"
     >
-      {/* Strength Bars */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex gap-1">
-          {[1, 2, 3, 4].map((bar) => (
-            <motion.div
-              key={bar}
-              className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-                bar <= analysis.barsActive ? analysis.strengthColor : 'bg-dark-100'
-              }`}
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: bar * 0.1, duration: 0.2 }}
-            />
-          ))}
+      {/* Progress Bar */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-dark-500 font-medium">Password Strength</span>
+          {analysis.strengthLabel && (
+            <span className={`font-semibold ${
+              analysis.strengthLabel === 'Weak' || analysis.strengthLabel === 'Too Long' ? 'text-red-500' :
+              analysis.strengthLabel === 'Fair' ? 'text-orange-500' :
+              analysis.strengthLabel === 'Good' ? 'text-yellow-600' :
+              'text-green-500'
+            }`}>
+              {analysis.strengthLabel}
+            </span>
+          )}
         </div>
-        {analysis.strengthLabel && (
-          <motion.span
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className={`text-xs font-semibold ${analysis.textColor}`}
-          >
-            {analysis.strengthLabel}
-          </motion.span>
-        )}
+        
+        {/* Smooth Progress Bar */}
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${analysis.barColor}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${analysis.percentage}%` }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          />
+        </div>
       </div>
 
-      {/* Requirements Checklist */}
+      {/* Static Rules Text (only text, no checkmarks) */}
       {showRequirements && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-cream-50 rounded-xl p-3 border border-dark-100"
-        >
-          <p className="text-[10px] uppercase tracking-wider text-dark-400 font-semibold mb-2">
-            Password Requirements
-          </p>
-          <div className="grid grid-cols-1 gap-1">
-            {analysis.requirements.map((req, index) => (
-              <motion.div
-                key={req.label}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`flex items-center gap-2 text-xs ${
-                  req.met ? 'text-green-600' : 'text-dark-400'
-                }`}
-              >
-                {req.met ? (
-                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-3.5 h-3.5 text-dark-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <circle cx="12" cy="12" r="9" />
-                  </svg>
-                )}
-                <span className={req.met ? 'line-through opacity-60' : ''}>{req.label}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+        <p className="text-[11px] text-dark-400 leading-relaxed">
+          Use 8-15 characters with uppercase, lowercase, number, and special character.
+        </p>
       )}
     </motion.div>
   );

@@ -6,13 +6,12 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOrders, Order } from '../utils/canteenStore';
+import Sidebar from '@/components/Sidebar';
 
 // Icons
 const Icons = {
-  Back: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>,
   Search: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
   MapPin: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>,
   Phone: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>,
@@ -26,10 +25,18 @@ export default function OrderHistory() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
 
   useEffect(() => {
-    setOrders(getOrders());
+    const fetchOrders = async () => {
+        try {
+            const data = await getOrders();
+            setOrders(data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+    fetchOrders();
   }, []);
 
   // Filter orders
@@ -71,33 +78,31 @@ export default function OrderHistory() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link
-              to="/dashboard"
-              className="p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
-            >
-              <Icons.Back />
-            </Link>
+    <Sidebar>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="min-h-screen bg-gray-50 font-sans"
+      >
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-20">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
             <div>
               <h1 className="text-xl font-bold text-gray-900">Order History</h1>
               <p className="text-sm text-gray-500">{filteredOrders.length} orders found</p>
             </div>
-          </div>
-
-          {/* Search */}
-          <div className="relative flex-1 max-w-xs">
-            <input
-              type="text"
-              placeholder="Search orders..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all text-sm"
-            />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+  
+            {/* Search */}
+            <div className="relative flex-1 max-w-xs">
+              <input
+                type="text"
+                placeholder="Search orders..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all text-sm"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
               <Icons.Search />
             </div>
           </div>
@@ -255,6 +260,7 @@ export default function OrderHistory() {
           </div>
         )}
       </div>
-    </div>
+      </motion.div>
+    </Sidebar>
   );
 }

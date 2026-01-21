@@ -51,10 +51,9 @@ export default function AuthCallback() {
           // Create session
           createSession({
             email: data.user.email,
-            password: '', // OAuth users don't have passwords
             fullName: data.user.fullName,
             mobile: ''
-          })
+          }, data.token, true)
 
           setStatus('success')
           toast.success('Successfully authenticated!')

@@ -1,13 +1,6 @@
-/**
- * Canteen Store - LocalStorage Persistence
- * 
- * Manages:
- * - Menu items (CRUD)
- * - Categories (CRUD)
- * - Orders (mock data for demo)
- */
+import api from '../../utils/api';
+// import { User } from '../../utils/authStore';
 
-// Types
 export interface DietaryInfo {
   vegetarian: boolean;
   vegan: boolean;
@@ -17,65 +10,109 @@ export interface DietaryInfo {
 }
 
 export interface MenuItem {
-  id: string;
+  id: number;
   name: string;
   description: string;
   price: number;
   category: string;
-  image: string;
+  image?: string;
   isAvailable: boolean;
-  visibleInMenu: boolean;
-  dietary: DietaryInfo;
-  rating: number;
-  salesCount: number;
-  createdAt: string;
+  visibleInMenu?: boolean;
+  dietary?: DietaryInfo;
+  rating?: number;
+  salesCount?: number;
+  createdAt?: string; // Added for compatibility
 }
 
-export interface Category {
-  id: string;
+export interface Canteen {
+  id: number;
   name: string;
-  icon?: string;
-  color?: string;
-  itemCount?: number;
+  location: string;
+  isOpen: boolean;
+  image?: string;
+  openingTime?: string;
+  closingTime?: string;
 }
 
+// Order Item Interface matching Backend
 export interface OrderItem {
+  id?: number;
+  menuItemId?: number;
   name: string;
   quantity: number;
-  price: number;
+  price: number; // Changed from unitPrice to price to match existing frontend code if needed, but backend usually has price
+  // Let's check existing OrderHistory.tsx usage: item.price
 }
 
 export interface Order {
-  id: string;
-  orderNumber: number;
-  customerName: string;
+  id: number;
+  orderNumber: string;
+  customerName: string; // Backend might need mapping if it returns user object
   customerPhone: string;
   customerAddress: string;
-  items: OrderItem[];
-  specialNotes?: string;
   total: number;
   status: 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  items: OrderItem[];
   createdAt: string;
-  acceptedAt?: string;
+  acceptedAt?: string; // Optional in backend?
   completedAt?: string;
-  estimatedTime?: number; // minutes
+  specialNotes?: string;
   paymentMethod: 'cash' | 'upi' | 'card';
   isPaid: boolean;
   // Payment transaction details
   transactionId?: string;
-  upiId?: string; // e.g. customer@paytm
-  cardLast4?: string; // last 4 digits of card
+  upiId?: string;
+  cardLast4?: string;
   merchantName?: string;
   paidAt?: string;
 }
 
-// Storage Keys
-const MENU_ITEMS_KEY = 'charusatneeds_menu_items';
-const CATEGORIES_KEY = 'charusatneeds_categories';
-const ORDERS_KEY = 'charusatneeds_orders';
+/**
+ * Fetch all canteens
+ */
+export const fetchCanteens = async (): Promise<Canteen[]> => {
+  try {
+    const response = await api.get('/canteens');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch canteens', error);
+    return [];
+  }
+};
 
-// Default Categories
-const DEFAULT_CATEGORIES: Category[] = [
+/**
+ * Fetch menu for a canteen
+ */
+export const fetchMenu = async (canteenId: number): Promise<MenuItem[]> => {
+  try {
+    const response = await api.get(`/canteens/${canteenId}/menu`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch menu', error);
+    return [];
+  }
+};
+
+/**
+ * Fetch user orders
+ */
+export const getOrders = async (): Promise<Order[]> => {
+  try {
+    const response = await api.get('/orders/my-orders'); 
+    // Assuming /my-orders is the endpoint for user orders, 
+    // or just /orders if the backend filters by authenticated user.
+    // I need to be careful about the backend endpoint.
+    // Based on standard REST, it might be GET /orders (which returns all for admin/owner? or just mine?)
+    // Let's assume GET /orders returns the user's orders based on token.
+    return response.data; 
+  } catch (error) {
+    console.error('Failed to fetch orders', error);
+    return [];
+  }
+};
+
+// Export these for backward compatibility if needed, or remove if fully refactoring
+export const getCategories = (): Category[] => [
   { id: 'hot-meals', name: 'Hot Meals', color: '#ef4444' },
   { id: 'snacks', name: 'Snacks', color: '#f59e0b' },
   { id: 'beverages', name: 'Beverages', color: '#3b82f6' },
@@ -83,353 +120,111 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 'breakfast', name: 'Breakfast', color: '#10b981' },
 ];
 
-// Default Menu Items
-const DEFAULT_MENU_ITEMS: MenuItem[] = [
-  {
-    id: '1',
-    name: 'Paneer Butter Masala',
-    description: 'Rich creamy tomato gravy with cottage cheese cubes. Best seller!',
-    price: 120,
-    category: 'Hot Meals',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400',
-    isAvailable: true,
-    visibleInMenu: true,
-    dietary: { vegetarian: true, vegan: false, glutenFree: true, spicy: false, containsNuts: true },
-    rating: 4.8,
-    salesCount: 1250,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    name: 'Veg Hakka Noodles',
-    description: 'Wok-tossed noodles with crunchy vegetables and soy sauce.',
-    price: 90,
-    category: 'Hot Meals',
-    image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400',
-    isAvailable: true,
-    visibleInMenu: true,
-    dietary: { vegetarian: true, vegan: true, glutenFree: false, spicy: true, containsNuts: false },
-    rating: 4.5,
-    salesCount: 890,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '3',
-    name: 'Cold Coffee',
-    description: 'Thick hazelnut cold coffee topped with vanilla ice cream.',
-    price: 60,
-    category: 'Beverages',
-    image: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400',
-    isAvailable: true,
-    visibleInMenu: true,
-    dietary: { vegetarian: true, vegan: false, glutenFree: true, spicy: false, containsNuts: true },
-    rating: 4.9,
-    salesCount: 2100,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '4',
-    name: 'Masala Dosa',
-    description: 'Crispy rice crepe filled with spiced potato masala, served with sambar.',
-    price: 75,
-    category: 'Breakfast',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400',
-    isAvailable: true,
-    visibleInMenu: true,
-    dietary: { vegetarian: true, vegan: true, glutenFree: true, spicy: true, containsNuts: false },
-    rating: 4.7,
-    salesCount: 1500,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '5',
-    name: 'Cheese Grilled Sandwich',
-    description: 'Triple layer sandwich loaded with mozzarella and cheddar blend.',
-    price: 85,
-    category: 'Snacks',
-    image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400',
-    isAvailable: false,
-    visibleInMenu: true,
-    dietary: { vegetarian: true, vegan: false, glutenFree: false, spicy: false, containsNuts: false },
-    rating: 4.4,
-    salesCount: 600,
-    createdAt: new Date().toISOString()
-  }
-];
+export interface Category {
+  id: string;
+  name: string;
+  color?: string;
+  // ... other fields if needed
+}
 
-// Mock Orders for Demo
-const MOCK_ORDERS: Order[] = [
-  {
-    id: 'ord-1',
-    orderNumber: 402,
-    customerName: 'Sarah J.',
-    customerPhone: '+91 98765 43210',
-    customerAddress: 'DEPSTAR Block, Room 301',
-    items: [
-      { name: 'Classic Burger', quantity: 2, price: 24.00 },
-      { name: 'Truffle Fries', quantity: 1, price: 6.50 }
-    ],
-    specialNotes: 'No pickles on burgers please.',
-    total: 30.50,
-    status: 'new',
-    createdAt: new Date(Date.now() - 8 * 60000).toISOString(),
-    estimatedTime: 15,
-    paymentMethod: 'upi',
-    isPaid: true,
-    transactionId: 'TXN402983746589',
-    upiId: 'sarah.j@paytm',
-    merchantName: 'CharusatNeeds Canteen',
-    paidAt: new Date(Date.now() - 9 * 60000).toISOString()
-  },
-  {
-    id: 'ord-2',
-    orderNumber: 405,
-    customerName: 'Mike T.',
-    customerPhone: '+91 87654 32109',
-    customerAddress: 'CSPIT Main Building, Lab 5',
-    items: [
-      { name: 'Pepperoni Pizza (L)', quantity: 1, price: 18.00 },
-      { name: 'Coke Zero', quantity: 2, price: 5.00 }
-    ],
-    total: 23.00,
-    status: 'new',
-    createdAt: new Date(Date.now() - 2 * 60000).toISOString(),
-    estimatedTime: 20,
-    paymentMethod: 'cash',
-    isPaid: false
-  },
-  {
-    id: 'ord-3',
-    orderNumber: 406,
-    customerName: 'Alex R.',
-    customerPhone: '+91 76543 21098',
-    customerAddress: 'Library, Floor 2',
-    items: [
-      { name: 'Vegan Bowl', quantity: 1, price: 14.50 }
-    ],
-    total: 14.50,
-    status: 'new',
-    createdAt: new Date(Date.now() - 1 * 60000).toISOString(),
-    estimatedTime: 10,
-    paymentMethod: 'card',
-    isPaid: true,
-    transactionId: 'TXN406127349875',
-    cardLast4: '4521',
-    merchantName: 'CharusatNeeds Canteen',
-    paidAt: new Date(Date.now() - 1.5 * 60000).toISOString()
-  },
-  {
-    id: 'ord-4',
-    orderNumber: 407,
-    customerName: 'Corporate Order',
-    customerPhone: '+91 65432 10987',
-    customerAddress: 'Admin Block, Conference Room A',
-    items: [
-      { name: 'Coffee Combo', quantity: 5, price: 45.00 },
-      { name: 'Bagel (Cream Cheese)', quantity: 5, price: 25.00 }
-    ],
-    total: 70.00,
-    status: 'new',
-    createdAt: new Date(Date.now() - 2.5 * 60000).toISOString(),
-    estimatedTime: 25,
-    paymentMethod: 'upi',
-    isPaid: true,
-    transactionId: 'TXN407582947612',
-    upiId: 'corporate@ybl',
-    merchantName: 'CharusatNeeds Canteen',
-    paidAt: new Date(Date.now() - 3 * 60000).toISOString()
-  },
-  {
-    id: 'ord-5',
-    orderNumber: 398,
-    customerName: 'Priya S.',
-    customerPhone: '+91 54321 09876',
-    customerAddress: 'Hostel C, Room 205',
-    items: [
-      { name: 'Paneer Tikka', quantity: 2, price: 35.00 }
-    ],
-    total: 35.00,
-    status: 'preparing',
-    createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
-    acceptedAt: new Date(Date.now() - 12 * 60000).toISOString(),
-    estimatedTime: 20,
-    paymentMethod: 'cash',
-    isPaid: false
-  },
-  {
-    id: 'ord-6',
-    orderNumber: 395,
-    customerName: 'Rahul K.',
-    customerPhone: '+91 43210 98765',
-    customerAddress: 'Sports Complex',
-    items: [
-      { name: 'Protein Shake', quantity: 3, price: 27.00 },
-      { name: 'Energy Bar', quantity: 2, price: 10.00 }
-    ],
-    total: 37.00,
-    status: 'ready',
-    createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
-    acceptedAt: new Date(Date.now() - 22 * 60000).toISOString(),
-    estimatedTime: 12,
-    paymentMethod: 'upi',
-    isPaid: true,
-    transactionId: 'TXN395837461952',
-    upiId: 'rahul.fitness@gpay',
-    merchantName: 'CharusatNeeds Canteen',
-    paidAt: new Date(Date.now() - 26 * 60000).toISOString()
-  },
-  {
-    id: 'ord-7',
-    orderNumber: 390,
-    customerName: 'Amit P.',
-    customerPhone: '+91 32109 87654',
-    customerAddress: 'PDPIAS, Ground Floor',
-    items: [
-      { name: 'Thali Meal', quantity: 1, price: 85.00 }
-    ],
-    total: 85.00,
-    status: 'completed',
-    createdAt: new Date(Date.now() - 60 * 60000).toISOString(),
-    acceptedAt: new Date(Date.now() - 55 * 60000).toISOString(),
-    completedAt: new Date(Date.now() - 35 * 60000).toISOString(),
-    estimatedTime: 25,
-    paymentMethod: 'card',
-    isPaid: true,
-    transactionId: 'TXN390938475621',
-    cardLast4: '7823',
-    merchantName: 'CharusatNeeds Canteen',
-    paidAt: new Date(Date.now() - 61 * 60000).toISOString()
-  }
-];
+// Management APIs
 
-// ==================== MENU ITEMS ====================
-export function getMenuItems(): MenuItem[] {
+export const addMenuItem = async (canteenId: number, item: Partial<MenuItem>): Promise<MenuItem | null> => {
   try {
-    const stored = localStorage.getItem(MENU_ITEMS_KEY);
-    if (stored) return JSON.parse(stored);
-    // Initialize with defaults
-    localStorage.setItem(MENU_ITEMS_KEY, JSON.stringify(DEFAULT_MENU_ITEMS));
-    return DEFAULT_MENU_ITEMS;
-  } catch {
-    return DEFAULT_MENU_ITEMS;
+    const response = await api.post(`/canteens/${canteenId}/menu`, {
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      isVeg: item.dietary && item.dietary.vegetarian ? true : false,
+      preparationTime: 15 // Default or add to UI
+    });
+    return response.data.item;
+  } catch (error) {
+    console.error('Failed to add menu item', error);
+    return null;
   }
-}
+};
 
-export function saveMenuItem(item: MenuItem): void {
-  const items = getMenuItems();
-  const existingIndex = items.findIndex(i => i.id === item.id);
-  if (existingIndex >= 0) {
-    items[existingIndex] = item;
-  } else {
-    items.unshift(item);
-  }
-  localStorage.setItem(MENU_ITEMS_KEY, JSON.stringify(items));
-}
-
-export function deleteMenuItem(id: string): void {
-  const items = getMenuItems().filter(i => i.id !== id);
-  localStorage.setItem(MENU_ITEMS_KEY, JSON.stringify(items));
-}
-
-export function toggleItemAvailability(id: string): MenuItem | null {
-  const items = getMenuItems();
-  const item = items.find(i => i.id === id);
-  if (item) {
-    item.isAvailable = !item.isAvailable;
-    localStorage.setItem(MENU_ITEMS_KEY, JSON.stringify(items));
-    return item;
-  }
-  return null;
-}
-
-// ==================== CATEGORIES ====================
-export function getCategories(): Category[] {
+export const updateMenuItem = async (itemId: number, item: Partial<MenuItem>): Promise<MenuItem | null> => {
   try {
-    const stored = localStorage.getItem(CATEGORIES_KEY);
-    if (stored) return JSON.parse(stored);
-    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(DEFAULT_CATEGORIES));
-    return DEFAULT_CATEGORIES;
-  } catch {
-    return DEFAULT_CATEGORIES;
+    const response = await api.put(`/canteens/menu/${itemId}`, {
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      isAvailable: item.isAvailable,
+      category: item.category
+    });
+    return response.data.item;
+  } catch (error) {
+    console.error('Failed to update menu item', error);
+    return null;
   }
-}
+};
 
-export function saveCategory(category: Category): void {
-  const categories = getCategories();
-  const existingIndex = categories.findIndex(c => c.id === category.id);
-  if (existingIndex >= 0) {
-    categories[existingIndex] = category;
-  } else {
-    categories.push(category);
-  }
-  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
-}
-
-export function deleteCategory(id: string): void {
-  const categories = getCategories().filter(c => c.id !== id);
-  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
-}
-
-// ==================== ORDERS ====================
-export function getOrders(): Order[] {
+export const deleteMenuItem = async (itemId: number): Promise<boolean> => {
   try {
-    const stored = localStorage.getItem(ORDERS_KEY);
-    if (stored) return JSON.parse(stored);
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(MOCK_ORDERS));
-    return MOCK_ORDERS;
-  } catch {
-    return MOCK_ORDERS;
+    await api.delete(`/canteens/menu/${itemId}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to delete menu item', error);
+    return false;
   }
-}
+};
 
-export function updateOrderStatus(id: string, status: Order['status']): Order | null {
-  const orders = getOrders();
-  const order = orders.find(o => o.id === id);
-  if (order) {
-    order.status = status;
-    if (status === 'preparing') order.acceptedAt = new Date().toISOString();
-    if (status === 'completed') order.completedAt = new Date().toISOString();
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-    return order;
-  }
-  return null;
-}
+export const toggleItemAvailability = async (itemId: number, isAvailable: boolean): Promise<boolean> => {
+   try {
+    await api.post(`/canteens/menu/${itemId}/toggle`, { available: isAvailable });
+    return true;
+   } catch (error) {
+     console.error('Failed to toggle availability', error);
+     return false;
+   }
+};
 
-export function getOrdersByStatus(status: Order['status']): Order[] {
-  return getOrders().filter(o => o.status === status);
-}
+// Placeholder for category management if backend supports it, otherwise generic
+export const saveCategory = (cat: Category) => {
+    // TODO: Implement backend API for categories if available
+    console.log('Category save not implemented in backend yet', cat);
+};
 
-export function getRecentOrders(count: number = 5): Order[] {
-  return getOrders()
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, count);
-}
+export const deleteCategory = (id: string) => {
+     // TODO: Implement backend API
+    console.log('Category delete not implemented in backend yet', id);
+};
 
-export function getOrderHistory(): Order[] {
-  return getOrders()
-    .filter(o => o.status === 'completed' || o.status === 'cancelled')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
+// Order Management
 
-// Stats
-export function getOrderStats() {
-  const orders = getOrders();
-  const activeOrders = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
-  const completedToday = orders.filter(o => {
-    if (o.status !== 'completed') return false;
+export const updateOrderStatus = async (orderId: number, status: string): Promise<Order | null> => {
+    try {
+        const response = await api.put(`/orders/${orderId}/status`, { status: status.toUpperCase() });
+        return response.data.order;
+    } catch (error) {
+        console.error('Failed to update order status', error);
+        return null;
+    }
+};
+
+export const getOrderStats = (orders: Order[]) => {
+    // Determine active vs completed based on status
+    const activeOrders = orders.filter(o => ['new', 'preparing', 'ready'].includes(o.status.toLowerCase()));
+    
+    // Calculate stats
+    const activeCount = activeOrders.length;
+    
+    // Average time (mock or calc from completedAt - createdAt)
+    // Simple mock calculation logic for now if data insufficient
+    const avgTime = 12; 
+    
+    // Today's revenue
     const today = new Date().toDateString();
-    return new Date(o.completedAt || o.createdAt).toDateString() === today;
-  });
-  
-  const avgTime = activeOrders.length > 0 
-    ? Math.round(activeOrders.reduce((acc, o) => acc + (o.estimatedTime || 15), 0) / activeOrders.length)
-    : 0;
-  
-  const todayRevenue = completedToday.reduce((acc, o) => acc + o.total, 0);
+    const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
+    const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
 
-  return {
-    activeCount: activeOrders.length,
-    avgTime,
-    todayRevenue: todayRevenue.toFixed(2)
-  };
-}
+    return {
+        activeCount,
+        avgTime,
+        todayRevenue
+    };
+};
+

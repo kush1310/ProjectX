@@ -12,13 +12,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  getOrders, 
-  updateOrderStatus, 
-  getOrderStats, 
-  Order 
+import {
+  getOrders,
+  updateOrderStatus,
+  getOrderStats,
+  Order
 } from '../utils/canteenStore';
-import { logout } from '@/utils/authStore';
+import { logout, getSession } from '@/utils/authStore';
+import StudentDashboard from './StudentDashboard';
+import AdminDashboard from './AdminDashboard';
 import ConfettiButton from '../components/ConfettiButton';
 import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import AnimatedBorder from '../components/AnimatedBorder';
@@ -35,7 +37,7 @@ const navItems = [
   { label: 'Menu Management', path: '/canteen/menu', icon: Icons.Menu, enabled: true },
   { label: 'Order History', path: '/order-history', icon: Icons.History, enabled: true },
   { label: 'Analytics', path: '#', icon: Icons.Chart, enabled: false },
-  { label: 'Coupon Management', path: '#', icon: Icons.Tag, enabled: false },
+  { label: 'Coupon Management', path: '/vendor/coupons', icon: Icons.Tag, enabled: true },
   { label: 'Recent Reviews', path: '#', icon: Icons.Star, enabled: false },
   { label: 'Help & Support', path: '#', icon: Icons.Help, enabled: false },
   { label: 'Restaurant Details', path: '#', icon: Icons.Settings, enabled: false },
@@ -53,11 +55,21 @@ const tabLabels: Record<OrderTab, string> = {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  
+
   // State
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<OrderTab>('new');
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  
+  // Check User Role
+  const user = getSession();
+  if (user?.role === 'USER') {
+      return <StudentDashboard />;
+  }
+  if (user?.role === 'ADMIN') {
+      return <AdminDashboard />;
+  }
+
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'live' | 'recent'>('live');
   const [rushHour, setRushHour] = useState(false);
@@ -83,7 +95,11 @@ export default function Dashboard() {
 
   // Load orders
   useEffect(() => {
-    setOrders(getOrders());
+    const fetch = async () => {
+        const data = await getOrders();
+        setOrders(data);
+    };
+    fetch();
   }, []);
 
   // Lock body scroll when logout modal is open
@@ -91,13 +107,13 @@ export default function Dashboard() {
     if (showLogoutModal) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = '';
+        document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
   }, [showLogoutModal]);
 
   // Stats
-  const stats = useMemo(() => getOrderStats(), [orders]);
+  const stats = useMemo(() => getOrderStats(orders), [orders]);
 
   // Filtered orders by tab
   const filteredOrders = useMemo(() => {
@@ -120,24 +136,25 @@ export default function Dashboard() {
   }), [orders]);
 
   // Handlers
-  const handleAcceptOrder = (id: string) => {
-    const updated = updateOrderStatus(id, 'preparing');
-    if (updated) setOrders(getOrders());
+  // Handlers
+  const handleAcceptOrder = async (id: number) => {
+    const updated = await updateOrderStatus(id, 'preparing');
+    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
   };
 
-  const handleDeclineOrder = (id: string) => {
-    const updated = updateOrderStatus(id, 'cancelled');
-    if (updated) setOrders(getOrders());
+  const handleDeclineOrder = async (id: number) => {
+    const updated = await updateOrderStatus(id, 'cancelled');
+    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
   };
 
-  const handleMarkReady = (id: string) => {
-    const updated = updateOrderStatus(id, 'ready');
-    if (updated) setOrders(getOrders());
+  const handleMarkReady = async (id: number) => {
+    const updated = await updateOrderStatus(id, 'ready');
+    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
   };
 
-  const handleMarkComplete = (id: string) => {
-    const updated = updateOrderStatus(id, 'completed');
-    if (updated) setOrders(getOrders());
+  const handleMarkComplete = async (id: number) => {
+    const updated = await updateOrderStatus(id, 'completed');
+    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
   };
 
   const handleLogout = () => {
@@ -161,14 +178,14 @@ export default function Dashboard() {
         {(isMobileNavOpen || isDesktop) && (
           <>
             {/* Mobile Overlay */}
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileNavOpen(false)}
-              className="fixed inset-0 bg-black/50 z-40 min-[968px]:hidden" 
+              className="fixed inset-0 bg-black/50 z-40 min-[968px]:hidden"
             />
-            
+
             <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0, width: isNavCollapsed ? 72 : 260 }}
@@ -176,110 +193,111 @@ export default function Dashboard() {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className={`fixed top-0 left-0 z-50 h-full bg-white flex flex-col shadow-2xl min-[968px]:translate-x-0`}
             >
-        {/* Logo */}
-        <div className={`p-5 border-b border-gray-100/80 flex items-center ${isNavCollapsed ? 'justify-center' : 'gap-3'}`}>
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-200">
-            C
-          </div>
-          {!isNavCollapsed && (
-            <span className="font-bold text-lg tracking-tight text-gray-900">
-              Charusat<span className="text-emerald-600">Needs</span>
-            </span>
-          )}
-          
-          {/* Mobile Close Button */}
-          {!isDesktop && (
-            <button 
-               onClick={() => setIsMobileNavOpen(false)}
-               className="ml-auto p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-               <Icons.X />
-            </button>
-          )}
-        </div>
+              {/* Logo - NO Green C Icon */}
+              <div className={`p-5 border-b border-gray-100/80 flex items-center ${isNavCollapsed ? 'justify-center' : 'gap-3'}`}>
+                {!isNavCollapsed ? (
+                  <span className="font-bold text-lg tracking-tight text-gray-900">
+                    Charusat<span className="text-emerald-600">Needs</span>
+                  </span>
+                ) : (
+                  <span className="font-bold text-lg text-emerald-600">CN</span>
+                )}
 
-        {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = item.path === '/dashboard' && item.label === 'Dashboard';
-            return (
-              <Link
-                key={item.label}
-                to={item.enabled ? item.path : '#'}
-                onClick={(e) => {
-                  if (!item.enabled) e.preventDefault();
-                  setIsMobileNavOpen(false); // Auto-close on mobile
-                }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 font-semibold' 
-                    : item.enabled 
-                      ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' 
-                      : 'text-gray-400 cursor-not-allowed opacity-50'
-                } ${isNavCollapsed ? 'justify-center px-3' : ''}`}
-                title={isNavCollapsed ? item.label : undefined}
-              >
-                <span className={isActive ? 'text-emerald-600' : ''}><item.icon /></span>
-                {!isNavCollapsed && <span className="text-sm truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+                {/* Mobile Close Button */}
+                {!isDesktop && (
+                  <button
+                    onClick={() => setIsMobileNavOpen(false)}
+                    className="ml-auto p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Icons.X />
+                  </button>
+                )}
+              </div>
 
-        {/* Collapse Toggle - ONLY VERTICAL VISIBLE ON DESKTOP */}
-        {isDesktop && (
-          <button
-            onClick={() => setIsNavCollapsed(!isNavCollapsed)}
-            className="absolute -right-3 top-24 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-200 shadow-md transition-all"
-          >
-            {isNavCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
-          </button>
-        )}
+              {/* Navigation */}
+              <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                {navItems.map((item) => {
+                  const isActive = item.path === '/dashboard' && item.label === 'Dashboard';
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.enabled ? item.path : '#'}
+                      onClick={(e) => {
+                        if (!item.enabled) e.preventDefault();
+                        setIsMobileNavOpen(false); // Auto-close on mobile
+                      }}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+                          ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 font-semibold'
+                          : item.enabled
+                            ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            : 'text-gray-400 cursor-not-allowed opacity-50'
+                        } ${isNavCollapsed ? 'justify-center px-3' : ''}`}
+                      title={isNavCollapsed ? item.label : undefined}
+                    >
+                      <span className={isActive ? 'text-emerald-600' : ''}><item.icon /></span>
+                      {!isNavCollapsed && <span className="text-sm truncate">{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-gray-100/80">
-          <button
-            onClick={() => setShowLogoutModal(true)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all ${isNavCollapsed ? 'justify-center px-3' : ''}`}
-          >
-            <Icons.Logout />
-            {!isNavCollapsed && <span className="text-sm font-medium">Logout</span>}
-          </button>
-        </div>
-      </motion.aside>
+              {/* Collapse Toggle - ONLY VERTICAL VISIBLE ON DESKTOP */}
+              {isDesktop && (
+                <button
+                  onClick={() => setIsNavCollapsed(!isNavCollapsed)}
+                  className="absolute -right-3 top-24 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-200 shadow-md transition-all"
+                >
+                  {isNavCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
+                </button>
+              )}
+
+              {/* Logout - Fixed icon size */}
+              <div className="p-4 border-t border-gray-100/80">
+                <button
+                  onClick={() => setShowLogoutModal(true)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all ${isNavCollapsed ? 'justify-center px-3' : ''}`}
+                >
+                  {/* Fixed size logout icon - shrink-0 prevents shrinking when collapsed */}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+                  </svg>
+                  {!isNavCollapsed && <span className="text-sm font-medium">Logout</span>}
+                </button>
+              </div>
+            </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      <main 
+      <main
         className={`flex-1 transition-all duration-200 min-h-screen ${isNavCollapsed ? 'min-[968px]:ml-[72px]' : 'min-[968px]:ml-[260px]'} lg:mr-[300px] w-full bg-gray-50/50`}
       >
         {/* Header */}
         <header className="bg-white/70 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-8 py-4 sm:py-6 sticky top-0 z-20">
-          
+
           {/* Mobile Header Controls */}
           <div className="flex flex-wrap items-center justify-between min-[968px]:hidden mb-4 gap-3">
-             <button onClick={() => setIsMobileNavOpen(true)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                <Icons.Menu />
-             </button>
-             
-             {/* Mobile View Toggle */}
-             <div className="flex bg-gray-100 rounded-lg p-1 flex-1 max-w-[250px] mx-auto min-w-[200px]">
-                <button 
-                  onClick={() => setMobileView('live')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mobileView === 'live' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'}`}
-                >
-                  Live Orders
-                </button>
-                <button 
-                  onClick={() => setMobileView('recent')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mobileView === 'recent' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'}`}
-                >
-                  Recent
-                </button>
-             </div>
-             
-             <div className="w-8" /> {/* Spacer balance */}
+            <button onClick={() => setIsMobileNavOpen(true)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+              <Icons.Menu />
+            </button>
+
+            {/* Mobile View Toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1 flex-1 max-w-[250px] mx-auto min-w-[200px]">
+              <button
+                onClick={() => setMobileView('live')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mobileView === 'live' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'}`}
+              >
+                Live Orders
+              </button>
+              <button
+                onClick={() => setMobileView('recent')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mobileView === 'recent' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'}`}
+              >
+                Recent
+              </button>
+            </div>
+
+            <div className="w-8" /> {/* Spacer balance */}
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between max-w-7xl 2xl:max-w-[1920px] mx-auto gap-4">
@@ -344,47 +362,45 @@ export default function Dashboard() {
 
         {/* ============ LIVE ORDERS VIEW ============ */}
         <div className={mobileView === 'live' ? 'block' : 'hidden min-[968px]:block'}>
-        {/* Tabs */}
-        <div className="px-4 lg:px-8 py-5 bg-white/50 backdrop-blur-sm border-b border-gray-100/50 overflow-x-auto no-scrollbar">
-          <div className="flex gap-2 max-w-7xl 2xl:max-w-[1920px] mx-auto min-w-max">
-            {ORDER_TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                  activeTab === tab 
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-200' 
-                    : 'text-gray-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200'
-                }`}
-              >
-                {tabLabels[tab]}
-                {tabCounts[tab] > 0 && (
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                    activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {tabCounts[tab]}
-                  </span>
-                )}
-              </button>
-            ))}
+          {/* Tabs */}
+          <div className="px-4 lg:px-8 py-5 bg-white/50 backdrop-blur-sm border-b border-gray-100/50 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2 max-w-7xl 2xl:max-w-[1920px] mx-auto min-w-max">
+              {ORDER_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${activeTab === tab
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-200'
+                      : 'text-gray-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200'
+                    }`}
+                >
+                  {tabLabels[tab]}
+                  {tabCounts[tab] > 0 && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                      {tabCounts[tab]}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Order Cards Grid */}
-        <div className="p-3 sm:p-8">
-          <div className="max-w-7xl 2xl:max-w-[1920px] mx-auto">
-            <AnimatedBorder rushHour={rushHour} radius="1.5rem">
-              <div className="bg-white rounded-3xl p-3 sm:p-6 min-h-[500px]">
-                {filteredOrders.length === 0 ? (
-                  <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100 mx-auto max-w-lg">
-                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 text-gray-400">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>
+          {/* Order Cards Grid */}
+          <div className="p-3 sm:p-8">
+            <div className="max-w-7xl 2xl:max-w-[1920px] mx-auto">
+              <AnimatedBorder rushHour={rushHour} radius="1.5rem">
+                <div className="bg-white rounded-3xl p-3 sm:p-6 min-h-[500px]">
+                  {filteredOrders.length === 0 ? (
+                    <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100 mx-auto max-w-lg">
+                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 text-gray-400">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900">No {tabLabels[activeTab]} Orders</h3>
+                      <p className="text-gray-500 mt-2">New orders will appear here automatically</p>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900">No {tabLabels[activeTab]} Orders</h3>
-                    <p className="text-gray-500 mt-2">New orders will appear here automatically</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-5">
+                  ) : (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-5">
                       {filteredOrders.map((order) => (
                         <OrderCard
                           key={order.id}
@@ -397,34 +413,34 @@ export default function Dashboard() {
                           onShowDetails={() => setSelectedOrder(order)}
                         />
                       ))}
-                  </div>
-                )}
-              </div>
-            </AnimatedBorder>
+                    </div>
+                  )}
+                </div>
+              </AnimatedBorder>
+            </div>
           </div>
-        </div>
         </div>
 
         {/* ============ RECENT ORDERS MOBILE VIEW ============ */}
         {mobileView === 'recent' && (
           <div className="p-4 min-[968px]:hidden pb-20">
-             <div className="space-y-4">
-                <h3 className="font-bold text-gray-900 px-2">Recent Orders History</h3>
-                {recentOrders.map((order) => (
-                  <RecentOrderCard
-                    key={order.id}
-                    order={order}
-                    getTimeSince={getTimeSince}
-                    onShowDetails={() => setSelectedOrder(order)}
-                  />
-                ))}
-             </div>
+            <div className="space-y-4">
+              <h3 className="font-bold text-gray-900 px-2">Recent Orders History</h3>
+              {recentOrders.map((order) => (
+                <RecentOrderCard
+                  key={order.id}
+                  order={order}
+                  getTimeSince={getTimeSince}
+                  onShowDetails={() => setSelectedOrder(order)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </main>
 
       {/* RIGHT: RECENT 5 ORDERS - Desktop Sidebar */}
-      <aside 
+      <aside
         className="hidden min-[968px]:flex fixed top-0 right-0 z-30 h-full w-[300px] bg-white/95 backdrop-blur-xl flex-col shadow-2xl shadow-gray-200/60"
         onWheel={(e) => e.stopPropagation()}
       >
@@ -432,8 +448,8 @@ export default function Dashboard() {
           <h2 className="font-bold text-lg text-gray-900">Recent Orders</h2>
           <p className="text-sm text-gray-500 mt-1">Last 5 orders</p>
         </div>
-        
-        <div 
+
+        <div
           className="flex-1 overflow-y-auto p-4 space-y-3 overscroll-contain"
           onWheel={(e) => e.stopPropagation()}
         >

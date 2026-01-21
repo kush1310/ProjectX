@@ -7,33 +7,16 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * User Repository - Data access layer for User entity
+ * User Repository - Database operations for users
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+    
+    Optional<User> findByEmail(String email);
+    
+    boolean existsByEmail(String email);
+    
+    Optional<User> findByEmailAndIsActiveTrue(String email);
 
-    /**
-     * Find user by email (case-insensitive)
-     */
     Optional<User> findByEmailIgnoreCase(String email);
-
-    /**
-     * Check if email exists
-     */
-    boolean existsByEmailIgnoreCase(String email);
-
-    /**
-     * Check if contact number exists
-     */
-    boolean existsByContactNumber(String contactNumber);
-
-    /**
-     * Find user by email verification token
-     */
-    Optional<User> findByEmailVerificationToken(String token);
-
-    /**
-     * Find user by password reset token
-     */
-    Optional<User> findByPasswordResetToken(String token);
 }

@@ -1,87 +1,137 @@
 package com.charusat.canteen.controller;
 
-import com.charusat.canteen.dto.*;
+import com.charusat.canteen.model.User;
 import com.charusat.canteen.service.AuthService;
-import jakarta.validation.Valid;
+import com.charusat.canteen.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Authentication Controller - REST API endpoints for auth operations
+ * Auth Controller - Handles authentication endpoints
  */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class AuthController {
-
+    
     private final AuthService authService;
-
-    /**
-     * Register a new user
-     * POST /api/auth/register
-     */
+    private final UserService userService;
+    
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse.UserDto>> register(
-            @Valid @RequestBody RegisterRequest request) {
-        AuthResponse.UserDto user = authService.register(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Registration successful. Please check your email to verify your account.", user));
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        try {
+            // Validate email domain
+            if (!request.email().toLowerCase().endsWith("@charusat.edu.in")) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("success", false, "message", "Use @charusat.edu.in email"));
+            }
+            
+            // Validate password length
+            if (request.password().length() < 8 || request.password().length() > 15) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("success", false, "message", "Password must be 8-15 characters"));
+            }
+            
+            User user = userService.register(
+                    request.email(),
+                    request.password(),
+                    request.fullName(),
+                    request.mobile()
+            );
+            
+            String token = authService.generateToken(user);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Registration successful");
+            response.put("token", token);
+            response.put("user", Map.of(
+                    "id", user.getId(),
+                    "email", user.getEmail(),
+                    "fullName", user.getFullName(),
+                    "role", user.getRole().name()
+            ));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
     }
-
-    /**
-     * Login user
-     * POST /api/auth/login
-     */
+    
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(
-            @Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            var userOpt = authService.authenticate(request.email(), request.password());
+            
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                String token = authService.generateToken(user);
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Login successful");
+                response.put("token", token);
+                response.put("user", Map.of(
+                        "id", user.getId(),
+                        "email", user.getEmail(),
+                        "fullName", user.getFullName(),
+                        "role", user.getRole().name()
+                ));
+                
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("success", false, "message", "Invalid credentials"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Authentication failed"));
+        }
     }
-
-    /**
-     * Request OTP for 2FA
-     * POST /api/auth/send-otp
-     */
-    @PostMapping("/send-otp")
-    public ResponseEntity<ApiResponse<Void>> sendOtp(@RequestParam String email) {
-        authService.sendOtp(email);
-        return ResponseEntity.ok(ApiResponse.success("OTP sent to your email"));
+    
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            
+            if (!authService.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("success", false, "message", "Invalid token"));
+            }
+            
+            Long userId = authService.getUserIdFromToken(token);
+            var userOpt = userService.findById(userId);
+            
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "user", Map.of(
+                                "id", user.getId(),
+                                "email", user.getEmail(),
+                                "fullName", user.getFullName(),
+                                "mobile", user.getMobile() != null ? user.getMobile() : "",
+                                "role", user.getRole().name()
+                        )
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("success", false, "message", "User not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Invalid token"));
+        }
     }
-
-    /**
-     * Forgot password - request reset link
-     * POST /api/auth/forgot-password
-     */
-    @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestParam String email) {
-        authService.forgotPassword(email);
-        return ResponseEntity.ok(ApiResponse.success("Password reset link sent to your email"));
-    }
-
-    /**
-     * Reset password with token
-     * POST /api/auth/reset-password
-     */
-    @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(
-            @RequestParam String token,
-            @RequestParam String newPassword) {
-        authService.resetPassword(token, newPassword);
-        return ResponseEntity.ok(ApiResponse.success("Password reset successfully"));
-    }
-
-    /**
-     * Verify email
-     * GET /api/auth/verify-email
-     */
-    @GetMapping("/verify-email")
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam String token) {
-        authService.verifyEmail(token);
-        return ResponseEntity.ok(ApiResponse.success("Email verified successfully"));
-    }
+    
+    // Request DTOs
+    public record RegisterRequest(String email, String password, String fullName, String mobile) {}
+    public record LoginRequest(String email, String password) {}
 }

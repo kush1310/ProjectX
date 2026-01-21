@@ -1,132 +1,140 @@
-/**
- * Auth Store - Client-Side Authentication Management
- * 
- * Features:
- * - Static test credentials for development
- * - Dynamic user registration (localStorage-based)
- * - Session management
- */
+import api from './api';
 
 // Types
 export interface User {
+  id?: number;
   email: string;
-  password: string;
   fullName: string;
-  mobile: string;
+  mobile?: string;
+  role?: string;
 }
 
-// Static test credentials
-const STATIC_USER: User = {
-  email: 'd25ce145@charusat.edu.in',
-  password: 'kush',
-  fullName: 'Test User',
-  mobile: '9999999999'
-};
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  user?: User;
+}
 
 // Storage keys
-const USERS_KEY = 'charusatneeds_users';
 const SESSION_KEY = 'charusatneeds_session';
+const COOKIE_NAME = 'charusatneeds_auth';
+const COOKIE_DAYS = 30;
 
 /**
- * Get all registered users from localStorage
+ * Cookie utilities
  */
-export const getRegisteredUsers = (): User[] => {
+const setCookie = (name: string, value: string, days: number): void => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
+};
+
+const getCookie = (name: string): string | null => {
+  const nameEQ = `${name}=`;
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    cookie = cookie.trim();
+    if (cookie.indexOf(nameEQ) === 0) {
+      return decodeURIComponent(cookie.substring(nameEQ.length));
+    }
+  }
+  return null;
+};
+
+const deleteCookie = (name: string): void => {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+};
+
+/**
+ * Register a new user
+ */
+export const registerUser = async (userData: any): Promise<AuthResponse> => {
   try {
-    const stored = localStorage.getItem(USERS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
+    const response = await api.post('/auth/register', userData);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Registration failed'
+    };
   }
 };
 
 /**
- * Register a new user (add to localStorage array)
+ * Authenticate user
  */
-export const registerUser = (user: User): { success: boolean; message: string } => {
-  const users = getRegisteredUsers();
-  
-  // Check if email already exists
-  const exists = users.some(u => u.email.toLowerCase() === user.email.toLowerCase());
-  if (exists) {
-    return { success: false, message: 'An account with this email already exists.' };
+export const authenticateUser = async (email: string, password: string): Promise<AuthResponse> => {
+  try {
+    const response = await api.post('/auth/login', { email, password });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Login failed'
+    };
   }
-  
-  // Check if it's the static user email
-  if (user.email.toLowerCase() === STATIC_USER.email.toLowerCase()) {
-    return { success: false, message: 'This email is reserved. Please use a different email.' };
-  }
-  
-  // Add user
-  users.push(user);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  
-  return { success: true, message: 'Account created successfully!' };
 };
 
 /**
- * Authenticate user (check static + dynamic users)
+ * Create session
  */
-export const authenticateUser = (email: string, password: string): { success: boolean; user?: User; message: string } => {
-  // Check static user first
-  if (email.toLowerCase() === STATIC_USER.email.toLowerCase() && password === STATIC_USER.password) {
-    return { success: true, user: STATIC_USER, message: 'Login successful!' };
-  }
-  
-  // Check dynamic users
-  const users = getRegisteredUsers();
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-  
-  if (user) {
-    return { success: true, user, message: 'Login successful!' };
-  }
-  
-  // Check if email exists but password wrong
-  const emailExists = users.some(u => u.email.toLowerCase() === email.toLowerCase()) || 
-                      email.toLowerCase() === STATIC_USER.email.toLowerCase();
-  
-  if (emailExists) {
-    return { success: false, message: 'Incorrect password. Please try again.' };
-  }
-  
-  return { success: false, message: 'No account found with this email. Please sign up.' };
-};
-
-/**
- * Create session (store in localStorage)
- */
-export const createSession = (user: User): void => {
+export const createSession = (user: User, token: string, rememberMe: boolean = false): void => {
   const session = {
-    email: user.email,
-    fullName: user.fullName,
+    ...user,
+    token,
     loggedInAt: new Date().toISOString()
   };
+  
+  // Always store in localStorage
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  
+  // Store in cookie if Remember Me
+  if (rememberMe) {
+    setCookie(COOKIE_NAME, JSON.stringify(session), COOKIE_DAYS);
+  } else {
+    deleteCookie(COOKIE_NAME);
+  }
 };
 
 /**
  * Get current session
  */
-export const getSession = (): { email: string; fullName: string; loggedInAt: string } | null => {
+export const getSession = (): any | null => {
   try {
+    // Check localStorage first
     const stored = localStorage.getItem(SESSION_KEY);
-    return stored ? JSON.parse(stored) : null;
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    
+    // Check cookie
+    const cookieSession = getCookie(COOKIE_NAME);
+    if (cookieSession) {
+      const session = JSON.parse(cookieSession);
+      localStorage.setItem(SESSION_KEY, cookieSession);
+      return session;
+    }
+    
+    return null;
   } catch {
     return null;
   }
 };
 
 /**
- * Check if user is authenticated
+ * Check if authenticated
  */
 export const isAuthenticated = (): boolean => {
   return getSession() !== null;
 };
 
 /**
- * Logout - clear session
+ * Logout
  */
 export const logout = (): void => {
   localStorage.removeItem(SESSION_KEY);
+  deleteCookie(COOKIE_NAME);
 };
 
 /**

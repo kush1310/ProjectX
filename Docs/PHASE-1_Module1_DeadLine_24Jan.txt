@@ -1,0 +1,38 @@
+Canteen UI
+Frontend Only
+
+Key->Value Pairs
+--> dhairy@hostel.com -> Hostel
+--> kush@canteen.com -> Canteen
+--> ishan@admin.com -> Admin
+--> krina@updown.com --> UpDown
+--> dennys@charusat.edu.in --> Canteen
+Admin Panel -> Canteen/Admin Access Must be Given
+
+
+VALIDATION KUSH-5546584#$$w$
+@charusat.edu.in
+
+d25ce145@charusat.edu.in
+Domain-Fetch
+
+Modules: 
+1. CANTEEN MENU --- Edit/Add/Remove ...etc
+
+2. CANTEEN COUPON --- CRUD -- Validity -- MOV
+  ---> MOV, VALIDITY, Rs./%, FLAT/BIASED(Upto   vadu), CHECKBOXES -- (MENU CATEGORIES) 
+
+3. Login/Signup -- Common -- ROLE BASED 
+Key-pair OPTIONS --> Canteen/Hostel/Admin
+
+4. ANALYTICS --- FINANCIAL DASHBOARD
+	--> Charts-Pie_Chart --> Mostly Ordered Items, Charts-Bar_Graph --> Sales in Rs. ...etc
+
+5. Invoice and Statements --> SECURED | Multiple API Calls --> Statement's Request, OPTIONS --> Daily/Weekly/Monthly/Quarterly/Yearly/CUSTOM
+
+6. Reviews -- ISHAN
+
+7. MAIN DASHBOARD --> At Last
+
+AntiGravity- 1. KUSH-KRINA 2. DHAIRY-ISHAN
+
