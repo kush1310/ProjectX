@@ -1,634 +1,324 @@
--- =====================================================
--- CharusatNeeds - MySQL Database Schema
--- CHARUSAT Campus Canteen Aggregator System
--- 
--- Compatible with: XAMPP MySQL Server
--- Create this database in phpMyAdmin or MySQL CLI
--- =====================================================
+-- ============================================================================
+-- CharusatNeeds PostgreSQL Database Schema
+-- Version: 1.0
+-- Generated: 2026-01-21
+-- ============================================================================
 
--- Create database
-CREATE DATABASE IF NOT EXISTS charusatneeds
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
+-- Drop existing tables if they exist (in reverse dependency order)
+DROP TABLE IF EXISTS password_reset_tokens CASCADE;
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS menu_item_tags CASCADE;
+DROP TABLE IF EXISTS menu_items CASCADE;
+DROP TABLE IF EXISTS canteens CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
-USE charusatneeds;
-
--- =====================================================
--- USERS TABLE
--- Stores all user types: student, canteen, warden, admin, superadmin
--- =====================================================
+-- ============================================================================
+-- 1. USERS TABLE
+-- Represents all application users (students, admins, canteen owners)
+-- ============================================================================
 CREATE TABLE users (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    
-    -- Identity
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    contact_number VARCHAR(15) NOT NULL,
-    
-    -- Role: 'student', 'canteen', 'warden', 'admin', 'superadmin'
-    role ENUM('student', 'canteen', 'warden', 'admin', 'superadmin') NOT NULL DEFAULT 'student',
-    
-    -- Status
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    is_phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    
-    -- Student specific (nullable for other roles)
-    hostel_name VARCHAR(100) NULL,
-    room_number VARCHAR(20) NULL,
-    
-    -- Preferences
-    language_preference ENUM('en', 'hi', 'gu') NOT NULL DEFAULT 'en',
-    profile_image_url VARCHAR(500) NULL,
-    
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    last_login_at TIMESTAMP NULL,
-    
-    -- Constraints
-    INDEX idx_users_email (email),
-    INDEX idx_users_role (role),
-    INDEX idx_users_hostel (hostel_name),
-    
-    -- Email must end with @charusat.edu.in
-    CONSTRAINT chk_users_email CHECK (email REGEXP '^[a-zA-Z0-9._-]+@charusat\\.edu\\.in$'),
-    
-    -- Contact number must be 10 digits starting with 6-9
-    CONSTRAINT chk_users_contact CHECK (contact_number REGEXP '^[6-9][0-9]{9}$'),
-    
-    -- Name must be letters and spaces only
-    CONSTRAINT chk_users_name CHECK (full_name REGEXP '^[A-Za-z ]{2,100}$')
-) ENGINE=InnoDB;
-
--- =====================================================
--- LOGIN ATTEMPTS TABLE
--- Rate limiting: 3 failed attempts = 44 second lockout
--- =====================================================
-CREATE TABLE login_attempts (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL,
-    ip_address VARCHAR(45) NOT NULL,
-    user_agent VARCHAR(500) NULL,
-    
-    attempt_type ENUM('password', 'otp') NOT NULL DEFAULT 'password',
-    is_successful BOOLEAN NOT NULL DEFAULT FALSE,
-    
-    attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_login_email_time (email, attempted_at),
-    INDEX idx_login_ip_time (ip_address, attempted_at)
-) ENGINE=InnoDB;
-
--- =====================================================
--- LOCKOUTS TABLE
--- Stores active lockouts for rate limiting
--- =====================================================
-CREATE TABLE lockouts (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL,
-    ip_address VARCHAR(45) NULL,
-    
-    reason ENUM('failed_login', 'failed_otp', 'suspicious_activity') NOT NULL,
-    attempts_count INT UNSIGNED NOT NULL DEFAULT 1,
-    
-    locked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    unlocks_at TIMESTAMP NOT NULL,
-    
-    INDEX idx_lockout_email (email, unlocks_at),
-    
-    CONSTRAINT chk_lockout_unlock CHECK (unlocks_at > locked_at)
-) ENGINE=InnoDB;
-
--- =====================================================
--- OTP TOKENS TABLE
--- For 2FA login and email verification
--- =====================================================
-CREATE TABLE otp_tokens (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNSIGNED NOT NULL,
-    
-    otp_code VARCHAR(6) NOT NULL,
-    otp_type ENUM('login_2fa', 'email_verify', 'password_reset', 'phone_verify') NOT NULL,
-    
-    is_used BOOLEAN NOT NULL DEFAULT FALSE,
-    expires_at TIMESTAMP NOT NULL,
-    
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    used_at TIMESTAMP NULL,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    INDEX idx_otp_user_type (user_id, otp_type),
-    INDEX idx_otp_expires (expires_at),
-    
-    CONSTRAINT chk_otp_code CHECK (otp_code REGEXP '^[0-9]{6}$')
-) ENGINE=InnoDB;
-
--- =====================================================
--- SESSIONS TABLE
--- JWT refresh tokens and session management
--- =====================================================
-CREATE TABLE sessions (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNSIGNED NOT NULL,
-    
-    refresh_token_hash VARCHAR(255) NOT NULL UNIQUE,
-    device_info VARCHAR(500) NULL,
-    ip_address VARCHAR(45) NULL,
-    
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    last_used_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    INDEX idx_session_user (user_id),
-    INDEX idx_session_token (refresh_token_hash),
-    INDEX idx_session_expires (expires_at)
-) ENGINE=InnoDB;
-
--- =====================================================
--- CANTEENS TABLE
--- Canteen profiles and subscription management
--- =====================================================
-CREATE TABLE canteens (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    owner_id BIGINT UNSIGNED NOT NULL UNIQUE,
-    
-    -- Business info
-    canteen_name VARCHAR(150) NOT NULL,
-    description TEXT NULL,
-    logo_url VARCHAR(500) NULL,
-    cover_image_url VARCHAR(500) NULL,
-    
-    -- Location
-    location_type ENUM('inside_campus', 'outside_campus') NOT NULL DEFAULT 'inside_campus',
-    address VARCHAR(500) NULL,
-    
-    -- Contact
-    business_phone VARCHAR(15) NULL,
-    business_email VARCHAR(100) NULL,
-    
-    -- Status
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    is_open BOOLEAN NOT NULL DEFAULT FALSE,
-    emergency_closed BOOLEAN NOT NULL DEFAULT FALSE,
-    
-    -- Ratings
-    average_rating DECIMAL(2, 1) NOT NULL DEFAULT 0.0,
-    total_reviews INT UNSIGNED NOT NULL DEFAULT 0,
-    total_orders INT UNSIGNED NOT NULL DEFAULT 0,
-    
-    -- Operating hours (stored as JSON: {"mon": {"open": "09:00", "close": "21:00"}, ...})
-    operating_hours JSON NULL,
-    
-    -- Subscription (₹1111/year)
-    subscription_status ENUM('trial', 'active', 'expired', 'suspended') NOT NULL DEFAULT 'trial',
-    trial_started_at TIMESTAMP NULL,
-    trial_ends_at TIMESTAMP NULL,
-    subscription_started_at TIMESTAMP NULL,
-    subscription_ends_at TIMESTAMP NULL,
-    subscription_plan ENUM('monthly', 'quarterly', 'half_yearly', 'yearly') NULL,
-    
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    INDEX idx_canteen_status (is_active, is_open),
-    INDEX idx_canteen_subscription (subscription_status, subscription_ends_at),
-    INDEX idx_canteen_rating (average_rating DESC),
-    
-    CONSTRAINT chk_canteen_rating CHECK (average_rating >= 0 AND average_rating <= 5)
-) ENGINE=InnoDB;
-
--- =====================================================
--- MENU CATEGORIES TABLE
--- =====================================================
-CREATE TABLE menu_categories (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    canteen_id BIGINT UNSIGNED NOT NULL,
-    
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(500) NULL,
-    display_order INT NOT NULL DEFAULT 0,
-    
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (canteen_id) REFERENCES canteens(id) ON DELETE CASCADE,
-    
-    INDEX idx_category_canteen (canteen_id, display_order),
-    UNIQUE KEY uk_category_name (canteen_id, name)
-) ENGINE=InnoDB;
-
--- =====================================================
--- MENU ITEMS TABLE
--- =====================================================
-CREATE TABLE menu_items (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    canteen_id BIGINT UNSIGNED NOT NULL,
-    category_id BIGINT UNSIGNED NULL,
-    
-    -- Item details
-    name VARCHAR(150) NOT NULL,
-    description TEXT NULL,
-    image_url VARCHAR(500) NULL,
-    
-    -- Pricing
-    price DECIMAL(10, 2) NOT NULL,
-    discounted_price DECIMAL(10, 2) NULL,
-    
-    -- Dietary info
-    is_vegetarian BOOLEAN NOT NULL DEFAULT TRUE,
-    is_vegan BOOLEAN NOT NULL DEFAULT FALSE,
-    spice_level ENUM('none', 'mild', 'medium', 'hot', 'extra_hot') NULL,
-    
-    -- Availability
-    is_available BOOLEAN NOT NULL DEFAULT TRUE,
-    available_from TIME NULL,
-    available_until TIME NULL,
-    
-    -- Stats
-    total_orders INT UNSIGNED NOT NULL DEFAULT 0,
-    average_rating DECIMAL(2, 1) NOT NULL DEFAULT 0.0,
-    
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (canteen_id) REFERENCES canteens(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES menu_categories(id) ON DELETE SET NULL,
-    
-    INDEX idx_menu_canteen (canteen_id, is_available),
-    INDEX idx_menu_category (category_id),
-    
-    CONSTRAINT chk_menu_price CHECK (price > 0),
-    CONSTRAINT chk_menu_discount CHECK (discounted_price IS NULL OR discounted_price < price)
-) ENGINE=InnoDB;
-
--- =====================================================
--- ORDERS TABLE
--- Time-bound ordering: 10:00 AM - 5:45 PM only
--- =====================================================
-CREATE TABLE orders (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    order_number VARCHAR(20) NOT NULL UNIQUE,
-    
-    user_id BIGINT UNSIGNED NOT NULL,
-    canteen_id BIGINT UNSIGNED NOT NULL,
-    
-    -- Order status lifecycle
-    status ENUM(
-        'placed',
-        'accepted',
-        'preparing',
-        'ready',
-        'delivered',
-        'cancelled',
-        'rejected'
-    ) NOT NULL DEFAULT 'placed',
-    
-    -- Pricing
-    subtotal DECIMAL(10, 2) NOT NULL,
-    discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    total_amount DECIMAL(10, 2) NOT NULL,
-    
-    -- Delivery
-    delivery_location VARCHAR(200) NOT NULL,
-    special_instructions TEXT NULL,
-    
-    -- Tracking
-    estimated_ready_time TIMESTAMP NULL,
-    actual_ready_time TIMESTAMP NULL,
-    delivered_at TIMESTAMP NULL,
-    
-    -- Warden acknowledgment
-    warden_acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
-    warden_acknowledged_at TIMESTAMP NULL,
-    warden_id BIGINT UNSIGNED NULL,
-    
-    -- Cancellation
-    cancelled_by ENUM('user', 'canteen', 'system') NULL,
-    cancellation_reason VARCHAR(500) NULL,
-    
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (canteen_id) REFERENCES canteens(id) ON DELETE RESTRICT,
-    FOREIGN KEY (warden_id) REFERENCES users(id) ON DELETE SET NULL,
-    
-    INDEX idx_order_user (user_id, created_at DESC),
-    INDEX idx_order_canteen (canteen_id, status, created_at DESC),
-    INDEX idx_order_status (status, created_at DESC),
-    INDEX idx_order_date (DATE(created_at)),
-    
-    -- Ensure order is placed during allowed hours (10:00 - 17:45)
-    -- Note: This is enforced at application level for real-time flexibility
-    CONSTRAINT chk_order_total CHECK (total_amount > 0)
-) ENGINE=InnoDB;
-
--- =====================================================
--- ORDER ITEMS TABLE
--- =====================================================
-CREATE TABLE order_items (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    order_id BIGINT UNSIGNED NOT NULL,
-    menu_item_id BIGINT UNSIGNED NOT NULL,
-    
-    quantity INT UNSIGNED NOT NULL,
-    unit_price DECIMAL(10, 2) NOT NULL,
-    total_price DECIMAL(10, 2) NOT NULL,
-    
-    special_request VARCHAR(500) NULL,
-    
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE RESTRICT,
-    
-    INDEX idx_order_items (order_id),
-    
-    CONSTRAINT chk_order_item_qty CHECK (quantity > 0),
-    CONSTRAINT chk_order_item_price CHECK (unit_price > 0 AND total_price > 0)
-) ENGINE=InnoDB;
-
--- =====================================================
--- REVIEWS TABLE
--- Post-delivery reviews only
--- =====================================================
-CREATE TABLE reviews (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    
-    user_id BIGINT UNSIGNED NOT NULL,
-    canteen_id BIGINT UNSIGNED NOT NULL,
-    order_id BIGINT UNSIGNED NOT NULL UNIQUE,
-    
-    -- Rating 1-5 stars
-    rating TINYINT UNSIGNED NOT NULL,
-    review_text TEXT NULL,
-    
-    -- Moderation
-    is_approved BOOLEAN NOT NULL DEFAULT TRUE,
-    is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
-    moderated_by BIGINT UNSIGNED NULL,
-    moderation_reason VARCHAR(500) NULL,
-    
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (canteen_id) REFERENCES canteens(id) ON DELETE CASCADE,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (moderated_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    INDEX idx_review_canteen (canteen_id, is_approved, created_at DESC),
-    INDEX idx_review_user (user_id),
-    
-    CONSTRAINT chk_review_rating CHECK (rating >= 1 AND rating <= 5)
-) ENGINE=InnoDB;
-
--- =====================================================
--- COUPONS TABLE
--- =====================================================
-CREATE TABLE coupons (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    canteen_id BIGINT UNSIGNED NOT NULL,
-    
-    code VARCHAR(50) NOT NULL,
-    description VARCHAR(500) NULL,
-    
-    discount_type ENUM('percentage', 'fixed') NOT NULL,
-    discount_value DECIMAL(10, 2) NOT NULL,
-    
-    min_order_amount DECIMAL(10, 2) NULL,
-    max_discount_amount DECIMAL(10, 2) NULL,
-    
-    -- Validity
-    starts_at TIMESTAMP NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    
-    -- Usage limits
-    max_uses INT UNSIGNED NULL,
-    max_uses_per_user INT UNSIGNED NOT NULL DEFAULT 1,
-    current_uses INT UNSIGNED NOT NULL DEFAULT 0,
-    
-    -- Targeting
-    target_hostels JSON NULL,
-    
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (canteen_id) REFERENCES canteens(id) ON DELETE CASCADE,
-    
-    UNIQUE KEY uk_coupon_code (canteen_id, code),
-    INDEX idx_coupon_active (canteen_id, is_active, expires_at),
-    
-    CONSTRAINT chk_coupon_dates CHECK (expires_at > starts_at),
-    CONSTRAINT chk_coupon_value CHECK (discount_value > 0)
-) ENGINE=InnoDB;
-
--- =====================================================
--- COUPON USAGE TABLE
--- =====================================================
-CREATE TABLE coupon_usages (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    coupon_id BIGINT UNSIGNED NOT NULL,
-    user_id BIGINT UNSIGNED NOT NULL,
-    order_id BIGINT UNSIGNED NOT NULL,
-    
-    discount_applied DECIMAL(10, 2) NOT NULL,
-    used_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    
-    INDEX idx_coupon_usage_user (coupon_id, user_id)
-) ENGINE=InnoDB;
-
--- =====================================================
--- ADMIN NOTICES TABLE
--- =====================================================
-CREATE TABLE admin_notices (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    
-    issued_by BIGINT UNSIGNED NOT NULL,
-    target_canteen_id BIGINT UNSIGNED NULL,
-    
-    notice_type ENUM('warning', 'violation', 'suspension', 'info') NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    content TEXT NOT NULL,
-    
-    is_acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
-    acknowledged_at TIMESTAMP NULL,
-    
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (issued_by) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (target_canteen_id) REFERENCES canteens(id) ON DELETE CASCADE,
-    
-    INDEX idx_notice_canteen (target_canteen_id, created_at DESC)
-) ENGINE=InnoDB;
-
--- =====================================================
--- HOSTELS REFERENCE TABLE
--- =====================================================
-CREATE TABLE hostels (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    type ENUM('girls', 'boys', 'staff') NOT NULL DEFAULT 'girls',
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    
-    warden_id BIGINT UNSIGNED NULL,
-    
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (warden_id) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB;
-
--- =====================================================
--- INSERT DEFAULT DATA
--- =====================================================
-
--- Insert super admin
-INSERT INTO users (email, password_hash, full_name, contact_number, role, is_active, is_email_verified)
-VALUES (
-    'd25ce145@charusat.edu.in',
-    -- Password: Charusat@2026 (hashed with BCrypt - replace with actual hash)
-    '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj2oK9JXuQVy',
-    'Super Admin',
-    '9876543210',
-    'superadmin',
-    TRUE,
-    TRUE
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    mobile VARCHAR(15),
+    role VARCHAR(50) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'CANTEEN_OWNER')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    locked_until TIMESTAMP
 );
 
--- Insert sample hostels (Girls hostels for CHARUSAT)
-INSERT INTO hostels (name, type) VALUES
-('Saraswati Bhavan', 'girls'),
-('Lakshmi Bhavan', 'girls'),
-('Parvati Bhavan', 'girls'),
-('Durga Bhavan', 'girls'),
-('Gayatri Bhavan', 'girls');
+-- Index for email lookups (case-insensitive login)
+CREATE INDEX idx_users_email_lower ON users (LOWER(email));
+CREATE INDEX idx_users_role ON users (role);
 
--- =====================================================
--- TRIGGERS
--- =====================================================
+COMMENT ON TABLE users IS 'Application users including students, admins, and canteen owners';
+COMMENT ON COLUMN users.role IS 'USER = Student, ADMIN = System Admin, CANTEEN_OWNER = Vendor';
+COMMENT ON COLUMN users.locked_until IS 'Account lock timestamp for failed login attempts';
 
--- Update canteen rating when review is added
-DELIMITER //
-CREATE TRIGGER after_review_insert
-AFTER INSERT ON reviews
-FOR EACH ROW
-BEGIN
-    UPDATE canteens 
-    SET 
-        average_rating = (
-            SELECT AVG(rating) FROM reviews 
-            WHERE canteen_id = NEW.canteen_id AND is_approved = TRUE AND is_hidden = FALSE
-        ),
-        total_reviews = (
-            SELECT COUNT(*) FROM reviews 
-            WHERE canteen_id = NEW.canteen_id AND is_approved = TRUE AND is_hidden = FALSE
-        )
-    WHERE id = NEW.canteen_id;
-END//
-DELIMITER ;
+-- ============================================================================
+-- 2. CANTEENS TABLE
+-- Represents campus canteens/food outlets
+-- ============================================================================
+CREATE TABLE canteens (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    location VARCHAR(255),
+    description TEXT,
+    image_url VARCHAR(500),
+    is_open BOOLEAN DEFAULT TRUE,
+    rush_hour_enabled BOOLEAN DEFAULT FALSE,
+    opening_time VARCHAR(10),
+    closing_time VARCHAR(10),
+    owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- Update menu item stats when order is delivered
-DELIMITER //
-CREATE TRIGGER after_order_delivered
-AFTER UPDATE ON orders
-FOR EACH ROW
-BEGIN
-    IF NEW.status = 'delivered' AND OLD.status != 'delivered' THEN
-        -- Update canteen order count
-        UPDATE canteens SET total_orders = total_orders + 1 WHERE id = NEW.canteen_id;
-        
-        -- Update menu item order counts
-        UPDATE menu_items mi
-        INNER JOIN order_items oi ON mi.id = oi.menu_item_id
-        SET mi.total_orders = mi.total_orders + oi.quantity
-        WHERE oi.order_id = NEW.id;
-    END IF;
-END//
-DELIMITER ;
+-- Index for owner lookup
+CREATE INDEX idx_canteens_owner ON canteens (owner_id);
+CREATE INDEX idx_canteens_is_open ON canteens (is_open);
 
--- =====================================================
--- VIEWS
--- =====================================================
+COMMENT ON TABLE canteens IS 'Campus canteens and food outlets';
+COMMENT ON COLUMN canteens.rush_hour_enabled IS 'When true, canteen is experiencing high traffic';
+COMMENT ON COLUMN canteens.opening_time IS 'Opening time in HH:MM format';
+COMMENT ON COLUMN canteens.closing_time IS 'Closing time in HH:MM format';
 
--- Active canteens view
-CREATE VIEW active_canteens AS
+-- ============================================================================
+-- 3. MENU_ITEMS TABLE
+-- Represents food items available in canteens
+-- ============================================================================
+CREATE TABLE menu_items (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
+    category VARCHAR(100),
+    image_url VARCHAR(500),
+    is_available BOOLEAN DEFAULT TRUE,
+    is_veg BOOLEAN DEFAULT TRUE,
+    preparation_time INTEGER, -- in minutes
+    spicy_level INTEGER CHECK (spicy_level BETWEEN 0 AND 3),
+    canteen_id BIGINT NOT NULL REFERENCES canteens(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for menu queries
+CREATE INDEX idx_menu_items_canteen ON menu_items (canteen_id);
+CREATE INDEX idx_menu_items_category ON menu_items (category);
+CREATE INDEX idx_menu_items_available ON menu_items (is_available);
+CREATE INDEX idx_menu_items_veg ON menu_items (is_veg);
+
+COMMENT ON TABLE menu_items IS 'Food items available in canteens';
+COMMENT ON COLUMN menu_items.spicy_level IS '0=Not Spicy, 1=Mild, 2=Medium, 3=Hot';
+COMMENT ON COLUMN menu_items.preparation_time IS 'Estimated preparation time in minutes';
+
+-- ============================================================================
+-- 4. MENU_ITEM_TAGS TABLE
+-- Stores tags for menu items (ElementCollection in JPA)
+-- ============================================================================
+CREATE TABLE menu_item_tags (
+    menu_item_id BIGINT NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+    tag VARCHAR(100) NOT NULL,
+    PRIMARY KEY (menu_item_id, tag)
+);
+
+CREATE INDEX idx_menu_item_tags_tag ON menu_item_tags (tag);
+
+COMMENT ON TABLE menu_item_tags IS 'Tags for menu items (e.g., Popular, New, Recommended)';
+
+-- ============================================================================
+-- 5. ORDERS TABLE
+-- Represents customer orders
+-- ============================================================================
+CREATE TABLE orders (
+    id BIGSERIAL PRIMARY KEY,
+    order_number VARCHAR(50) NOT NULL UNIQUE,
+    customer_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    canteen_id BIGINT NOT NULL REFERENCES canteens(id) ON DELETE RESTRICT,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING' 
+        CHECK (status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED')),
+    total_amount DECIMAL(10, 2) NOT NULL CHECK (total_amount >= 0),
+    payment_method VARCHAR(50),
+    payment_status VARCHAR(50) DEFAULT 'PENDING'
+        CHECK (payment_status IN ('PENDING', 'PAID', 'FAILED', 'REFUNDED')),
+    special_instructions TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+-- Indexes for order queries
+CREATE INDEX idx_orders_customer ON orders (customer_id);
+CREATE INDEX idx_orders_canteen ON orders (canteen_id);
+CREATE INDEX idx_orders_status ON orders (status);
+CREATE INDEX idx_orders_created_at ON orders (created_at DESC);
+CREATE INDEX idx_orders_order_number ON orders (order_number);
+
+COMMENT ON TABLE orders IS 'Customer orders placed at canteens';
+COMMENT ON COLUMN orders.order_number IS 'Human-readable order number (e.g., ORD-2026-0001)';
+COMMENT ON COLUMN orders.status IS 'Order workflow: PENDING → CONFIRMED → PREPARING → READY → COMPLETED';
+
+-- ============================================================================
+-- 6. ORDER_ITEMS TABLE
+-- Represents individual items within an order
+-- ============================================================================
+CREATE TABLE order_items (
+    id BIGSERIAL PRIMARY KEY,
+    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    menu_item_id BIGINT NOT NULL REFERENCES menu_items(id) ON DELETE RESTRICT,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    unit_price DECIMAL(10, 2) NOT NULL CHECK (unit_price >= 0),
+    total_price DECIMAL(10, 2) NOT NULL CHECK (total_price >= 0),
+    notes TEXT
+);
+
+-- Indexes for order item queries
+CREATE INDEX idx_order_items_order ON order_items (order_id);
+CREATE INDEX idx_order_items_menu_item ON order_items (menu_item_id);
+
+COMMENT ON TABLE order_items IS 'Individual items within an order';
+COMMENT ON COLUMN order_items.unit_price IS 'Price at time of order (may differ from current menu price)';
+
+-- ============================================================================
+-- 7. PASSWORD_RESET_TOKENS TABLE
+-- Stores secure tokens for password reset functionality
+-- ============================================================================
+CREATE TABLE password_reset_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for token lookup
+CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens (token);
+CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens (user_id);
+CREATE INDEX idx_password_reset_tokens_expires ON password_reset_tokens (expires_at);
+
+COMMENT ON TABLE password_reset_tokens IS 'Secure tokens for password reset (valid for 1 hour)';
+COMMENT ON COLUMN password_reset_tokens.token IS 'UUID token sent via email';
+COMMENT ON COLUMN password_reset_tokens.used IS 'True if token has already been used';
+
+-- ============================================================================
+-- SEED DATA (Optional - for development/testing)
+-- This matches the DataInitializer.java in the Spring Boot app
+-- ============================================================================
+
+-- Note: Passwords below are BCrypt hashed versions of "kush"
+-- BCrypt hash for "kush": $2a$10$N.Xz1xP7gVsX9gZWGJPMb.6pjpN5JzQX.zC1fNQj3R9oZzJ1qX3Xy
+
+-- Uncomment the following to seed initial data:
+
+/*
+-- Insert demo users
+INSERT INTO users (email, password, full_name, role) VALUES
+('d25ce145@charusat.edu.in', '$2a$10$N.Xz1xP7gVsX9gZWGJPMb.6pjpN5JzQX.zC1fNQj3R9oZzJ1qX3Xy', 'Kush Shah', 'USER'),
+('admin@charusat.edu.in', '$2a$10$N.Xz1xP7gVsX9gZWGJPMb.6pjpN5JzQX.zC1fNQj3R9oZzJ1qX3Xy', 'Admin User', 'ADMIN'),
+('vendor@charusat.edu.in', '$2a$10$N.Xz1xP7gVsX9gZWGJPMb.6pjpN5JzQX.zC1fNQj3R9oZzJ1qX3Xy', 'Vendor User', 'CANTEEN_OWNER');
+
+-- Insert demo canteens
+INSERT INTO canteens (name, location, description, is_open, opening_time, closing_time, owner_id) VALUES
+('CSPIT Canteen', 'CSPIT Building, Ground Floor', 'Main canteen serving fresh food', TRUE, '08:00', '18:00', 3),
+('DEPSTAR Cafe', 'DEPSTAR Building, 1st Floor', 'Quick bites and beverages', TRUE, '09:00', '17:00', 3);
+
+-- Insert demo menu items (Canteen 1 - CSPIT)
+INSERT INTO menu_items (name, description, price, category, is_veg, preparation_time, spicy_level, canteen_id) VALUES
+('Masala Dosa', 'Crispy dosa with potato filling', 60.00, 'South Indian', TRUE, 10, 1, 1),
+('Vada Pav', 'Mumbai style spicy potato fritter in bun', 30.00, 'Street Food', TRUE, 5, 2, 1),
+('Paneer Tikka', 'Grilled cottage cheese with spices', 120.00, 'Starters', TRUE, 15, 2, 1),
+('Chicken Biryani', 'Aromatic basmati rice with tender chicken', 150.00, 'Main Course', FALSE, 20, 2, 1),
+('Cold Coffee', 'Chilled coffee with ice cream', 50.00, 'Beverages', TRUE, 5, 0, 1),
+('Samosa', 'Crispy pastry with spiced potato filling', 20.00, 'Snacks', TRUE, 5, 1, 1),
+('Pav Bhaji', 'Spiced vegetable mash with buttered buns', 70.00, 'Street Food', TRUE, 12, 2, 1),
+('Manchurian Dry', 'Indo-Chinese vegetable balls', 90.00, 'Chinese', TRUE, 15, 2, 1);
+
+-- Insert demo menu items (Canteen 2 - DEPSTAR)
+INSERT INTO menu_items (name, description, price, category, is_veg, preparation_time, spicy_level, canteen_id) VALUES
+('Maggi', 'Classic 2-minute noodles', 40.00, 'Snacks', TRUE, 5, 1, 2),
+('Sandwich', 'Grilled vegetable sandwich', 50.00, 'Snacks', TRUE, 8, 0, 2),
+('Tea', 'Hot masala chai', 15.00, 'Beverages', TRUE, 3, 0, 2),
+('Coffee', 'Fresh brewed coffee', 25.00, 'Beverages', TRUE, 3, 0, 2),
+('Veg Spring Roll', 'Crispy rolls with vegetable filling', 60.00, 'Chinese', TRUE, 10, 1, 2),
+('French Fries', 'Crispy golden potato fries', 50.00, 'Snacks', TRUE, 8, 0, 2),
+('Pasta', 'Creamy white sauce pasta', 80.00, 'Italian', TRUE, 12, 0, 2),
+('Burger', 'Vegetable patty burger with cheese', 70.00, 'Fast Food', TRUE, 10, 1, 2);
+*/
+
+-- ============================================================================
+-- VIEWS (Optional - for reporting)
+-- ============================================================================
+
+-- View for active orders with details
+CREATE OR REPLACE VIEW active_orders_view AS
 SELECT 
-    c.*,
-    u.full_name as owner_name,
-    u.contact_number as owner_phone
-FROM canteens c
-JOIN users u ON c.owner_id = u.id
-WHERE c.is_active = TRUE 
-  AND (c.subscription_status = 'active' OR c.subscription_status = 'trial');
-
--- Today's orders view
-CREATE VIEW todays_orders AS
-SELECT o.*, u.full_name as customer_name, c.canteen_name
+    o.id,
+    o.order_number,
+    u.full_name AS customer_name,
+    u.email AS customer_email,
+    c.name AS canteen_name,
+    o.status,
+    o.total_amount,
+    o.payment_status,
+    o.created_at,
+    (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count
 FROM orders o
-JOIN users u ON o.user_id = u.id
+JOIN users u ON o.customer_id = u.id
 JOIN canteens c ON o.canteen_id = c.id
-WHERE DATE(o.created_at) = CURDATE();
+WHERE o.status NOT IN ('COMPLETED', 'CANCELLED');
 
--- =====================================================
--- STORED PROCEDURES
--- =====================================================
+-- View for daily revenue per canteen
+CREATE OR REPLACE VIEW daily_revenue_view AS
+SELECT 
+    c.id AS canteen_id,
+    c.name AS canteen_name,
+    DATE(o.created_at) AS order_date,
+    COUNT(o.id) AS order_count,
+    SUM(o.total_amount) AS total_revenue
+FROM orders o
+JOIN canteens c ON o.canteen_id = c.id
+WHERE o.status = 'COMPLETED'
+GROUP BY c.id, c.name, DATE(o.created_at)
+ORDER BY order_date DESC;
 
--- Check if ordering is allowed (10:00 AM - 5:45 PM)
-DELIMITER //
-CREATE FUNCTION is_ordering_allowed() RETURNS BOOLEAN
-DETERMINISTIC
+-- ============================================================================
+-- FUNCTIONS (Optional - for business logic)
+-- ============================================================================
+
+-- Function to generate order number
+CREATE OR REPLACE FUNCTION generate_order_number()
+RETURNS TEXT AS $$
+DECLARE
+    year_part TEXT;
+    seq_num INTEGER;
+    order_num TEXT;
 BEGIN
-    DECLARE current_time TIME;
-    SET current_time = CURTIME();
-    RETURN current_time >= '10:00:00' AND current_time <= '17:45:00';
-END//
-DELIMITER ;
-
--- Clean up expired OTPs
-DELIMITER //
-CREATE PROCEDURE cleanup_expired_otps()
-BEGIN
-    DELETE FROM otp_tokens WHERE expires_at < NOW();
-END//
-DELIMITER ;
-
--- Clean up expired lockouts
-DELIMITER //
-CREATE PROCEDURE cleanup_expired_lockouts()
-BEGIN
-    DELETE FROM lockouts WHERE unlocks_at < NOW();
-END//
-DELIMITER ;
-
--- =====================================================
--- EVENTS (for automatic cleanup)
--- =====================================================
-SET GLOBAL event_scheduler = ON;
-
-CREATE EVENT cleanup_expired_data
-ON SCHEDULE EVERY 1 HOUR
-DO
-BEGIN
-    CALL cleanup_expired_otps();
-    CALL cleanup_expired_lockouts();
-    DELETE FROM sessions WHERE expires_at < NOW();
+    year_part := TO_CHAR(CURRENT_DATE, 'YYYY');
+    SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM 10) AS INTEGER)), 0) + 1
+    INTO seq_num
+    FROM orders
+    WHERE order_number LIKE 'ORD-' || year_part || '-%';
+    
+    order_num := 'ORD-' || year_part || '-' || LPAD(seq_num::TEXT, 4, '0');
+    RETURN order_num;
 END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-update updated_at on orders
+CREATE OR REPLACE FUNCTION update_order_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    IF NEW.status = 'COMPLETED' AND OLD.status != 'COMPLETED' THEN
+        NEW.completed_at = CURRENT_TIMESTAMP;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER orders_update_timestamp
+    BEFORE UPDATE ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_order_timestamp();
+
+-- ============================================================================
+-- GRANT PERMISSIONS (Uncomment and modify for production)
+-- ============================================================================
+
+/*
+-- Create application user
+CREATE USER charusatneeds_app WITH PASSWORD 'your_secure_password';
+
+-- Grant permissions
+GRANT CONNECT ON DATABASE charusatneeds TO charusatneeds_app;
+GRANT USAGE ON SCHEMA public TO charusatneeds_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO charusatneeds_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO charusatneeds_app;
+*/
+
+-- ============================================================================
+-- END OF SCHEMA
+-- ============================================================================
