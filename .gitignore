@@ -1,0 +1,12 @@
+# Maven build output
+Backend/target/
+*.class
+
+# Logs
+*.log
+
+# Node dependencies
+Frontend/node_modules/
+
+# Build cache
+Frontend/tsconfig.tsbuildinfo

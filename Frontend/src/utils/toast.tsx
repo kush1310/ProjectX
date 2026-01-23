@@ -102,12 +102,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {typeof document !== 'undefined' && createPortal(
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2 w-full max-w-sm px-4">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
           <AnimatePresence mode="sync">
             {toasts.map(toast => {
               const style = toastStyles[toast.type];
               const Icon = ToastIcons[toast.type];
-              
+
               return (
                 <motion.div
                   key={toast.id}
@@ -115,7 +115,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className={`flex items-center ${style.bg}/80 backdrop-blur-md ${style.text} border ${style.border} p-3 sm:p-4 rounded-xl shadow-lg`}
+                  className={`flex items-center ${style.bg}/80 backdrop-blur-md ${style.text} border ${style.border} p-3 sm:p-4 rounded-xl shadow-lg pointer-events-auto`}
                 >
                   <div className={`mr-3 ${style.icon}`}>
                     <Icon />
@@ -123,7 +123,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   <div className="flex-1">
                     <p className="font-medium text-sm">{toast.message}</p>
                   </div>
-                  <button 
+                  <button
                     className="ml-3 text-current opacity-60 hover:opacity-100 transition-opacity"
                     onClick={() => removeToast(toast.id)}
                   >
