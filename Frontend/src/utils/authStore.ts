@@ -64,15 +64,17 @@ export const registerUser = async (userData: any): Promise<AuthResponse> => {
 /**
  * Authenticate user
  */
-export const authenticateUser = async (email: string, password: string): Promise<AuthResponse> => {
+export const authenticateUser = async (email: string, password: string, captchaId?: string, captchaAnswer?: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/auth/login', { email, password, captchaId, captchaAnswer });
     return response.data;
   } catch (error: any) {
     return {
       success: false,
-      message: error.response?.data?.message || 'Login failed'
-    };
+      message: error.response?.data?.message || 'Login failed',
+      user: undefined, // Type compatibility
+      token: undefined
+    } as AuthResponse; // Cast to satisfy interface if needed, or update interface
   }
 };
 

@@ -1,5 +1,5 @@
 import api from '../../utils/api';
-// import { User } from '../../utils/authStore';
+import { MenuVariant, AddonGroup } from '../types/menu';
 
 export interface DietaryInfo {
   vegetarian: boolean;
@@ -15,13 +15,26 @@ export interface MenuItem {
   description: string;
   price: number;
   category: string;
+  subCategory?: string;
   image?: string;
   isAvailable: boolean;
-  visibleInMenu?: boolean;
+  visibleInMenu?: boolean; // Legacy
   dietary?: DietaryInfo;
+  isVegetarian?: boolean; // For compat
   rating?: number;
   salesCount?: number;
-  createdAt?: string; // Added for compatibility
+  createdAt?: string; 
+  
+  // Advanced Features
+  preparationTime?: number;
+  isRecommended?: boolean;
+  displayOrder?: number;
+  availableFrom?: string;
+  availableTo?: string;
+  hasVariants?: boolean;
+  variants?: MenuVariant[];
+  hasAddons?: boolean;
+  addonGroups?: AddonGroup[];
 }
 
 export interface Canteen {
@@ -30,8 +43,20 @@ export interface Canteen {
   location: string;
   isOpen: boolean;
   image?: string;
+  imageUrl?: string;
   openingTime?: string;
   closingTime?: string;
+  fssaiNumber?: string;
+  gstNo?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  accountHolderName?: string;
+  kycDocumentUrl?: string;
+  // UI Display Properties
+  rating?: number;
+  hasOffer?: boolean;
+  isPureVeg?: boolean;
 }
 
 // Order Item Interface matching Backend
@@ -40,25 +65,48 @@ export interface OrderItem {
   menuItemId?: number;
   name: string;
   quantity: number;
-  price: number; // Changed from unitPrice to price to match existing frontend code if needed, but backend usually has price
-  // Let's check existing OrderHistory.tsx usage: item.price
+  price: number;
+  totalPrice?: number; // Backend returns this
+  menuItem?: {
+    id: number;
+    name: string;
+    price: number;
+    isVeg?: boolean;
+  };
 }
+
+// Customer info from backend
+export interface Customer {
+  id: number;
+  fullName: string;
+  email: string;
+  mobile?: string;
+}
+
+// Order status matching backend enum (uppercase)
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
 
 export interface Order {
   id: number;
   orderNumber: string;
-  customerName: string; // Backend might need mapping if it returns user object
-  customerPhone: string;
-  customerAddress: string;
-  total: number;
-  status: 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  customer?: Customer; // Backend returns customer object
+  customerName?: string; // Legacy support
+  customerPhone?: string;
+  customerAddress?: string;
+  total?: number;
+  totalAmount?: number; // Backend uses this
+  status: OrderStatus;
+  paymentStatus?: PaymentStatus;
   items: OrderItem[];
   createdAt: string;
-  acceptedAt?: string; // Optional in backend?
+  acceptedAt?: string;
+  rejectionReason?: string;
   completedAt?: string;
+  specialInstructions?: string;
   specialNotes?: string;
-  paymentMethod: 'cash' | 'upi' | 'card';
-  isPaid: boolean;
+  paymentMethod?: 'cash' | 'upi' | 'card' | 'CASH' | 'UPI' | 'CARD';
+  isPaid?: boolean;
   // Payment transaction details
   transactionId?: string;
   upiId?: string;
@@ -77,6 +125,36 @@ export const fetchCanteens = async (): Promise<Canteen[]> => {
   } catch (error) {
     console.error('Failed to fetch canteens', error);
     return [];
+  }
+};
+
+/**
+ * Update canteen details
+ */
+export const updateCanteenDetails = async (id: number, canteen: Partial<Canteen>): Promise<Canteen | null> => {
+  try {
+    const response = await api.put(`/canteens/${id}`, {
+      name: canteen.name,
+      location: canteen.location,
+      isOpen: canteen.isOpen,
+      rushHourEnabled: false,
+      openingTime: canteen.openingTime,
+      closingTime: canteen.closingTime,
+      fssaiNumber: canteen.fssaiNumber,
+      gstNo: canteen.gstNo,
+      bankName: canteen.bankName,
+      accountNumber: canteen.accountNumber,
+      ifscCode: canteen.ifscCode,
+      accountHolderName: canteen.accountHolderName,
+      kycDocumentUrl: canteen.kycDocumentUrl
+    });
+    if (response.data.success) {
+      return response.data.canteen;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to update canteen details', error);
+    return null;
   }
 };
 
@@ -112,22 +190,9 @@ export const getOrders = async (): Promise<Order[]> => {
 };
 
 // Export these for backward compatibility if needed, or remove if fully refactoring
-export const getCategories = (): Category[] => [
-  { id: 'hot-meals', name: 'Hot Meals', color: '#ef4444' },
-  { id: 'snacks', name: 'Snacks', color: '#f59e0b' },
-  { id: 'beverages', name: 'Beverages', color: '#3b82f6' },
-  { id: 'desserts', name: 'Desserts', color: '#ec4899' },
-  { id: 'breakfast', name: 'Breakfast', color: '#10b981' },
-];
+// Legacy getCategories removed to prefer fetchCategories API
 
-export interface Category {
-  id: string;
-  name: string;
-  color?: string;
-  // ... other fields if needed
-}
-
-// Management APIs
+// Menu Management APIs
 
 export const addMenuItem = async (canteenId: number, item: Partial<MenuItem>): Promise<MenuItem | null> => {
   try {
@@ -136,8 +201,17 @@ export const addMenuItem = async (canteenId: number, item: Partial<MenuItem>): P
       description: item.description,
       price: item.price,
       category: item.category,
-      isVeg: item.dietary && item.dietary.vegetarian ? true : false,
-      preparationTime: 15 // Default or add to UI
+      subCategory: item.subCategory || '',
+      displayOrder: item.displayOrder || 0,
+      availableFrom: item.availableFrom || '',
+      availableTo: item.availableTo || '',
+      isVeg: item.isVegetarian || (item.dietary && item.dietary.vegetarian) || false,
+      preparationTime: item.preparationTime || 15,
+      isRecommended: item.isRecommended || false,
+      hasVariants: item.hasVariants || false,
+      variants: item.variants || [],
+      hasAddons: item.hasAddons || false,
+      addonGroups: item.addonGroups || []
     });
     return response.data.item;
   } catch (error) {
@@ -153,7 +227,17 @@ export const updateMenuItem = async (itemId: number, item: Partial<MenuItem>): P
       description: item.description,
       price: item.price,
       isAvailable: item.isAvailable,
-      category: item.category
+      category: item.category,
+      subCategory: item.subCategory,
+      displayOrder: item.displayOrder,
+      availableFrom: item.availableFrom,
+      availableTo: item.availableTo,
+      preparationTime: item.preparationTime,
+      isRecommended: item.isRecommended,
+      hasVariants: item.hasVariants,
+      variants: item.variants,
+      hasAddons: item.hasAddons,
+      addonGroups: item.addonGroups
     });
     return response.data.item;
   } catch (error) {
@@ -182,22 +266,54 @@ export const toggleItemAvailability = async (itemId: number, isAvailable: boolea
    }
 };
 
-// Placeholder for category management if backend supports it, otherwise generic
-export const saveCategory = (cat: Category) => {
-    // TODO: Implement backend API for categories if available
-    console.log('Category save not implemented in backend yet', cat);
+export interface Category {
+  id: number;
+  name: string;
+  canteenId?: number;
+}
+
+
+export const fetchCategories = async (canteenId: number): Promise<Category[]> => {
+    try {
+        const response = await api.get(`/categories/canteen/${canteenId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch categories', error);
+        return [];
+    }
 };
 
-export const deleteCategory = (id: string) => {
-     // TODO: Implement backend API
-    console.log('Category delete not implemented in backend yet', id);
+export const createCategory = async (canteenId: number, name: string): Promise<Category | null> => {
+    try {
+        const response = await api.post(`/categories/canteen/${canteenId}`, { name });
+        return response.data;
+    } catch (error) {
+        console.error('Failed to create category', error);
+        return null;
+    }
 };
+
+export const deleteCategory = async (id: number): Promise<boolean> => {
+    try {
+        await api.delete(`/categories/${id}`);
+        return true;
+    } catch (error) {
+        console.error('Failed to delete category', error);
+        return false;
+    }
+};
+
+// Legacy Aliases
+export const getCategories = fetchCategories;
+export const saveCategory = createCategory;
 
 // Order Management
 
-export const updateOrderStatus = async (orderId: number, status: string): Promise<Order | null> => {
+export const updateOrderStatus = async (orderId: number, status: string, rejectionReason?: string): Promise<Order | null> => {
     try {
-        const response = await api.put(`/orders/${orderId}/status`, { status: status.toUpperCase() });
+        const payload: any = { status: status.toUpperCase() };
+        if (rejectionReason) payload.rejectionReason = rejectionReason;
+        const response = await api.put(`/orders/${orderId}/status`, payload);
         return response.data.order;
     } catch (error) {
         console.error('Failed to update order status', error);
@@ -206,8 +322,8 @@ export const updateOrderStatus = async (orderId: number, status: string): Promis
 };
 
 export const getOrderStats = (orders: Order[]) => {
-    // Determine active vs completed based on status
-    const activeOrders = orders.filter(o => ['new', 'preparing', 'ready'].includes(o.status.toLowerCase()));
+    // Determine active vs completed based on status (using uppercase backend status)
+    const activeOrders = orders.filter(o => ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.status));
     
     // Calculate stats
     const activeCount = activeOrders.length;
@@ -216,10 +332,10 @@ export const getOrderStats = (orders: Order[]) => {
     // Simple mock calculation logic for now if data insufficient
     const avgTime = 12; 
     
-    // Today's revenue
+    // Today's revenue (use totalAmount from backend, fallback to total)
     const today = new Date().toDateString();
-    const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
-    const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
+    const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'CANCELLED');
+    const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
 
     return {
         activeCount,
@@ -228,3 +344,70 @@ export const getOrderStats = (orders: Order[]) => {
     };
 };
 
+
+
+// Coupon Interface & APIs
+export interface Coupon {
+  id?: string | number; 
+  code: string;
+  title: string; 
+  description?: string;
+  color?: string; // Hex code
+  discountType: 'PERCENTAGE' | 'FLAT';
+  discountValue: number;
+  minOrderValue?: number;
+  maxDiscountAmount?: number;
+  validFrom?: string;
+  validUntil?: string;
+  usageLimit?: number;
+  usageCount?: number;
+  isActive: boolean;
+  isCustom?: boolean;
+
+  // Advanced Fields
+  type?: 'DISCOUNT' | 'BOGO';
+  scope?: 'GLOBAL' | 'CATEGORY' | 'ITEM';
+  targetIds?: string; // Comma separated
+  bogoBuyQty?: number;
+  bogoGetQty?: number;
+}
+
+export const getCoupons = async (): Promise<Coupon[]> => {
+    try {
+        const response = await api.get('/api/vendor/coupons');
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch coupons', error);
+        return [];
+    }
+};
+
+export const createCoupon = async (coupon: Partial<Coupon>): Promise<Coupon | null> => {
+    try {
+        const response = await api.post('/api/vendor/coupons', coupon);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to create coupon', error);
+        return null; // or throw
+    }
+};
+
+export const deleteCoupon = async (id: string | number): Promise<boolean> => {
+    try {
+        await api.delete(`/api/vendor/coupons/${id}`);
+        return true;
+    } catch (error) {
+        console.error('Failed to delete coupon', error);
+        return false;
+    }
+};
+
+export const toggleCoupon = async (id: string | number): Promise<Coupon | null> => {
+    try {
+        const response = await api.put(`/api/vendor/coupons/${id}/toggle`);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to toggle coupon', error);
+        return null;
+    }
+};

@@ -8,13 +8,15 @@
  * - Remember Me controls cookie persistence
  */
 
-import { useState, FormEvent, ChangeEvent, useEffect, useRef } from 'react'
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import CharusatNeedsLogo from '@/components/Logo'
 import LightweightBorder from '@/components/LightweightBorder'
 import { initiateGoogleLogin } from '@/utils/googleAuth'
 import { authenticateUser, createSession, isAuthenticated } from '@/utils/authStore'
+import api from '@/utils/api'
+import { toast } from '@/utils/toast'
 
 interface LoginFormData { 
   email: string; 
@@ -47,130 +49,49 @@ const EyeIcon = ({ show }: { show: boolean }) => (
   </svg>
 );
 
-// 6-Character Captcha
-function generateCaptcha(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let result = '';
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-function CaptchaCanvas({ code, onRefresh }: { code: string; onRefresh: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    gradient.addColorStop(0, '#fef2f2');
-    gradient.addColorStop(0.5, '#fff7ed');
-    gradient.addColorStop(1, '#fef2f2');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Harder Captcha Noise
-    for (let i = 0; i < 100; i++) {
-      ctx.fillStyle = `rgba(239, 68, 68, ${Math.random() * 0.2})`;
-      ctx.beginPath();
-      ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // More interference lines
-    for (let i = 0; i < 7; i++) {
-      ctx.strokeStyle = `rgba(239, 68, 68, ${0.15 + Math.random() * 0.2})`;
-      ctx.lineWidth = 1 + Math.random();
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.bezierCurveTo(
-        Math.random() * canvas.width, Math.random() * canvas.height,
-        Math.random() * canvas.width, Math.random() * canvas.height,
-        Math.random() * canvas.width, Math.random() * canvas.height
-      );
-      ctx.stroke();
-    }
-
-    const charWidth = canvas.width / (code.length + 1);
-    code.split('').forEach((char, i) => {
-      ctx.save();
-      const x = charWidth * (i + 0.8) + (Math.random() - 0.5) * 10;
-      const y = canvas.height / 2 + (Math.random() - 0.5) * 15;
-      ctx.translate(x, y);
-      ctx.rotate((Math.random() - 0.5) * 0.5); // More rotation
-      ctx.font = `bold ${24 + Math.random() * 4}px Metropolis, Arial`; // Varying font size
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const textGradient = ctx.createLinearGradient(-15, 0, 15, 0);
-      textGradient.addColorStop(0, '#dc2626');
-      textGradient.addColorStop(1, '#ea580c');
-      ctx.fillStyle = textGradient;
-      ctx.fillText(char, 0, 0);
-      ctx.restore();
-    });
-
-    // Distortion grid
-    ctx.strokeStyle = 'rgba(229, 231, 235, 0.5)';
-    ctx.lineWidth = 1;
-    for(let i=0; i<canvas.width; i+=20) {
-       ctx.beginPath();
-       ctx.moveTo(i, 0);
-       ctx.lineTo(i + (Math.random()-0.5)*5, canvas.height);
-       ctx.stroke();
-    }
-
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-  }, [code]);
-
-  return (
-    <div className="flex items-center gap-3">
-      <canvas ref={canvasRef} width={180} height={50} className="rounded-xl" style={{ border: '2px solid #e5e7eb' }} />
-      <button
-        type="button"
-        onClick={onRefresh}
-        className="p-2.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-colors border-2 border-gray-200 hover:border-brand-200"
-        title="Get new code"
-      >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-        </svg>
-      </button>
-    </div>
-  );
-}
-
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [formData, setFormData] = useState<LoginFormData>({ 
     email: '', 
     password: '', 
     captcha: '',
     rememberMe: false
   })
+
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [captchaCode, setCaptchaCode] = useState(generateCaptcha())
+  const [captchaImage, setCaptchaImage] = useState<string | null>(null)
+  const [captchaId, setCaptchaId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (isAuthenticated()) {
-      navigate('/dashboard', { replace: true });
+  const fetchCaptcha = async () => {
+    try {
+      setCaptchaImage(null) // Show loading state
+      const response = await api.get('/auth/captcha')
+      setCaptchaImage(response.data.image)
+      setCaptchaId(response.data.id)
+    } catch (error) {
+      console.error('Failed to fetch captcha:', error)
+      setErrors(prev => ({ ...prev, captcha: 'Failed to load security code.' }))
     }
-  }, [navigate]);
+  }
 
   const refreshCaptcha = () => {
-    setCaptchaCode(generateCaptcha());
-    setFormData(prev => ({ ...prev, captcha: '' }));
-    setErrors(prev => ({ ...prev, captcha: undefined }));
+    fetchCaptcha();
   };
+
+  useEffect(() => {
+    fetchCaptcha()
+  }, [])
+
+  useEffect(() => {
+    if (location.state?.error) {
+       setErrors(prev => ({ ...prev, credentials: location.state.error }))
+       // Clear state to prevent persistence on refresh
+       window.history.replaceState({}, '')
+    }
+  }, [location]);
 
   const getEmailHint = (email: string): string | undefined => {
     if (!email || !email.includes('@')) return undefined;
@@ -194,47 +115,63 @@ export default function Login() {
     }
   }
 
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setErrors({})
 
     if (!formData.email || !formData.password) {
-      setErrors({ credentials: 'Please enter your credentials' })
+      const msg = 'Please enter your credentials';
+      setErrors({ credentials: msg })
+      toast.error(msg);
       setIsSubmitting(false)
       return
     }
 
     if (!formData.captcha.trim()) {
-      setErrors({ captcha: 'Please enter the security code' })
+      const msg = 'Please enter the security code';
+      setErrors({ captcha: msg })
+      toast.error(msg);
       setIsSubmitting(false)
       return
     }
 
-    if (formData.captcha.toUpperCase() !== captchaCode.toUpperCase()) {
-      setErrors({ captcha: 'Security code does not match' })
-      refreshCaptcha()
-      setIsSubmitting(false)
-      return
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Validate Captcha locally (basic)
+    // Server validation is primary now
 
     try {
-      const authResult = await authenticateUser(formData.email, formData.password)
+      // Pass captchaId and Answer
+      const authResult = await authenticateUser(formData.email, formData.password, captchaId || undefined, formData.captcha)
 
       if (authResult.success && authResult.user && authResult.token) {
         createSession(authResult.user, authResult.token, formData.rememberMe)
-        navigate('/dashboard', { replace: true })
+        
+        toast.success(`Welcome back, ${authResult.user.fullName}!`);
+        
+        // Role-Based Redirect
+        const role = authResult.user.role;
+        if (role === 'ADMIN') {
+           navigate('/analytics', { replace: true });
+        } else if (role === 'CANTEEN_OWNER') {
+           navigate('/dashboard', { replace: true });
+        } else {
+           navigate('/customer/menu', { replace: true });
+        }
+        
       } else {
         // Set credentials error - this will highlight BOTH email and password fields
-        setErrors({ credentials: authResult.message || 'Invalid credentials' })
+        const msg = authResult.message || 'Invalid credentials';
+        setErrors({ credentials: msg })
+        toast.error(msg);
         refreshCaptcha()
       }
     } catch (error) {
       // Network or unexpected error - show error message instead of refreshing
       console.error('Login error:', error)
-      setErrors({ credentials: 'Unable to connect. Please try again.' })
+      const msg = 'Unable to connect. Please try again.';
+      setErrors({ credentials: msg })
+      toast.error(msg);
       refreshCaptcha()
     }
 
@@ -335,7 +272,27 @@ export default function Login() {
               {/* Captcha */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-dark-700 ml-1">Security Code</label>
-                <CaptchaCanvas code={captchaCode} onRefresh={refreshCaptcha} />
+                <div className="flex items-center gap-3">
+                  {captchaImage ? (
+                    <img 
+                      src={captchaImage} 
+                      alt="Captcha" 
+                      className="h-[50px] w-[180px] rounded-xl object-cover border-2 border-gray-200" 
+                    />
+                  ) : (
+                    <div className="h-[50px] w-[180px] rounded-xl bg-gray-100 animate-pulse border-2 border-gray-200" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={refreshCaptcha}
+                    className="p-2.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-colors border-2 border-gray-200 hover:border-brand-200"
+                    title="Get new code"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                  </button>
+                </div>
                 <input
                   type="text"
                   name="captcha"
@@ -369,7 +326,13 @@ export default function Login() {
                   />
                   <span>Remember me</span>
                 </label>
-                <Link to="/forgot-password" className="font-medium text-brand-600 hover:text-brand-700">Forgot Password?</Link>
+                <Link 
+                  to="/forgot-password" 
+                  state={{ email: formData.email }}
+                  className="font-medium text-brand-600 hover:text-brand-700 hover:underline"
+                >
+                  Forgot password?
+                </Link>
               </div>
 
               {/* Submit */}

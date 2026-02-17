@@ -23,6 +23,7 @@ public class OrderService {
     
     private final OrderRepository orderRepository;
     private final MenuItemRepository menuItemRepository;
+    private final WebSocketService webSocketService;
     
     public List<Order> findAll() {
         return orderRepository.findAll();
@@ -58,12 +59,12 @@ public class OrderService {
         LocalDateTime since = LocalDateTime.now().minusHours(hours);
         return orderRepository.findRecentOrdersByCanteen(canteenId, since);
     }
-    
+
     @Transactional
     public Order createOrder(User customer, Canteen canteen, List<Long> menuItemIds, 
                               List<Integer> quantities, String paymentMethod, String instructions) {
         
-        // Generate unique order number
+        // ... existing logic ...
         String orderNumber = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         
         Order order = Order.builder()
@@ -100,11 +101,16 @@ public class OrderService {
         }
         
         order.setTotalAmount(total);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        
+        // Notify Vendors via WebSocket
+        webSocketService.notifyNewOrder(savedOrder);
+        
+        return savedOrder;
     }
     
     @Transactional
-    public Order updateStatus(Long orderId, Order.OrderStatus newStatus) {
+    public Order updateStatus(Long orderId, Order.OrderStatus newStatus, String rejectionReason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
@@ -115,7 +121,21 @@ public class OrderService {
             order.setCompletedAt(LocalDateTime.now());
         }
         
-        return orderRepository.save(order);
+        if (newStatus == Order.OrderStatus.CANCELLED && rejectionReason != null) {
+            order.setRejectionReason(rejectionReason);
+        }
+        
+        Order savedOrder = orderRepository.save(order);
+        
+        // Notify via WebSocket
+        webSocketService.notifyStatusUpdate(savedOrder);
+        
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order updateStatus(Long orderId, Order.OrderStatus newStatus) {
+        return updateStatus(orderId, newStatus, null);
     }
     
     @Transactional

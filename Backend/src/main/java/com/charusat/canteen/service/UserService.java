@@ -25,6 +25,11 @@ public class UserService {
         return userRepository.findAll();
     }
     
+    @Transactional
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+    
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }
@@ -49,6 +54,7 @@ public class UserService {
                 .fullName(fullName)
                 .mobile(mobile)
                 .role(User.UserRole.USER)
+                .authProvider(User.AuthProvider.LOCAL) // Email/password registration
                 .build();
         
         return userRepository.save(user);
@@ -87,5 +93,46 @@ public class UserService {
     
     public boolean validatePassword(User user, String rawPassword) {
         return passwordEncoder.matches(rawPassword, user.getPassword());
+    }
+
+    @Transactional
+    public String generateEmailVerificationToken(User user) {
+        String token = java.util.UUID.randomUUID().toString();
+        user.setEmailVerificationToken(token);
+        user.setEmailVerificationExpiry(LocalDateTime.now().plusHours(24));
+        user.setIsEmailVerified(false);
+        userRepository.save(user);
+        return token;
+    }
+
+    @Transactional
+    public boolean verifyEmail(String token) {
+        Optional<User> userOpt = userRepository.findByEmailVerificationToken(token);
+        if (userOpt.isEmpty()) {
+            return false;
+        }
+        User user = userOpt.get();
+        if (user.getEmailVerificationExpiry().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+        user.setIsEmailVerified(true);
+        user.setEmailVerificationToken(null);
+        user.setEmailVerificationExpiry(null);
+        userRepository.save(user);
+        return true;
+    }
+
+    @Transactional
+    public java.util.Optional<User> resendVerificationToken(String email) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (user.getIsEmailVerified()) {
+                return Optional.empty(); // Already verified
+            }
+            generateEmailVerificationToken(user);
+            return Optional.of(user);
+        }
+        return Optional.empty();
     }
 }

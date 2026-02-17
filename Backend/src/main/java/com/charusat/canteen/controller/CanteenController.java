@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Canteen Controller - Handles canteen and menu endpoints
@@ -63,7 +64,8 @@ public class CanteenController {
                     request.name(),
                     request.location(),
                     request.isOpen(),
-                    request.rushHourEnabled()
+                    request.rushHourEnabled(),
+                    request
             );
             return ResponseEntity.ok(Map.of("success", true, "canteen", canteen));
         } catch (Exception e) {
@@ -94,12 +96,7 @@ public class CanteenController {
         try {
             MenuItem item = canteenService.addMenuItem(
                     canteenId,
-                    request.name(),
-                    request.description(),
-                    request.price(),
-                    request.category(),
-                    request.isVeg(),
-                    request.preparationTime()
+                    request
             );
             return ResponseEntity.ok(Map.of("success", true, "item", item));
         } catch (Exception e) {
@@ -113,11 +110,7 @@ public class CanteenController {
         try {
             MenuItem item = canteenService.updateMenuItem(
                     itemId,
-                    request.name(),
-                    request.description(),
-                    request.price(),
-                    request.isAvailable(),
-                    request.category()
+                    request
             );
             return ResponseEntity.ok(Map.of("success", true, "item", item));
         } catch (Exception e) {
@@ -140,7 +133,59 @@ public class CanteenController {
     
     // Request DTOs
     public record CreateCanteenRequest(String name, String location, String description, Long ownerId) {}
-    public record UpdateCanteenRequest(String name, String location, Boolean isOpen, Boolean rushHourEnabled) {}
-    public record AddMenuItemRequest(String name, String description, BigDecimal price, String category, Boolean isVeg, Integer preparationTime) {}
-    public record UpdateMenuItemRequest(String name, String description, BigDecimal price, Boolean isAvailable, String category) {}
+    public record UpdateCanteenRequest(
+        String name, 
+        String location, 
+        Boolean isOpen, 
+        Boolean rushHourEnabled,
+        String openingTime,
+        String closingTime,
+        String fssaiNumber,
+        String gstNo,
+        String bankName,
+        String accountNumber,
+        String ifscCode,
+        String accountHolderName,
+        String kycDocumentUrl
+    ) {}
+    
+    public record VariantDto(String name, BigDecimal price) {}
+    public record AddonOptionDto(String name, BigDecimal price) {}
+    public record AddonGroupDto(String name, Integer minSelection, Integer maxSelection, List<AddonOptionDto> options) {}
+
+    public record AddMenuItemRequest(
+        String name, 
+        String description, 
+        BigDecimal price, 
+        String category, 
+        String subCategory,
+        Integer displayOrder, // Added
+        String availableFrom, // Added
+        String availableTo, // Added
+        Boolean isVeg, 
+        Integer preparationTime,
+        Boolean isRecommended, // Added
+        Boolean hasVariants,
+        List<VariantDto> variants,
+        Boolean hasAddons,
+        List<AddonGroupDto> addonGroups
+    ) {}
+
+    public record UpdateMenuItemRequest(
+        String name, 
+        String description, 
+        BigDecimal price, 
+        Boolean isAvailable, 
+        String category,
+        String subCategory,
+        Integer displayOrder, // Added
+        String availableFrom, // Added
+        String availableTo, // Added
+        Integer preparationTime,
+        Boolean isRecommended, // Added
+        Boolean hasVariants,
+        List<VariantDto> variants,
+        Boolean hasAddons,
+        List<AddonGroupDto> addonGroups
+    ) {}
 }

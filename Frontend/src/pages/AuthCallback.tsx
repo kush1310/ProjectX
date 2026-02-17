@@ -1,13 +1,4 @@
-/**
- * Google OAuth Callback Handler
- * 
- * Features:
- * - Domain validation (@charusat.edu.in only)
- * - Error handling with user-friendly messages
- * - Redirect to dashboard on success
- */
-
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { handleGoogleCallback } from '@/utils/googleAuth'
@@ -19,8 +10,13 @@ export default function AuthCallback() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const hasProcessed = useRef(false) // Prevent duplicate processing
 
   useEffect(() => {
+    // Prevent duplicate processing in StrictMode
+    if (hasProcessed.current) return
+    hasProcessed.current = true
+
     const code = searchParams.get('code')
     const errorParam = searchParams.get('error')
 
@@ -48,20 +44,27 @@ export default function AuthCallback() {
             return
           }
 
-          // Create session
+          // Create session with role
           createSession({
             email: data.user.email,
             fullName: data.user.fullName,
-            mobile: ''
+            mobile: '',
+            role: data.user.role // Include role in session
           }, data.token, true)
 
           setStatus('success')
-          toast.success('Successfully authenticated!')
-          console.log('User authenticated:', data.user.email)
+          toast.success('Welcome to CharusatNeeds!') // Single notification
           
-          // Redirect to dashboard
+          // Redirect based on role (use session.role pattern)
+          const role = data.user.role
           setTimeout(() => {
-            navigate('/dashboard')
+            if (role === 'ADMIN') {
+              navigate('/analytics', { replace: true })
+            } else if (role === 'CANTEEN_OWNER') {
+              navigate('/dashboard', { replace: true })
+            } else {
+              navigate('/customer/dashboard', { replace: true })
+            }
           }, 1500)
         })
         .catch((err) => {
@@ -70,7 +73,9 @@ export default function AuthCallback() {
           setError(errorMsg)
           setStatus('error')
           toast.error(errorMsg)
-          setTimeout(() => navigate('/login'), 3000)
+          // Navigate immediately to Avoid hanging on Error UI if user prefers
+          // Pass error in state to display on Login form
+          setTimeout(() => navigate('/login', { state: { error: errorMsg } }), 2000)
         })
     } else {
       setError('No authorization code received.')

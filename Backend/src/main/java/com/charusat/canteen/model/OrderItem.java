@@ -1,5 +1,7 @@
 package com.charusat.canteen.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,11 +25,13 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @JsonIgnore // Prevent circular: Order -> OrderItem -> Order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"canteen", "variants", "addonGroups", "tags"}) // Prevent deep nesting
+    @ManyToOne(fetch = FetchType.EAGER) // Changed to EAGER to include menu item details
     @JoinColumn(name = "menu_item_id", nullable = false)
     private MenuItem menuItem;
     

@@ -1,65 +1,56 @@
 /* CharusatNeeds - Global Styles */
 
-/* ==================== Metropolis Font (Zomato-style) ==================== */
-@font-face {
-  font-family: "Metropolis";
-  src: url("https://cdn.jsdelivr.net/gh/nickmro/metropolis@master/fonts/Metropolis-Regular.woff2")
-    format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Metropolis";
-  src: url("https://cdn.jsdelivr.net/gh/nickmro/metropolis@master/fonts/Metropolis-Medium.woff2")
-    format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Metropolis";
-  src: url("https://cdn.jsdelivr.net/gh/nickmro/metropolis@master/fonts/Metropolis-SemiBold.woff2")
-    format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Metropolis";
-  src: url("https://cdn.jsdelivr.net/gh/nickmro/metropolis@master/fonts/Metropolis-Bold.woff2")
-    format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ==================== CSS Variables - CharusatNeeds Theme ==================== */
-:root {
-  /* Brand Colors */
-  --brand-50: #fff7ed;
-  --brand-100: #ffedd5;
-  --brand-200: #fed7aa;
-  --brand-300: #fdba74;
-  --brand-400: #fb923c;
-  --brand-500: #f97316;
-  --brand-600: #ea580c;
-  --brand-700: #c2410c;
-  --brand-800: #9a3412;
-  --brand-900: #7c2d12;
+/* Custom Scrollbar - Zomato Style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  /* Cream background palette */
-  --cream-50: #fffdf7;
-  --cream-100: #fff9eb;
-  --cream-200: #fff3d6;
-  --cream-300: #ffecc2;
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Scroll Lock Utility */
+.no-scroll {
+  overflow: hidden;
+}
+
+/* ==================== CSS Variables - Zomato Theme ==================== */
+:root {
+  /* Zomato Red Brand Colors */
+  --brand-50: #fef2f2;
+  --brand-100: #fee2e2;
+  --brand-200: #fecaca;
+  --brand-300: #fca5a5;
+  --brand-400: #f87171;
+  --brand-500: #e23744; /* Zomato Primary Red */
+  --brand-600: #cb2c3e;
+  --brand-700: #b91c1c;
+  --brand-800: #991b1b;
+  --brand-900: #7f1d1d;
+
+  /* Light Gray Background (Zomato style) */
+  --cream-50: #fafafa;
+  --cream-100: #f5f5f5;
+  --cream-200: #eeeeee;
+  --cream-300: #e0e0e0;
 
   /* Dark palette */
   --dark-50: #fafafa;
@@ -84,6 +75,13 @@
   --info: #3b82f6;
   --info-light: #dbeafe;
 
+  /* Status Colors (Zomato style) */
+  --status-pending: #f59e0b;
+  --status-preparing: #3b82f6;
+  --status-ready: #22c55e;
+  --status-completed: #10b981;
+  --status-cancelled: #ef4444;
+
   /* 3D Variables */
   --perspective: 1000px;
   --rotation-intensity: 10deg;
@@ -106,7 +104,7 @@ html {
 
 body {
   font-family:
-    "Metropolis",
+    "Inter",
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",

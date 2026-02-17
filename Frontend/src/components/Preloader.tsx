@@ -43,7 +43,12 @@ export default function Preloader({ minDuration = 3000, onComplete }: PreloaderP
     return () => clearInterval(interval);
   }, [minDuration, onComplete]);
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    console.log('[Preloader] Hidden/Unmounted');
+    return null;
+  }
+  
+  console.log('[Preloader] Visible. Progress:', progress);
 
   return (
     <AnimatePresence>

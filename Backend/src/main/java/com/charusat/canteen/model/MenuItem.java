@@ -1,5 +1,7 @@
 package com.charusat.canteen.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,7 +10,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+
 
 /**
  * MenuItem Entity - Represents a food item in a canteen's menu
@@ -35,6 +38,19 @@ public class MenuItem {
     
     private String category;
     
+    @Column(name = "sub_category")
+    private String subCategory;
+    
+    @Column(name = "display_order")
+    private Integer displayOrder;
+    
+    // Time-based Availability (e.g. 07:00 - 11:00)
+    @Column(name = "available_from")
+    private String availableFrom;
+    
+    @Column(name = "available_to")
+    private String availableTo;
+    
     @Column(name = "image_url")
     private String imageUrl;
     
@@ -56,6 +72,29 @@ public class MenuItem {
     @CollectionTable(name = "menu_item_tags", joinColumns = @JoinColumn(name = "menu_item_id"))
     @Column(name = "tag")
     private java.util.List<String> tags;
+
+    @Column(columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean isRecommended = false;
+
+
+    @Column(columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean hasVariants = false;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<MenuItemVariant> variants = new ArrayList<>();
+
+    @Column(columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean hasAddons = false;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<AddonGroup> addonGroups = new ArrayList<>();
     
 
     @JsonIgnore

@@ -1,5 +1,6 @@
 package com.charusat.canteen.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Order {
     
     @Id
@@ -32,6 +34,7 @@ public class Order {
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
     
+    @JsonIgnoreProperties({"menuItems", "owner", "hibernateLazyInitializer", "handler"}) // Don't serialize full menu with order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "canteen_id", nullable = false)
     private Canteen canteen;
@@ -57,6 +60,9 @@ public class Order {
     
     @Column(name = "special_instructions")
     private String specialInstructions;
+    
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
     
     @Column(name = "created_at")
     @Builder.Default

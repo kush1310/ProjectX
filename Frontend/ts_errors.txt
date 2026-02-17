@@ -1,0 +1,13 @@
+src/Canteen/pages/CustomerMenu.tsx(9,3): error TS2724: '"../utils/canteenStore"' has no exported member named 'getCategories'. Did you mean 'fetchCategories'?
+src/Canteen/pages/Menu.tsx(9,3): error TS2724: '"../utils/canteenStore"' has no exported member named 'getCategories'. Did you mean 'fetchCategories'?
+src/Canteen/pages/Menu.tsx(14,3): error TS2724: '"../utils/canteenStore"' has no exported member named 'saveCategory'. Did you mean 'Category'?
+src/Canteen/pages/Menu.tsx(108,7): error TS2322: Type 'string' is not assignable to type 'number'.
+src/Canteen/pages/Menu.tsx(119,22): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/Canteen/pages/Menu.tsx(501,47): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/Canteen/pages/MenuManagement.tsx(341,10): error TS2786: 'CreateCouponForm' cannot be used as a JSX component.
+  Its type 'FC<CreateCouponFormProps>' is not a valid JSX element type.
+    Type 'FunctionComponent<CreateCouponFormProps>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactNode | Promise<ReactNode>' is not assignable to type 'ReactNode'.
+        Type 'bigint' is not assignable to type 'ReactNode'.
+src/components/ui/Skeletons.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/ErrorBoundary.tsx(1,8): error TS6133: 'React' is declared but its value is never read.

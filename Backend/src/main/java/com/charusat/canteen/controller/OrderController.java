@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.security.Principal;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * Order Controller - Handles order management endpoints
@@ -66,6 +69,32 @@ public class OrderController {
             @RequestParam(defaultValue = "24") int hours) {
         return ResponseEntity.ok(orderService.findRecentOrders(canteenId, hours));
     }
+
+    @GetMapping("/my-orders")
+    public ResponseEntity<List<Order>> getMyOrders(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        String email = principal.getName();
+        User user = userService.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+                
+        if (user.getRole() == User.UserRole.CANTEEN_OWNER) {
+            // Find canteen owned by this user
+            // Assuming 1-to-1 mapping for now or finding first canteen
+            Canteen canteen = canteenService.getCanteenByOwnerId(user.getId());
+            if (canteen != null) {
+               return ResponseEntity.ok(orderService.findByCanteen(canteen.getId()));
+            }
+            return ResponseEntity.ok(List.of());
+        } else if (user.getRole() == User.UserRole.ADMIN) {
+             return ResponseEntity.ok(orderService.findAll());
+        } else {
+            // Standard User
+            return ResponseEntity.ok(orderService.findByCustomer(user.getId()));
+        }
+    }
     
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest request) {
@@ -96,8 +125,9 @@ public class OrderController {
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         try {
             String statusStr = body.get("status");
+            String rejectionReason = body.get("rejectionReason");
             Order.OrderStatus newStatus = Order.OrderStatus.valueOf(statusStr.toUpperCase());
-            Order order = orderService.updateStatus(id, newStatus);
+            Order order = orderService.updateStatus(id, newStatus, rejectionReason);
             return ResponseEntity.ok(Map.of("success", true, "order", order));
         } catch (Exception e) {
             return ResponseEntity.badRequest()

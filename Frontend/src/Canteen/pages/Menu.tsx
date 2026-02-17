@@ -57,7 +57,7 @@ export default function CanteenMenuPage() {
     setLoading(true);
     const menuData = await fetchMenu(canteenId);
     setItems(menuData);
-    setCategories(getCategories());
+    setCategories(await getCategories(canteenId));
     setLoading(false);
   };
   
@@ -103,21 +103,17 @@ export default function CanteenMenuPage() {
     setEditingItem(null);
   };
 
-  const handleAddCategory = (name: string) => {
-    const newCategory: Category = {
-      id: name.toLowerCase().replace(/\s+/g, '-'),
-      name,
-      color: '#10b981'
-    };
-    saveCategory(newCategory);
-    setCategories(getCategories());
+  const handleAddCategory = async (name: string) => {
+    // legacy saveCategory usage fixed to createCategory signature
+    await saveCategory(canteenId, name);
+    setCategories(await getCategories(canteenId));
     setShowCategoryModal(false);
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: number) => {
     if (confirm('Delete this category?')) {
-      deleteCategory(id);
-      setCategories(getCategories());
+      await deleteCategory(id);
+      setCategories(await getCategories(canteenId));
     }
   };
 
@@ -449,7 +445,7 @@ function ItemModal({ item, categories, onSave, onClose }: {
 function CategoryModal({ categories, onAdd, onDelete, onClose }: {
   categories: Category[];
   onAdd: (name: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   onClose: () => void;
 }) {
   const [newCategory, setNewCategory] = useState('');

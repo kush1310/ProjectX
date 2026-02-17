@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Canteen Entity - Represents a canteen on campus
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Canteen {
     
     @Id
@@ -48,6 +50,30 @@ public class Canteen {
     
     @Column(name = "closing_time")
     private String closingTime;
+    
+    // Compliance Details
+    @Column(name = "fssai_number")
+    private String fssaiNumber;
+    
+    @Column(name = "gst_no")
+    private String gstNo;
+    
+    // Bank Details
+    @Column(name = "bank_name")
+    private String bankName;
+    
+    @Column(name = "account_number")
+    private String accountNumber;
+    
+    @Column(name = "ifsc_code")
+    private String ifscCode;
+    
+    @Column(name = "account_holder_name")
+    private String accountHolderName;
+    
+    // Documents
+    @Column(name = "kyc_document_url")
+    private String kycDocumentUrl;
     
 
     @JsonIgnore
