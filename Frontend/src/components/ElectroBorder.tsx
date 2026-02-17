@@ -59,20 +59,20 @@ export default function ElectroBorder({
   animated = true
 }: ElectroBorderProps) {
   const config = colorConfigs[color];
-  
+
   const glowIntensity = {
     subtle: { blur: 15, spread: 5 },
     medium: { blur: 25, spread: 10 },
     high: { blur: 40, spread: 15 },
   };
-  
+
   const { blur, spread } = glowIntensity[intensity];
 
   return (
     <div className={`relative ${className}`} style={{ borderRadius: radius }}>
       {/* Outer glow layer */}
-      <div 
-        className={`absolute inset-0 ${animated ? 'electro-pulse' : ''}`}
+      <div
+        className={`absolute inset-0 pointer-events-none ${animated ? 'electro-pulse' : ''}`}
         style={{
           borderRadius: radius,
           boxShadow: `
@@ -83,10 +83,10 @@ export default function ElectroBorder({
           zIndex: 0,
         }}
       />
-      
+
       {/* Electric border gradient */}
-      <div 
-        className="absolute inset-0"
+      <div
+        className="absolute inset-0 pointer-events-none"
         style={{
           borderRadius: radius,
           padding: '2px',
@@ -97,14 +97,14 @@ export default function ElectroBorder({
           zIndex: 1,
         }}
       />
-      
+
       {/* Rotating energy field */}
       {animated && (
-        <div 
-          className="absolute inset-0 overflow-hidden"
+        <div
+          className="absolute inset-0 overflow-hidden pointer-events-none"
           style={{ borderRadius: radius, zIndex: 2 }}
         >
-          <div 
+          <div
             className="absolute w-[300%] h-[300%] -top-full -left-full electro-spin"
             style={{
               background: `conic-gradient(
@@ -125,19 +125,19 @@ export default function ElectroBorder({
           />
         </div>
       )}
-      
+
       {/* Corner energy accents */}
       {animated && (
         <>
-          <div 
-            className="absolute w-8 h-8 -top-1 -left-1 electro-flicker"
+          <div
+            className="absolute w-8 h-8 -top-1 -left-1 electro-flicker pointer-events-none"
             style={{
               background: `radial-gradient(circle, ${config.glowStrong} 0%, transparent 70%)`,
               zIndex: 3,
             }}
           />
-          <div 
-            className="absolute w-8 h-8 -bottom-1 -right-1 electro-flicker"
+          <div
+            className="absolute w-8 h-8 -bottom-1 -right-1 electro-flicker pointer-events-none"
             style={{
               background: `radial-gradient(circle, ${config.glowStrong} 0%, transparent 70%)`,
               animationDelay: '0.5s',
@@ -146,12 +146,12 @@ export default function ElectroBorder({
           />
         </>
       )}
-      
+
       {/* Content */}
       <div className="relative" style={{ borderRadius: radius, zIndex: 10 }}>
         {children}
       </div>
-      
+
       <style>{`
         @keyframes electro-spin {
           from { transform: rotate(0deg); }

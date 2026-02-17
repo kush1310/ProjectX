@@ -1,12 +1,24 @@
 import api from '../../utils/api';
 import { MenuVariant, AddonGroup } from '../types/menu';
 
+
+
 export interface DietaryInfo {
   vegetarian: boolean;
   vegan: boolean;
   glutenFree: boolean;
   spicy: boolean;
   containsNuts: boolean;
+}
+
+export interface Variant {
+  name: string; // e.g. "Small", "Large", "Cheese Burst"
+  price: number;
+}
+
+export interface AddOn {
+  name: string; // e.g. "Extra Cheese"
+  price: number;
 }
 
 export interface MenuItem {
@@ -23,6 +35,7 @@ export interface MenuItem {
   isVegetarian?: boolean; // For compat
   rating?: number;
   salesCount?: number;
+<<<<<<< HEAD
   createdAt?: string; 
   
   // Advanced Features
@@ -35,6 +48,35 @@ export interface MenuItem {
   variants?: MenuVariant[];
   hasAddons?: boolean;
   addonGroups?: AddonGroup[];
+=======
+  createdAt?: string;
+
+  // 📦 Variants (Single-select)
+  variantType?: 'Size' | 'Quantity' | 'Type' | 'Crust' | 'None';
+  variants?: Variant[];
+
+  // ➕ Add-Ons (Multi-select)
+  addOns?: AddOn[];
+
+  // ⚙️ Custom Preferences
+  spiceLevel?: 'Low' | 'Medium' | 'High';
+  sugarLevel?: 'No Sugar' | 'Less Sugar' | 'Normal Sugar';
+  cookingStyle?: 'Fried' | 'Grilled' | 'Steamed';
+
+  // 🟢 Availability & Pricing
+  isCouponApplicable?: boolean;
+  discount?: number; // Percentage
+  preparationTime?: number; // Minutes
+
+  // 🏷️ Tags & Control
+  isPopular?: boolean;
+  isRecommended?: boolean;
+  isLimitedTime?: boolean;
+  maxQuantityPerOrder?: number;
+
+  // 🕒 Time Control
+  availabilityTime?: 'Breakfast' | 'Lunch' | 'Evening' | 'All Day';
+>>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
 }
 
 export interface Canteen {
@@ -66,6 +108,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+<<<<<<< HEAD
   totalPrice?: number; // Backend returns this
   menuItem?: {
     id: number;
@@ -73,6 +116,12 @@ export interface OrderItem {
     price: number;
     isVeg?: boolean;
   };
+=======
+  selectedVariant?: string;
+  selectedAddOns?: string[];
+  // Changed from unitPrice to price to match existing frontend code if needed, but backend usually has price
+  // Let's check existing OrderHistory.tsx usage: item.price
+>>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
 }
 
 // Customer info from backend
@@ -176,13 +225,8 @@ export const fetchMenu = async (canteenId: number): Promise<MenuItem[]> => {
  */
 export const getOrders = async (): Promise<Order[]> => {
   try {
-    const response = await api.get('/orders/my-orders'); 
-    // Assuming /my-orders is the endpoint for user orders, 
-    // or just /orders if the backend filters by authenticated user.
-    // I need to be careful about the backend endpoint.
-    // Based on standard REST, it might be GET /orders (which returns all for admin/owner? or just mine?)
-    // Let's assume GET /orders returns the user's orders based on token.
-    return response.data; 
+    const response = await api.get('/orders/my-orders');
+    return response.data;
   } catch (error) {
     console.error('Failed to fetch orders', error);
     return [];
@@ -190,9 +234,45 @@ export const getOrders = async (): Promise<Order[]> => {
 };
 
 // Export these for backward compatibility if needed, or remove if fully refactoring
+<<<<<<< HEAD
 // Legacy getCategories removed to prefer fetchCategories API
 
 // Menu Management APIs
+=======
+
+export interface Category {
+  id: string;
+  name: string;
+  color?: string;
+}
+
+// In-memory category storage (persists for session)
+let categoriesData: Category[] = [
+  { id: 'pizza', name: 'Pizza', color: '#ef4444' },
+  { id: 'burgers', name: 'Burgers', color: '#f97316' },
+  { id: 'sandwiches', name: 'Sandwiches', color: '#f59e0b' },
+  { id: 'snacks', name: 'Snacks', color: '#84cc16' },
+  { id: 'street-food', name: 'Street Food', color: '#10b981' },
+  { id: 'hot-meals', name: 'Hot Meals', color: '#06b6d4' },
+  { id: 'indian-meals-thali', name: 'Indian Meals (Thali)', color: '#3b82f6' },
+  { id: 'south-indian', name: 'South Indian', color: '#6366f1' },
+  { id: 'chinese', name: 'Chinese', color: '#8b5cf6' },
+  { id: 'rice-biryani', name: 'Rice & Biryani', color: '#d946ef' },
+  { id: 'pasta-noodles', name: 'Pasta & Noodles', color: '#f43f5e' },
+  { id: 'wraps-rolls', name: 'Wraps & Rolls', color: '#ec4899' },
+  { id: 'breakfast', name: 'Breakfast', color: '#fbbf24' },
+  { id: 'evening-snacks', name: 'Evening Snacks', color: '#a3e635' },
+  { id: 'beverages', name: 'Beverages', color: '#22d3ee' },
+  { id: 'tea-coffee', name: 'Tea & Coffee', color: '#a855f7' },
+  { id: 'milkshakes-juices', name: 'Milkshakes & Juices', color: '#ec4899' },
+  { id: 'desserts', name: 'Desserts', color: '#f472b6' },
+  { id: 'combos-meal-deals', name: 'Combos / Meal Deals', color: '#fb923c' },
+];
+
+export const getCategories = (): Category[] => [...categoriesData];
+
+// Management APIs
+>>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
 
 export const addMenuItem = async (canteenId: number, item: Partial<MenuItem>): Promise<MenuItem | null> => {
   try {
@@ -257,15 +337,16 @@ export const deleteMenuItem = async (itemId: number): Promise<boolean> => {
 };
 
 export const toggleItemAvailability = async (itemId: number, isAvailable: boolean): Promise<boolean> => {
-   try {
+  try {
     await api.post(`/canteens/menu/${itemId}/toggle`, { available: isAvailable });
     return true;
-   } catch (error) {
-     console.error('Failed to toggle availability', error);
-     return false;
-   }
+  } catch (error) {
+    console.error('Failed to toggle availability', error);
+    return false;
+  }
 };
 
+<<<<<<< HEAD
 export interface Category {
   id: number;
   name: string;
@@ -291,6 +372,16 @@ export const createCategory = async (canteenId: number, name: string): Promise<C
         console.error('Failed to create category', error);
         return null;
     }
+=======
+export const saveCategory = (cat: Category) => {
+  if (!categoriesData.find(c => c.id === cat.id)) {
+    categoriesData.push(cat);
+  }
+};
+
+export const deleteCategory = (id: string) => {
+  categoriesData = categoriesData.filter(c => c.id !== id);
+>>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
 };
 
 export const deleteCategory = async (id: number): Promise<boolean> => {
@@ -309,6 +400,7 @@ export const saveCategory = createCategory;
 
 // Order Management
 
+<<<<<<< HEAD
 export const updateOrderStatus = async (orderId: number, status: string, rejectionReason?: string): Promise<Order | null> => {
     try {
         const payload: any = { status: status.toUpperCase() };
@@ -336,12 +428,39 @@ export const getOrderStats = (orders: Order[]) => {
     const today = new Date().toDateString();
     const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'CANCELLED');
     const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
+=======
+export const updateOrderStatus = async (orderId: number, status: string): Promise<Order | null> => {
+  try {
+    const response = await api.put(`/orders/${orderId}/status`, { status: status.toUpperCase() });
+    return response.data.order;
+  } catch (error) {
+    console.error('Failed to update order status', error);
+    return null;
+  }
+};
 
-    return {
-        activeCount,
-        avgTime,
-        todayRevenue
-    };
+export const getOrderStats = (orders: Order[]) => {
+  // Determine active vs completed based on status
+  const activeOrders = orders.filter(o => ['new', 'preparing', 'ready'].includes(o.status.toLowerCase()));
+>>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
+
+  // Calculate stats
+  const activeCount = activeOrders.length;
+
+  // Average time (mock or calc from completedAt - createdAt)
+  // Simple mock calculation logic for now if data insufficient
+  const avgTime = 12;
+
+  // Today's revenue
+  const today = new Date().toDateString();
+  const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
+  const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
+
+  return {
+    activeCount,
+    avgTime,
+    todayRevenue
+  };
 };
 
 

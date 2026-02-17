@@ -1,0 +1,284 @@
+:root {
+  --bg-dark: #0f0f11;
+  --bg-card: rgba(30, 30, 35, 0.7);
+  /* Dark Glass */
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+
+  --brand-zomato: #e23744;
+  --brand-swiggy: #fc8019;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  /* Fresh Green Accent */
+  --accent-green: #10b981;
+  --danger: #ef4444;
+  --success: #22c55e;
+
+  --font-main: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  --shadow-glow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  /* Stronger glow for dark mode */
+  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --table-header-bg: rgba(255, 255, 255, 0.03);
+  --table-border: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(0, 0, 0, 0.4);
+}
+
+.light-mode {
+  --bg-dark: #f0f4f8;
+  /* Cooler grey-blue */
+  --bg-card: rgba(255, 255, 255, 0.65);
+  --bg-glass: rgba(255, 255, 255, 0.5);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+
+  /* Modern "Float" Shadow for Light Mode */
+  --shadow-glow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(250, 17, 17, 0.974) inset;
+
+  --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+  --table-header-bg: rgba(255, 255, 255, 0.5);
+  --table-border: rgba(0, 0, 0, 0.05);
+  --input-bg: #ffffff;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-dark);
+  /* Fallback */
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-primary);
+}
+
+/* Utilities for 3D */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Animations */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile Responsiveness & Layout Classes */
+.app-header {
+  padding: 20px 40px;
+  border-bottom: var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.search-container {
+  position: relative;
+  width: 300px;
+}
+
+.dashboard-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 30px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: 15px;
+    position: static;
+    /* sticky might eat screen space on small landscape */
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  /* Create Coupon Button full width */
+  .dashboard-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Adjust Grid for Mobile */
+  .coupon-grid {
+    grid-template-columns: 1fr !important;
+    padding: 0 10px !important;
+  }
+}
+
+/* React Datepicker Customization */
+.react-datepicker {
+  font-family: var(--font-main) !important;
+  border: 1px solid #000000 !important;
+  border-radius: 15px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+  background-color: #ffffff !important;
+}
+
+.react-datepicker__header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+  color: #1f2937 !important;
+  font-weight: 700 !important;
+}
+
+.react-datepicker__day-name {
+  color: #9ca3af !important;
+}
+
+.react-datepicker__day {
+  color: #374151 !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: #f3f4f6 !important;
+  border-radius: 50% !important;
+}
+
+.react-datepicker__day--selected {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+}
+
+.react-datepicker__triangle {
+  display: none !important;
+}
+
+/* Full width wrapper for the datepicker input */
+.w-full {
+  width: 100%;
+}
+
+.w-full .react-datepicker-wrapper,
+.w-full .react-datepicker__input-container {
+  width: 100%;
+  display: block;
+}

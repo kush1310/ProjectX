@@ -1,0 +1,272 @@
+.disabledBtn {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.cardWrapper {
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+    height: 380px;
+    margin: 0 auto;
+    cursor: pointer;
+    z-index: 1;
+    /* Removed perspective as tilt is gone, but keeping relative for layout */
+}
+
+.card3D {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* Skeuomorphic Glass Base */
+    background: rgba(40, 40, 45, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.2s ease;
+
+    /* Tactile Depth Shadow: Dark shadow bottom-right, light highlight top-left */
+    box-shadow:
+        10px 10px 20px rgba(0, 0, 0, 0.4),
+        -2px -2px 5px rgba(255, 255, 255, 0.05) inset,
+        2px 2px 5px rgba(0, 0, 0, 0.5) inset;
+
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Light Mode Skeuomorphism */
+:global(.light-mode) .card3D {
+    background: rgba(240, 244, 248, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    /* Soft Neumorphic-like shadow */
+    box-shadow:
+        15px 15px 30px rgba(166, 180, 200, 0.4),
+        -5px -5px 10px rgba(255, 255, 255, 0.9),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+        inset -1px -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.cardWrapper:hover .card3D {
+    /* Transform handled by Framer Motion */
+    /* Deepen shadow on lift */
+    box-shadow:
+        15px 20px 40px rgba(0, 0, 0, 0.4),
+        -2px -2px 5px rgba(255, 255, 255, 0.05) inset;
+}
+
+:global(.light-mode) .cardWrapper:hover .card3D {
+    box-shadow:
+        20px 20px 40px rgba(166, 180, 200, 0.5),
+        -5px -5px 10px rgba(255, 255, 255, 0.9);
+}
+
+.cardWrapper:active .card3D {
+    /* Pressed effect shadows only, transform handled by Framer */
+    box-shadow:
+        5px 5px 10px rgba(0, 0, 0, 0.3),
+        inset 2px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Content Styles */
+.cardTop {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    /* Glossy Sheen */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+}
+
+:global(.light-mode) .cardTop {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, transparent 50%);
+}
+
+.brandBadge {
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.discount {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    /* Engraved Text Effect */
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+:global(.light-mode) .discount {
+    color: var(--text-primary);
+    text-shadow: -1px -1px 0 rgba(255, 255, 255, 1), 1px 1px 2px rgba(166, 180, 200, 0.5);
+}
+
+.title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.expiry {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.tearLine {
+    position: relative;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.1);
+    /* Slightly sunken channel */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+:global(.light-mode) .tearLine {
+    background: rgba(0, 0, 0, 0.03);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tearLine::before,
+.tearLine::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background-color: var(--bg-dark);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+    /* Inner shadow for hole */
+}
+
+:global(.light-mode) .tearLine::before,
+:global(.light-mode) .tearLine::after {
+    /* Need to match light bg */
+    background-color: var(--bg-dark);
+    /* Should verify var in light mode */
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tearLine::before {
+    left: -12px;
+}
+
+.tearLine::after {
+    right: -12px;
+}
+
+.dashedLine {
+    width: 80%;
+    height: 2px;
+    border-bottom: 2px dashed var(--text-secondary);
+    opacity: 0.3;
+}
+
+.scissorIcon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.cardBottom {
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.05);
+    /* Slight darkening for stability */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 150px;
+}
+
+.description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.5;
+}
+
+.codeRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.2);
+    /* Recessed Area */
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-top: auto;
+}
+
+:global(.light-mode) .codeRow {
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.code {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+}
+
+.copyBtn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.copyBtn:hover {
+    color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.applyBtn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--brand-color);
+    color: white;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    /* Physical Button Shadow */
+    box-shadow:
+        0 4px 0 rgba(0, 0, 0, 0.2),
+        0 10px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.1s;
+}
+
+.applyBtn:active {
+    transform: translateY(4px);
+    box-shadow:
+        0 0 0 rgba(0, 0, 0, 0.2),
+        0 2px 2px rgba(0, 0, 0, 0.1);
+}

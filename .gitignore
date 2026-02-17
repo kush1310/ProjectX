@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ==============================================================================
 # CharusatNeeds .gitignore
 # ==============================================================================
@@ -65,3 +66,17 @@ logs/
 *.tmp
 *.swp
 *~
+=======
+# Maven build output
+Backend/target/
+*.class
+
+# Logs
+*.log
+
+# Node dependencies
+Frontend/node_modules/
+
+# Build cache
+Frontend/tsconfig.tsbuildinfo
+>>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
