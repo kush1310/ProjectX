@@ -1,0 +1,67 @@
+# ==============================================================================
+# CharusatNeeds .gitignore
+# ==============================================================================
+
+# --------------------------------- Java / Maven --------------------------------
+Backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# --------------------------------- Node.js ------------------------------------
+node_modules/
+dist/
+*.tsbuildinfo
+
+# --------------------------------- Environment --------------------------------
+.env
+.env.local
+.env.*.local
+
+# Keep .env.example for reference
+!.env.example
+
+# --------------------------------- IDE ----------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --------------------------------- OS -----------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# --------------------------------- Logs / Build Artifacts ---------------------
+*.log
+*.txt.log
+build_log*.txt
+compile_output.txt
+build_output.txt
+ts_errors.txt
+tsc_log.txt
+
+# --------------------------------- Runtime ------------------------------------
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# --------------------------------- Package Manager ----------------------------
+# Root-level stale lock file (no root package.json)
+/package-lock.json
+
+# --------------------------------- Miscellaneous ------------------------------
+*.bak
+*.tmp
+*.swp
+*~
