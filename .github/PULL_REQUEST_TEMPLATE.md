@@ -4,12 +4,12 @@
 
 ## Type of Change
 
-- [ ] Feature — New functionality
-- [ ] Bugfix — Fixes an existing issue
-- [ ] Hotfix — Critical production fix
-- [ ] Refactor — Code improvement (no behavior change)
-- [ ] Documentation — Docs only
-- [ ] CI/CD — Pipeline or build changes
+- [ ] Feature -- New functionality
+- [ ] Bugfix -- Fixes an existing issue
+- [ ] Hotfix -- Critical production fix
+- [ ] Refactor -- Code improvement (no behavior change)
+- [ ] Documentation -- Docs only
+- [ ] CI/CD -- Pipeline or build changes
 
 ## Related Issue
 

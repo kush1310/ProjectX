@@ -1,5 +1,5 @@
 # =============================================================================
-# CharusatNeeds — CODEOWNERS
+# CharusatNeeds -- CODEOWNERS
 # =============================================================================
 # This file defines code ownership for automatic PR review assignment.
 # GitHub will automatically request reviews from the listed owners when
@@ -7,7 +7,6 @@
 #
 # Format:  <pattern>  <owner1> <owner2> ...
 #
-# Update this file as team members join and take ownership of modules.
 # Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 # =============================================================================
 
@@ -15,25 +14,13 @@
 *                       @kush1310
 
 # --- Backend (Spring Boot / Java) --------------------------------------------
-/Backend/               @kush1310
+/Backend/               @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83
 
 # --- Frontend (React / TypeScript / Vite) ------------------------------------
-/Frontend/              @kush1310
+/Frontend/              @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83
 
-# --- CI/CD & Repository Configuration ----------------------------------------
+# --- CI/CD and Repository Configuration --------------------------------------
 /.github/               @kush1310
 
 # --- Documentation -----------------------------------------------------------
-/Docs/                  @kush1310
-
-# =============================================================================
-# TEAM EXPANSION GUIDE
-# =============================================================================
-# When team members join, assign ownership like this:
-#
-# /Backend/src/main/java/com/charusat/canteen/controller/   @backend-dev1
-# /Backend/src/main/java/com/charusat/canteen/service/      @backend-dev2
-# /Frontend/src/pages/                                       @frontend-dev1
-# /Frontend/src/Canteen/                                     @frontend-dev2
-# /Docs/                                                     @docs-lead
-# =============================================================================
+/Docs/                  @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83

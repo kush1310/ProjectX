@@ -1,5 +1,5 @@
 # =============================================================================
-# CharusatNeeds — Production Deployment (Stub)
+# CharusatNeeds -- Production Deployment (Stub)
 # =============================================================================
 # Triggered when code is pushed/merged into 'main'.
 # Uses GitHub Environments with manual approval gate.
