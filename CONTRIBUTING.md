@@ -65,33 +65,33 @@ We follow **Git Flow**. All work happens in isolated branches off `develop`.
 
 ## Daily Workflow
 
-### Step 1 — Pull Latest Changes
+### Step 1 -- Pull Latest Changes
 
 ```bash
 git checkout develop
 git pull origin develop
 ```
 
-### Step 2 — Create Your Branch
+### Step 2 -- Create Your Branch
 
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
-### Step 3 — Work and Commit
+### Step 3 -- Work and Commit
 
 ```bash
 git add .
 git commit -m "feat: add payment gateway integration"
 ```
 
-### Step 4 — Push Your Branch
+### Step 4 -- Push Your Branch
 
 ```bash
 git push origin feature/your-feature-name
 ```
 
-### Step 5 — Open a Pull Request
+### Step 5 -- Open a Pull Request
 
 - Go to GitHub → Pull Requests → New Pull Request
 - **From:** `feature/your-feature-name`
@@ -205,14 +205,14 @@ When reviewing someone's PR, check:
 
 ## Module Ownership
 
-| Module        | Primary Owner |
-| ------------- | ------------- |
-| Backend API   | @kush1310     |
-| Frontend UI   | @kush1310     |
-| CI/CD         | @kush1310     |
-| Documentation | @kush1310     |
+| Module        | Owners                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| Backend API   | @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83 |
+| Frontend UI   | @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83 |
+| CI/CD         | @kush1310                                                             |
+| Documentation | @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83 |
 
-> Update this table as team members take ownership of specific modules.
+> CI/CD configuration is managed exclusively by the project owner.
 
 ---
 

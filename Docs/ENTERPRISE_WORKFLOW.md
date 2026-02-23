@@ -1,8 +1,8 @@
-# Enterprise GitHub Governance & DevOps Documentation
+# Enterprise GitHub Governance and DevOps Documentation
 
-## CI/CD · Branch Protection · Access Control Model
+## CI/CD - Branch Protection - Access Control Model
 
-**Project:** CharusatNeeds — Campus Food Aggregator  
+**Project:** CharusatNeeds -- Campus Food Aggregator  
 **Repository:** [kush1310/ProjectX](https://github.com/kush1310/ProjectX)  
 **Last Updated:** February 2026
 
@@ -37,11 +37,11 @@ This document defines the enterprise workflow for collaborative development on C
 
 ```
 main (production)
-  ↑ PR + CI + Approval
+  ^ PR + CI + Approval
 develop (integration)
-  ↑ PR + CI
+  ^ PR + CI
 feature/* | bugfix/* | hotfix/* | release/*
-  ↑
+  ^
 Individual developer work
 ```
 
@@ -67,24 +67,22 @@ Individual developer work
 
 ### 3.2 Current Team Allocation
 
-| Member    | Role      | GitHub Username |
-| --------- | --------- | --------------- |
-| Kush Shah | Owner     | @kush1310       |
-| TBD       | Developer | —               |
-| TBD       | Developer | —               |
-| TBD       | Developer | —               |
-| TBD       | Developer | —               |
-
-> Update this table as team members are onboarded.
+| Member        | Role      | GitHub Username      |
+| ------------- | --------- | -------------------- |
+| Kush Shah     | Owner     | @kush1310            |
+| Dhairy        | Developer | @dhairy18            |
+| Ishan Shastri | Developer | @Ishanshastithecoder |
+| Krina Parikh  | Developer | @krinaparikh227      |
+| Mrugendra     | Developer | @Mrugendra83         |
 
 ### 3.3 Team-Based Permissions (Future Scale)
 
 When the team grows, create GitHub Teams:
 
-- `core-team` → Maintain access
-- `backend-team` → Write access to `/Backend/`
-- `frontend-team` → Write access to `/Frontend/`
-- `devops-team` → Admin access to `/.github/`
+- `core-team` -- Maintain access
+- `backend-team` -- Write access to `/Backend/`
+- `frontend-team` -- Write access to `/Frontend/`
+- `devops-team` -- Admin access to `/.github/`
 
 ---
 
@@ -92,25 +90,25 @@ When the team grows, create GitHub Teams:
 
 ### 4.1 Protection Rules for `main`
 
-| Rule                                | Setting            |
-| ----------------------------------- | ------------------ |
-| Require Pull Request before merging | ✅ Enabled         |
-| Required approving reviews          | 1 minimum          |
-| Dismiss stale PR approvals          | ✅ Enabled         |
-| Require status checks to pass       | ✅ (`CI Pipeline`) |
-| Require branches to be up to date   | ✅ Enabled         |
-| Restrict who can push               | ✅ (Owner only)    |
-| Enforce for administrators          | ✅ Enabled         |
+| Rule                                | Setting      |
+| ----------------------------------- | ------------ |
+| Require Pull Request before merging | Enabled      |
+| Required approving reviews          | 1 minimum    |
+| Dismiss stale PR approvals          | Enabled      |
+| Require status checks to pass       | Enabled (CI) |
+| Require branches to be up to date   | Enabled      |
+| Restrict who can push               | Owner only   |
+| Enforce for administrators          | Enabled      |
 
 ### 4.2 Protection Rules for `develop`
 
-| Rule                                | Setting            |
-| ----------------------------------- | ------------------ |
-| Require Pull Request before merging | ✅ Enabled         |
-| Required approving reviews          | 1 minimum          |
-| Dismiss stale PR approvals          | ✅ Enabled         |
-| Require status checks to pass       | ✅ (`CI Pipeline`) |
-| Require branches to be up to date   | ✅ Enabled         |
+| Rule                                | Setting      |
+| ----------------------------------- | ------------ |
+| Require Pull Request before merging | Enabled      |
+| Required approving reviews          | 1 minimum    |
+| Dismiss stale PR approvals          | Enabled      |
+| Require status checks to pass       | Enabled (CI) |
+| Require branches to be up to date   | Enabled      |
 
 ---
 
@@ -121,47 +119,47 @@ When the team grows, create GitHub Teams:
 **File:** `.github/workflows/ci.yml`
 
 ```
-PR opened/updated → CI triggered → Two parallel jobs:
+PR opened/updated -- CI triggered -- Two parallel jobs:
 
 Job 1: Backend
-  ├── Checkout code
-  ├── Setup Java 17 (Temurin)
-  ├── mvn clean verify
-  └── Upload test reports (on failure)
+  - Checkout code
+  - Setup Java 17 (Temurin)
+  - mvn clean verify
+  - Upload test reports (on failure)
 
 Job 2: Frontend
-  ├── Checkout code
-  ├── Setup Node 18
-  ├── npm ci
-  ├── npm run lint
-  ├── npm run typecheck
-  └── npm run build
+  - Checkout code
+  - Setup Node 18
+  - npm ci
+  - npm run lint
+  - npm run typecheck
+  - npm run build
 ```
 
 **Merge is blocked if either job fails.**
 
-### 5.2 CD — Staging Deployment
+### 5.2 CD -- Staging Deployment
 
 **File:** `.github/workflows/cd-staging.yml`
 
 - Triggered on push to `develop`
 - Deploys to staging environment
-- Currently a placeholder — configure with your server details
+- Currently a placeholder -- configure with your server details
 
-### 5.3 CD — Production Deployment
+### 5.3 CD -- Production Deployment
 
 **File:** `.github/workflows/cd-production.yml`
 
 - Triggered on push to `main`
 - Requires manual approval via GitHub Environments
-- Currently a placeholder — configure with your server details
+- Currently a placeholder -- configure with your server details
 
 ### 5.4 Pipeline Flow
 
 ```
-feature/* → PR to develop → CI validates → Merge → Deploy to Staging
-                                                          ↓
-develop → PR to main → CI validates + Approval → Merge → Deploy to Production
+feature/* -- PR to develop -- CI validates -- Merge -- Deploy to Staging
+                                                            |
+develop -- PR to main -- CI validates + Approval -- Merge -- Deploy to Production
 ```
 
 ---
@@ -174,7 +172,7 @@ Every PR must include:
 2. **Linked issue** reference (`Closes #42`)
 3. **Description** of changes and motivation
 4. **Screenshots** for UI changes
-5. **Testing proof** — how changes were verified
+5. **Testing proof** -- how changes were verified
 
 ### PR Checklist (enforced via template)
 
@@ -214,7 +212,7 @@ Every PR must include:
 ### Prevention Strategies
 
 - Pull `develop` daily before starting work
-- Keep feature branches short-lived (1–3 days)
+- Keep feature branches short-lived (1-3 days)
 - Avoid modifying the same files unnecessarily
 - Follow clear module ownership (see CODEOWNERS)
 - Communicate with the team about shared files
@@ -231,7 +229,7 @@ Every PR must include:
    git checkout -b release/v1.0.0 develop
    ```
 
-2. Stabilize — fix only bugs, no new features
+2. Stabilize -- fix only bugs, no new features
 
 3. Merge into `main` via PR
 
@@ -264,21 +262,21 @@ Every PR must include:
 
 | Control                        | Status |
 | ------------------------------ | ------ |
-| Branch protection on `main`    | ✅     |
-| Branch protection on `develop` | ✅     |
-| CODEOWNERS enforcement         | ✅     |
-| CI validation on PRs           | ✅     |
-| `.env` in `.gitignore`         | ✅     |
+| Branch protection on `main`    | Active |
+| Branch protection on `develop` | Active |
+| CODEOWNERS enforcement         | Active |
+| CI validation on PRs           | Active |
+| `.env` in `.gitignore`         | Active |
 
 ### Recommended Additions
 
 | Control                | How to Enable                                  |
 | ---------------------- | ---------------------------------------------- |
-| Dependabot             | Settings → Security → Enable Dependabot alerts |
-| Secret scanning        | Settings → Security → Enable secret scanning   |
-| 2FA enforcement        | Organization → Settings → Require 2FA          |
-| CodeQL analysis        | Security → Code scanning → Set up CodeQL       |
-| HTTPS-only enforcement | Settings → General → Always redirect to HTTPS  |
+| Dependabot             | Settings - Security - Enable Dependabot alerts |
+| Secret scanning        | Settings - Security - Enable secret scanning   |
+| 2FA enforcement        | Organization - Settings - Require 2FA          |
+| CodeQL analysis        | Security - Code scanning - Set up CodeQL       |
+| HTTPS-only enforcement | Settings - General - Always redirect to HTTPS  |
 
 ---
 
@@ -288,15 +286,13 @@ Every PR must include:
 
 Automatically requests reviews from code owners when their files are modified.
 
-| Path          | Owner     |
-| ------------- | --------- |
-| `*` (default) | @kush1310 |
-| `/Backend/`   | @kush1310 |
-| `/Frontend/`  | @kush1310 |
-| `/.github/`   | @kush1310 |
-| `/Docs/`      | @kush1310 |
-
-> Update with team member usernames as they join.
+| Path          | Owners                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| `*` (default) | @kush1310                                                             |
+| `/Backend/`   | @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83 |
+| `/Frontend/`  | @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83 |
+| `/.github/`   | @kush1310                                                             |
+| `/Docs/`      | @kush1310 @dhairy18 @Ishanshastithecoder @krinaparikh227 @Mrugendra83 |
 
 ---
 
@@ -326,8 +322,8 @@ Automatically requests reviews from code owners when their files are modified.
 
 The repository has a safety backup created before this workflow was set up:
 
-- **Tag:** `v0.0.0-pre-workflow` — permanent recovery point
-- **Branch:** `backup/pre-workflow-setup` — full copy of original state
+- **Tag:** `v0.0.0-pre-workflow` -- permanent recovery point
+- **Branch:** `backup/pre-workflow-setup` -- full copy of original state
 
 ### Recovery Commands
 

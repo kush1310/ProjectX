@@ -1,5 +1,5 @@
 # =============================================================================
-# CharusatNeeds — Continuous Integration Pipeline
+# CharusatNeeds -- Continuous Integration Pipeline
 # =============================================================================
 # Runs on every Pull Request targeting 'develop' or 'main'.
 # Validates both Backend (Java/Maven) and Frontend (React/Vite) in parallel.
@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Backend — Java 17 / Maven
+  # Backend -- Java 17 / Maven
   # ---------------------------------------------------------------------------
   backend:
     name: Backend Build & Test
@@ -51,7 +51,7 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Frontend — Node 18 / Vite / TypeScript
+  # Frontend -- Node 18 / Vite / TypeScript
   # ---------------------------------------------------------------------------
   frontend:
     name: Frontend Build & Lint

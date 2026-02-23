@@ -11,7 +11,6 @@ This guide will help you set up Google OAuth with **strict CHARUSAT domain enfor
 ### Step 1: Create Google Cloud Project
 
 1. **Go to Google Cloud Console**
-
    - Visit: https://console.cloud.google.com/
    - Sign in with your Google account
 
@@ -23,7 +22,6 @@ This guide will help you set up Google OAuth with **strict CHARUSAT domain enfor
 ### Step 2: Enable Google+ API
 
 1. **Navigate to APIs & Services**
-
    - Left sidebar → "APIs & Services" → "Library"
 
 2. **Enable Required APIs**
@@ -33,11 +31,9 @@ This guide will help you set up Google OAuth with **strict CHARUSAT domain enfor
 ### Step 3: Configure OAuth Consent Screen
 
 1. **Go to OAuth Consent Screen**
-
    - Left sidebar → "OAuth consent screen"
 
 2. **Choose User Type**
-
    - Select **"Internal"** if you have Google Workspace for CHARUSAT
    - Or select **"External"** (requires verification for production)
    - Click "Create"
@@ -67,11 +63,9 @@ This guide will help you set up Google OAuth with **strict CHARUSAT domain enfor
    ```
 
 6. **Developer Contact**
-
    - Add your email: `your-email@charusat.edu.in`
 
 7. **Scopes**
-
    - Click "Add or Remove Scopes"
    - Select:
      - `.../auth/userinfo.email`
@@ -86,12 +80,10 @@ This guide will help you set up Google OAuth with **strict CHARUSAT domain enfor
 ### Step 4: Create OAuth 2.0 Credentials
 
 1. **Go to Credentials**
-
    - Left sidebar → "Credentials"
    - Click "+ CREATE CREDENTIALS" → "OAuth client ID"
 
 2. **Application Type**
-
    - Select: **"Web application"**
 
 3. **Configure Web Client**
@@ -418,14 +410,14 @@ public class AuthController {
 
 ## Part 4: Security Checklist
 
-### ✅ Domain Verification (Multiple Layers)
+### Domain Verification (Multiple Layers)
 
 1. **Frontend**: `hd=charusat.edu.in` in OAuth URL
 2. **Google Response**: Check `hd` claim in ID token
 3. **Backend**: Verify `hd` field in `GoogleIdToken.Payload`
 4. **Backend**: Manual email suffix check: `email.endsWith("@charusat.edu.in")`
 
-### ✅ Additional Checks
+### Additional Checks
 
 ```java
 // In your service
@@ -497,7 +489,7 @@ VITE_API_URL=https://api.charusatneeds.com
 ### Error: "Can't use this account"
 
 - User tried non-CHARUSAT email
-- `hd` parameter is working correctly ✅
+- `hd` parameter is working correctly
 
 ### Error: "Invalid domain"
 
@@ -515,9 +507,9 @@ VITE_API_URL=https://api.charusatneeds.com
 
 **Domain Restriction Points:**
 
-1. ✅ Frontend OAuth URL: `hd=charusat.edu.in`
-2. ✅ Google ID Token: `hd` claim verification
-3. ✅ Backend: Email suffix check
-4. ✅ Database: Email constraint validation
+1. Frontend OAuth URL: `hd=charusat.edu.in`
+2. Google ID Token: `hd` claim verification
+3. Backend: Email suffix check
+4. Database: Email constraint validation
 
-Your users **cannot** sign up with non-CHARUSAT emails! 🔒
+Your users **cannot** sign up with non-CHARUSAT emails.

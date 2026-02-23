@@ -1,5 +1,5 @@
 # =============================================================================
-# CharusatNeeds — Staging Deployment (Stub)
+# CharusatNeeds -- Staging Deployment (Stub)
 # =============================================================================
 # Triggered when code is pushed/merged into 'develop'.
 # Replace the placeholder deployment steps with your actual staging server
