@@ -139,27 +139,14 @@ export default function CanteenMenuPage() {
   };
 
   const handleAddCategory = async (name: string) => {
-<<<<<<< HEAD
     // legacy saveCategory usage fixed to createCategory signature
     await saveCategory(canteenId, name);
     setCategories(await getCategories(canteenId));
     setShowCategoryModal(false);
   };
 
-  const handleDeleteCategory = async (id: number) => {
-    if (confirm('Delete this category?')) {
-      await deleteCategory(id);
-      setCategories(await getCategories(canteenId));
-    }
-=======
-    await saveCategory({ id: Math.random().toString(), name });
-    toast.success(`Category "${name}" added`);
-    loadMenu();
-  };
-
   const handleDeleteCategory = async (id: string) => {
     confirmDeleteCategory(id);
->>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
   };
 
   const openAddModal = () => {

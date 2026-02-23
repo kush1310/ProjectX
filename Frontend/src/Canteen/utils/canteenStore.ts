@@ -35,9 +35,8 @@ export interface MenuItem {
   isVegetarian?: boolean; // For compat
   rating?: number;
   salesCount?: number;
-<<<<<<< HEAD
-  createdAt?: string; 
-  
+  createdAt?: string;
+
   // Advanced Features
   preparationTime?: number;
   isRecommended?: boolean;
@@ -48,35 +47,6 @@ export interface MenuItem {
   variants?: MenuVariant[];
   hasAddons?: boolean;
   addonGroups?: AddonGroup[];
-=======
-  createdAt?: string;
-
-  // 📦 Variants (Single-select)
-  variantType?: 'Size' | 'Quantity' | 'Type' | 'Crust' | 'None';
-  variants?: Variant[];
-
-  // ➕ Add-Ons (Multi-select)
-  addOns?: AddOn[];
-
-  // ⚙️ Custom Preferences
-  spiceLevel?: 'Low' | 'Medium' | 'High';
-  sugarLevel?: 'No Sugar' | 'Less Sugar' | 'Normal Sugar';
-  cookingStyle?: 'Fried' | 'Grilled' | 'Steamed';
-
-  // 🟢 Availability & Pricing
-  isCouponApplicable?: boolean;
-  discount?: number; // Percentage
-  preparationTime?: number; // Minutes
-
-  // 🏷️ Tags & Control
-  isPopular?: boolean;
-  isRecommended?: boolean;
-  isLimitedTime?: boolean;
-  maxQuantityPerOrder?: number;
-
-  // 🕒 Time Control
-  availabilityTime?: 'Breakfast' | 'Lunch' | 'Evening' | 'All Day';
->>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
 }
 
 export interface Canteen {
@@ -108,20 +78,15 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
-<<<<<<< HEAD
-  totalPrice?: number; // Backend returns this
+  totalPrice?: number;
+  selectedVariant?: string;
+  selectedAddOns?: string[];
   menuItem?: {
     id: number;
     name: string;
     price: number;
     isVeg?: boolean;
   };
-=======
-  selectedVariant?: string;
-  selectedAddOns?: string[];
-  // Changed from unitPrice to price to match existing frontend code if needed, but backend usually has price
-  // Let's check existing OrderHistory.tsx usage: item.price
->>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
 }
 
 // Customer info from backend
@@ -233,46 +198,10 @@ export const getOrders = async (): Promise<Order[]> => {
   }
 };
 
-// Export these for backward compatibility if needed, or remove if fully refactoring
-<<<<<<< HEAD
+// Export these for backward compatibility if needed
 // Legacy getCategories removed to prefer fetchCategories API
 
 // Menu Management APIs
-=======
-
-export interface Category {
-  id: string;
-  name: string;
-  color?: string;
-}
-
-// In-memory category storage (persists for session)
-let categoriesData: Category[] = [
-  { id: 'pizza', name: 'Pizza', color: '#ef4444' },
-  { id: 'burgers', name: 'Burgers', color: '#f97316' },
-  { id: 'sandwiches', name: 'Sandwiches', color: '#f59e0b' },
-  { id: 'snacks', name: 'Snacks', color: '#84cc16' },
-  { id: 'street-food', name: 'Street Food', color: '#10b981' },
-  { id: 'hot-meals', name: 'Hot Meals', color: '#06b6d4' },
-  { id: 'indian-meals-thali', name: 'Indian Meals (Thali)', color: '#3b82f6' },
-  { id: 'south-indian', name: 'South Indian', color: '#6366f1' },
-  { id: 'chinese', name: 'Chinese', color: '#8b5cf6' },
-  { id: 'rice-biryani', name: 'Rice & Biryani', color: '#d946ef' },
-  { id: 'pasta-noodles', name: 'Pasta & Noodles', color: '#f43f5e' },
-  { id: 'wraps-rolls', name: 'Wraps & Rolls', color: '#ec4899' },
-  { id: 'breakfast', name: 'Breakfast', color: '#fbbf24' },
-  { id: 'evening-snacks', name: 'Evening Snacks', color: '#a3e635' },
-  { id: 'beverages', name: 'Beverages', color: '#22d3ee' },
-  { id: 'tea-coffee', name: 'Tea & Coffee', color: '#a855f7' },
-  { id: 'milkshakes-juices', name: 'Milkshakes & Juices', color: '#ec4899' },
-  { id: 'desserts', name: 'Desserts', color: '#f472b6' },
-  { id: 'combos-meal-deals', name: 'Combos / Meal Deals', color: '#fb923c' },
-];
-
-export const getCategories = (): Category[] => [...categoriesData];
-
-// Management APIs
->>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
 
 export const addMenuItem = async (canteenId: number, item: Partial<MenuItem>): Promise<MenuItem | null> => {
   try {
@@ -346,52 +275,41 @@ export const toggleItemAvailability = async (itemId: number, isAvailable: boolea
   }
 };
 
-<<<<<<< HEAD
+// Category Management
 export interface Category {
   id: number;
   name: string;
   canteenId?: number;
 }
 
-
 export const fetchCategories = async (canteenId: number): Promise<Category[]> => {
-    try {
-        const response = await api.get(`/categories/canteen/${canteenId}`);
-        return response.data;
-    } catch (error) {
-        console.error('Failed to fetch categories', error);
-        return [];
-    }
-};
-
-export const createCategory = async (canteenId: number, name: string): Promise<Category | null> => {
-    try {
-        const response = await api.post(`/categories/canteen/${canteenId}`, { name });
-        return response.data;
-    } catch (error) {
-        console.error('Failed to create category', error);
-        return null;
-    }
-=======
-export const saveCategory = (cat: Category) => {
-  if (!categoriesData.find(c => c.id === cat.id)) {
-    categoriesData.push(cat);
+  try {
+    const response = await api.get(`/categories/canteen/${canteenId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch categories', error);
+    return [];
   }
 };
 
-export const deleteCategory = (id: string) => {
-  categoriesData = categoriesData.filter(c => c.id !== id);
->>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
+export const createCategory = async (canteenId: number, name: string): Promise<Category | null> => {
+  try {
+    const response = await api.post(`/categories/canteen/${canteenId}`, { name });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create category', error);
+    return null;
+  }
 };
 
 export const deleteCategory = async (id: number): Promise<boolean> => {
-    try {
-        await api.delete(`/categories/${id}`);
-        return true;
-    } catch (error) {
-        console.error('Failed to delete category', error);
-        return false;
-    }
+  try {
+    await api.delete(`/categories/${id}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to delete category', error);
+    return false;
+  }
 };
 
 // Legacy Aliases
@@ -400,38 +318,11 @@ export const saveCategory = createCategory;
 
 // Order Management
 
-<<<<<<< HEAD
 export const updateOrderStatus = async (orderId: number, status: string, rejectionReason?: string): Promise<Order | null> => {
-    try {
-        const payload: any = { status: status.toUpperCase() };
-        if (rejectionReason) payload.rejectionReason = rejectionReason;
-        const response = await api.put(`/orders/${orderId}/status`, payload);
-        return response.data.order;
-    } catch (error) {
-        console.error('Failed to update order status', error);
-        return null;
-    }
-};
-
-export const getOrderStats = (orders: Order[]) => {
-    // Determine active vs completed based on status (using uppercase backend status)
-    const activeOrders = orders.filter(o => ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.status));
-    
-    // Calculate stats
-    const activeCount = activeOrders.length;
-    
-    // Average time (mock or calc from completedAt - createdAt)
-    // Simple mock calculation logic for now if data insufficient
-    const avgTime = 12; 
-    
-    // Today's revenue (use totalAmount from backend, fallback to total)
-    const today = new Date().toDateString();
-    const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'CANCELLED');
-    const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
-=======
-export const updateOrderStatus = async (orderId: number, status: string): Promise<Order | null> => {
   try {
-    const response = await api.put(`/orders/${orderId}/status`, { status: status.toUpperCase() });
+    const payload: any = { status: status.toUpperCase() };
+    if (rejectionReason) payload.rejectionReason = rejectionReason;
+    const response = await api.put(`/orders/${orderId}/status`, payload);
     return response.data.order;
   } catch (error) {
     console.error('Failed to update order status', error);
@@ -440,21 +331,14 @@ export const updateOrderStatus = async (orderId: number, status: string): Promis
 };
 
 export const getOrderStats = (orders: Order[]) => {
-  // Determine active vs completed based on status
-  const activeOrders = orders.filter(o => ['new', 'preparing', 'ready'].includes(o.status.toLowerCase()));
->>>>>>> e0f05a3391a3ba932f6d8ad95e89983709a6dde9
+  const activeOrders = orders.filter(o => ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.status));
 
-  // Calculate stats
   const activeCount = activeOrders.length;
-
-  // Average time (mock or calc from completedAt - createdAt)
-  // Simple mock calculation logic for now if data insufficient
   const avgTime = 12;
 
-  // Today's revenue
   const today = new Date().toDateString();
-  const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
-  const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
+  const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'CANCELLED');
+  const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
 
   return {
     activeCount,
@@ -493,7 +377,7 @@ export interface Coupon {
 
 export const getCoupons = async (): Promise<Coupon[]> => {
     try {
-        const response = await api.get('/api/vendor/coupons');
+        const response = await api.get('/vendor/coupons');
         return response.data;
     } catch (error) {
         console.error('Failed to fetch coupons', error);
@@ -503,7 +387,7 @@ export const getCoupons = async (): Promise<Coupon[]> => {
 
 export const createCoupon = async (coupon: Partial<Coupon>): Promise<Coupon | null> => {
     try {
-        const response = await api.post('/api/vendor/coupons', coupon);
+        const response = await api.post('/vendor/coupons', coupon);
         return response.data;
     } catch (error) {
         console.error('Failed to create coupon', error);
@@ -513,7 +397,7 @@ export const createCoupon = async (coupon: Partial<Coupon>): Promise<Coupon | nu
 
 export const deleteCoupon = async (id: string | number): Promise<boolean> => {
     try {
-        await api.delete(`/api/vendor/coupons/${id}`);
+        await api.delete(`/vendor/coupons/${id}`);
         return true;
     } catch (error) {
         console.error('Failed to delete coupon', error);
@@ -523,7 +407,7 @@ export const deleteCoupon = async (id: string | number): Promise<boolean> => {
 
 export const toggleCoupon = async (id: string | number): Promise<Coupon | null> => {
     try {
-        const response = await api.put(`/api/vendor/coupons/${id}/toggle`);
+        const response = await api.put(`/vendor/coupons/${id}/toggle`);
         return response.data;
     } catch (error) {
         console.error('Failed to toggle coupon', error);
