@@ -1,0 +1,55 @@
+# =============================================================================
+# CharusatNeeds — Production Deployment (Stub)
+# =============================================================================
+# Triggered when code is pushed/merged into 'main'.
+# Uses GitHub Environments with manual approval gate.
+# Replace placeholder steps with actual production deployment commands.
+# =============================================================================
+
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    name: Deploy to Production Environment
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      # Uncomment the URL below once you have a production URL:
+      # url: https://your-production-url.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------------------------
+      # TODO: Replace this placeholder with your actual deployment commands.
+      # For production, consider:
+      #   - Building optimized artifacts
+      #   - Running database migrations
+      #   - Blue-green or rolling deployment
+      #   - Health check after deployment
+      #   - Rollback strategy
+      # -------------------------------------------------------------------
+      - name: Deploy (placeholder)
+        run: |
+          echo "========================================="
+          echo "  PRODUCTION DEPLOYMENT PLACEHOLDER"
+          echo "========================================="
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          echo "Replace this step with actual deployment"
+          echo "commands for your production environment."
+          echo "========================================="
+
+      - name: Post-deployment verification (placeholder)
+        run: |
+          echo "Run smoke tests or health checks here."
