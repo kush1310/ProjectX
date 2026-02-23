@@ -1,0 +1,85 @@
+# =============================================================================
+# CharusatNeeds — Continuous Integration Pipeline
+# =============================================================================
+# Runs on every Pull Request targeting 'develop' or 'main'.
+# Validates both Backend (Java/Maven) and Frontend (React/Vite) in parallel.
+# =============================================================================
+
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Backend — Java 17 / Maven
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Build & run tests
+        run: mvn clean verify -B -q
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: Backend/target/surefire-reports/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Node 18 / Vite / TypeScript
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend Build & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true # TODO: remove once existing lint issues are fixed
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
