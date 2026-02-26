@@ -14,7 +14,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import CharusatNeedsLogo from '@/components/Logo'
 import LightweightBorder from '@/components/LightweightBorder'
 import { initiateGoogleLogin } from '@/utils/googleAuth'
-import { authenticateUser, createSession, isAuthenticated } from '@/utils/authStore'
+import { authenticateUser, createSession } from '@/utils/authStore'
 import api from '@/utils/api'
 import { toast } from '@/utils/toast'
 

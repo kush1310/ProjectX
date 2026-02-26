@@ -13,6 +13,9 @@ import java.util.List;
 public class VendorService {
 
     private final MenuItemRepository menuItemRepository;
+    private final MenuItemVariantRepository menuItemVariantRepository;
+    private final AddonGroupRepository addonGroupRepository;
+    private final AddonOptionRepository addonOptionRepository;
     private final CouponRepository couponRepository;
     private final CanteenRepository canteenRepository;
 
@@ -20,29 +23,35 @@ public class VendorService {
 
     @Transactional
     public MenuItem addMenuItemWithVariants(Long canteenId, MenuItem menuItem, List<MenuItemVariant> variants, List<AddonGroup> addonGroups) {
-        Canteen canteen = canteenRepository.findById(canteenId)
+        canteenRepository.findById(canteenId)
                 .orElseThrow(() -> new RuntimeException("Canteen not found"));
         
-        menuItem.setCanteen(canteen);
+        menuItem.setCanteenId(canteenId);
+        MenuItem savedItem = menuItemRepository.save(menuItem);
         
-        // Link variants
+        // Link and save variants
         if (variants != null) {
-            variants.forEach(v -> v.setMenuItem(menuItem));
-            menuItem.setVariants(variants);
+            for (MenuItemVariant v : variants) {
+                v.setMenuItemId(savedItem.getId());
+                menuItemVariantRepository.save(v);
+            }
         }
         
-        // Link addons
+        // Link and save addons
         if (addonGroups != null) {
-            addonGroups.forEach(group -> {
-                group.setMenuItem(menuItem);
+            for (AddonGroup group : addonGroups) {
+                group.setMenuItemId(savedItem.getId());
+                AddonGroup savedGroup = addonGroupRepository.save(group);
                 if (group.getOptions() != null) {
-                    group.getOptions().forEach(addon -> addon.setAddonGroup(group));
+                    for (AddonOption option : group.getOptions()) {
+                        option.setAddonGroupId(savedGroup.getId());
+                        addonOptionRepository.save(option);
+                    }
                 }
-            });
-            menuItem.setAddonGroups(addonGroups);
+            }
         }
         
-        return menuItemRepository.save(menuItem);
+        return savedItem;
     }
 
     @Transactional
@@ -68,9 +77,9 @@ public class VendorService {
     @Transactional
     public Coupon createCoupon(Long canteenId, Coupon coupon) {
         if (canteenId != null) {
-            Canteen canteen = canteenRepository.findById(canteenId)
+            canteenRepository.findById(canteenId)
                     .orElseThrow(() -> new RuntimeException("Canteen not found"));
-            coupon.setCanteen(canteen);
+            coupon.setCanteenId(canteenId);
         }
         return couponRepository.save(coupon);
     }

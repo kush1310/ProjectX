@@ -6,7 +6,7 @@ import com.charusat.canteen.repository.PasswordResetTokenRepository;
 import com.charusat.canteen.repository.UserRepository;
 import com.charusat.canteen.service.*;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -110,10 +110,10 @@ public class PasswordResetController {
         rateLimit.increment();
         
         // Delete any existing tokens for this user (invalidate old links)
-        tokenRepository.deleteByUser(user);
+        tokenRepository.deleteByUserId(user.getId());
         
         // Create new secure token
-        PasswordResetToken resetToken = PasswordResetToken.createForUser(user);
+        PasswordResetToken resetToken = PasswordResetToken.createForUser(user.getId());
         tokenRepository.save(resetToken);
         
         // Log security event
@@ -157,7 +157,9 @@ public class PasswordResetController {
         }
         
         // Don't reveal full email - mask it
-        String maskedEmail = maskEmail(resetToken.getUser().getEmail());
+        User tokenUser = userRepository.findById(resetToken.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String maskedEmail = maskEmail(tokenUser.getEmail());
         
         return ResponseEntity.ok(Map.of(
                 "valid", true,
@@ -199,11 +201,13 @@ public class PasswordResetController {
         PasswordResetToken resetToken = tokenOpt.get();
         
         if (!resetToken.isValid()) {
-            log.warn("Expired/used reset token attempted for: {} from IP: {}", resetToken.getUser().getEmail(), ipAddress);
+            User expiredUser = userRepository.findById(resetToken.getUserId()).orElse(null);
+            log.warn("Expired/used reset token attempted for: {} from IP: {}", expiredUser != null ? expiredUser.getEmail() : "unknown", ipAddress);
             return unauthorized("This reset link has expired or already been used. Please request a new one.");
         }
         
-        User user = resetToken.getUser();
+        User user = userRepository.findById(resetToken.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Validate password strength
         var passwordValidation = passwordPolicyService.validatePassword(request.password(), user.getEmail());

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CharusatNeeds — Software Requirements Specification</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; color: #1a1a2e; line-height: 1.7; background: #fff; }
+@page { size: A4; margin: 20mm 18mm; }
+@media print { .no-print { display: none !important; } .page-break { page-break-before: always; } body { font-size: 11pt; } }
+.cover { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); color: #fff; text-align: center; padding: 60px 40px; }
+.cover h1 { font-size: 42px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.cover .subtitle { font-size: 20px; font-weight: 300; opacity: 0.85; margin-bottom: 40px; }
+.cover .meta { font-size: 14px; opacity: 0.7; margin: 4px 0; }
+.cover .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 40px; text-align: left; margin-top: 30px; background: rgba(255,255,255,0.08); padding: 24px 32px; border-radius: 12px; }
+.cover .team-grid .member { font-size: 13px; } .cover .team-grid .role { opacity: 0.6; font-size: 11px; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 32px; }
+h2 { font-size: 24px; font-weight: 700; color: #302b63; border-bottom: 3px solid #302b63; padding-bottom: 8px; margin: 40px 0 20px; }
+h3 { font-size: 18px; font-weight: 600; color: #1a1a2e; margin: 28px 0 12px; }
+h4 { font-size: 15px; font-weight: 600; color: #555; margin: 20px 0 8px; }
+p, li { font-size: 13.5px; } ul, ol { padding-left: 24px; margin: 8px 0; }
+li { margin: 4px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+th { background: #302b63; color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; }
+td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; }
+tr:nth-child(even) td { background: #f8f9fc; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-done { background: #d1fae5; color: #065f46; } .badge-planned { background: #fef3c7; color: #92400e; }
+.toc a { text-decoration: none; color: #302b63; display: block; padding: 4px 0; font-size: 14px; }
+.toc a:hover { color: #6366f1; }
+.print-btn { position: fixed; bottom: 30px; right: 30px; padding: 14px 28px; background: #302b63; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 999; }
+.print-btn:hover { background: #6366f1; }
+.gantt { width: 100%; margin: 16px 0; } .gantt td, .gantt th { font-size: 12px; padding: 6px 8px; }
+.bar { height: 18px; border-radius: 4px; display: inline-block; }
+.bar-p { background: #818cf8; } .bar-e { background: #34d399; } .bar-t { background: #fbbf24; } .bar-d { background: #f87171; }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+<p class="meta">CHAROTAR UNIVERSITY OF SCIENCE AND TECHNOLOGY (CHARUSAT)</p>
+<p class="meta">Faculty of Computer Science & Engineering</p>
+<p class="meta" style="margin-bottom:30px">Subject: Software Group Project (SGP) — B.Tech CSE</p>
+<h1>CharusatNeeds</h1>
+<p class="subtitle">Campus Food Aggregator Platform</p>
+<p class="meta" style="font-size:16px; opacity:0.9; margin-bottom:6px">Software Requirements Specification (SRS)</p>
+<p class="meta">Document Version: 1.0 &nbsp;|&nbsp; Date: February 2026</p>
+<p class="meta">Standard: IEEE 830-1998 / ISO/IEC/IEEE 29148:2018</p>
+<div class="team-grid">
+<div style="grid-column:1/-1;font-weight:600;font-size:14px;margin-bottom:4px;opacity:0.9">Project Team</div>
+<div class="member"><strong>Kush Shah</strong><div class="role">Team Lead + Full Stack Developer + Security Tester</div></div><div class="member"><strong>Krina Parikh</strong><div class="role">Frontend Developer</div></div><div class="member"><strong>Ishan Shastri</strong><div class="role">Full Stack Developer</div></div><div class="member"><strong>Dhairy Tanna</strong><div class="role">Backend Developer + Security Architecture</div></div><div class="member"><strong>Shrey Raval</strong><div class="role">System/Security Tester + QA</div></div>
+</div>
+</div>
+
+<div class="container">
+
+<!-- TABLE OF CONTENTS -->
+<div class="page-break"></div>
+<div id="toc"><h2>Table of Contents</h2><div class="toc">
+<a href="#s1">1. Introduction</a>
+<a href="#s1.1" style="padding-left:20px">1.1 Purpose</a>
+<a href="#s1.2" style="padding-left:20px">1.2 Scope</a>
+<a href="#s1.3" style="padding-left:20px">1.3 Definitions & Acronyms</a>
+<a href="#s1.4" style="padding-left:20px">1.4 References</a>
+<a href="#s1.5" style="padding-left:20px">1.5 Overview</a>
+<a href="#s2">2. Overall Description</a>
+<a href="#s2.1" style="padding-left:20px">2.1 Product Perspective</a>
+<a href="#s2.2" style="padding-left:20px">2.2 Product Functions</a>
+<a href="#s2.3" style="padding-left:20px">2.3 User Classes & Characteristics</a>
+<a href="#s2.4" style="padding-left:20px">2.4 Operating Environment</a>
+<a href="#s2.5" style="padding-left:20px">2.5 Design & Implementation Constraints</a>
+<a href="#s2.6" style="padding-left:20px">2.6 Assumptions & Dependencies</a>
+<a href="#s3">3. System Architecture</a>
+<a href="#s4">4. Specific Requirements</a>
+<a href="#s4.1" style="padding-left:20px">4.1 Functional Requirements</a>
+<a href="#s4.2" style="padding-left:20px">4.2 Non-Functional Requirements</a>
+<a href="#s4.3" style="padding-left:20px">4.3 API Specification</a>
+<a href="#s4.4" style="padding-left:20px">4.4 Database Schema</a>
+<a href="#s5">5. Team & Work Distribution</a>
+<a href="#s6">6. Project Planning & Phases</a>
+<a href="#s7">7. Appendices</a>
+</div></div>
+
+<!-- 1. INTRODUCTION -->
+<div class="page-break"></div>
+<div id="s1"><h2>1. Introduction</h2>
+
+<h3 id="s1.1">1.1 Purpose</h3>
+<p>This Software Requirements Specification (SRS) document provides a comprehensive description of the <strong>CharusatNeeds — Campus Food Aggregator Platform</strong>. It details the functional and non-functional requirements for the system and is intended for the development team, project evaluators, and stakeholders. The document follows the IEEE 830-1998 standard for software requirements specifications.</p>
+
+<h3 id="s1.2">1.2 Scope</h3>
+<p>CharusatNeeds is a full-stack web application designed to digitize the campus food ordering experience at CHARUSAT. The system enables students and faculty to browse canteen menus, place orders, track order status in real-time via WebSocket, and manage their profiles. Canteen vendors can manage menus, process orders, offer coupons, and view analytics. The platform is designed for multi-device access across mobile, tablet, desktop, kiosk, and TV displays.</p>
+<p><strong>Key Objectives:</strong></p>
+<ul>
+<li>Eliminate physical queues at campus canteens</li>
+<li>Provide real-time order tracking and notifications</li>
+<li>Enable vendors to manage operations digitally</li>
+<li>Ensure enterprise-grade security (OWASP, NIST 800-63B)</li>
+<li>Support responsive deployment across all screen form factors</li>
+</ul>
+
+<h3 id="s1.3">1.3 Definitions, Acronyms & Abbreviations</h3>
+<table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody><tr><td>SRS</td><td>Software Requirements Specification</td></tr><tr><td>JWT</td><td>JSON Web Token — Stateless authentication token</td></tr><tr><td>STOMP</td><td>Simple Text Oriented Messaging Protocol — WebSocket sub-protocol</td></tr><tr><td>CAPTCHA</td><td>Completely Automated Public Turing test to tell Computers and Humans Apart</td></tr><tr><td>FSSAI</td><td>Food Safety and Standards Authority of India</td></tr><tr><td>CRUD</td><td>Create, Read, Update, Delete operations</td></tr><tr><td>OWASP</td><td>Open Web Application Security Project</td></tr><tr><td>MFA</td><td>Multi-Factor Authentication</td></tr><tr><td>RBAC</td><td>Role-Based Access Control</td></tr><tr><td>REST</td><td>Representational State Transfer</td></tr><tr><td>WebSocket</td><td>Full-duplex communication protocol over TCP</td></tr><tr><td>BOGO</td><td>Buy One Get One — Coupon type</td></tr></tbody></table>
+
+<h3 id="s1.4">1.4 References</h3>
+<ul>
+<li>IEEE 830-1998: Recommended Practice for Software Requirements Specifications</li>
+<li>ISO/IEC/IEEE 29148:2018: Systems and Software Engineering — Life Cycle Processes — Requirements Engineering</li>
+<li>OWASP Application Security Verification Standard (ASVS) v4.0</li>
+<li>NIST Special Publication 800-63B: Digital Identity Guidelines — Authentication</li>
+<li>Spring Boot 3.x Official Documentation</li>
+<li>React 18 Official Documentation</li>
+</ul>
+
+<h3 id="s1.5">1.5 Document Overview</h3>
+<p>Section 2 presents the overall product context and user classes. Section 3 covers the system architecture. Section 4 defines detailed functional and non-functional requirements, API endpoints, and database schema. Section 5 details the team composition and work distribution. Section 6 provides the project planning phases with a Gantt chart. Section 7 contains appendices.</p>
+</div>
+
+<!-- 2. OVERALL DESCRIPTION -->
+<div class="page-break"></div>
+<div id="s2"><h2>2. Overall Description</h2>
+
+<h3 id="s2.1">2.1 Product Perspective</h3>
+<p>CharusatNeeds is a standalone, self-contained web application. It does not replace any existing system but introduces a new digital food ordering workflow on the CHARUSAT campus. The system is composed of three primary subsystems:</p>
+<ul>
+<li><strong>Frontend SPA</strong> — React + TypeScript + Tailwind CSS, served via Vite</li>
+<li><strong>Backend API Server</strong> — Spring Boot 3.x MVC + JDBC (Java 21)</li>
+<li><strong>Database</strong> — PostgreSQL 15+</li>
+</ul>
+<p>Real-time communication is achieved via STOMP-over-WebSocket (native + SockJS fallback). Email services are handled through SMTP (Brevo/SendinBlue). Authentication supports both local credentials and Google OAuth 2.0.</p>
+
+<h3 id="s2.2">2.2 Product Functions (High-Level)</h3>
+<table><thead><tr><th>Module</th><th>Functions</th><th>Status</th></tr></thead><tbody><tr><td>Authentication</td><td>User registration, login (local + Google OAuth), JWT token management, refresh tokens, email verification, password reset, CAPTCHA, account lockout, MFA support</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>User Management</td><td>Profile CRUD, profile image upload/storage, address management (student/teacher), name validation with email ID retention</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Canteen Management</td><td>Canteen CRUD, open/close toggle, rush hour mode, FSSAI/GST compliance fields, bank details, KYC document upload</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Menu Management</td><td>Menu item CRUD with variants, add-on groups, dietary info, categories, availability scheduling, display ordering, item toggle</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Shopping Cart</td><td>Server-side cart, add/update/remove items, auto-total recalculation, variant and add-on selection, special instructions</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Order System</td><td>Order placement, status lifecycle (Pending→Confirmed→Preparing→Ready→Completed/Cancelled), payment tracking, rejection reasons</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Real-time Notifications</td><td>WebSocket (STOMP) for live order updates, canteen-specific topics, user-specific topics, auto-reconnect</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Coupon System</td><td>Percentage/flat discounts, BOGO offers, scope (global/category/item), usage limits, validity periods, activation toggle</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Analytics Dashboard</td><td>Revenue stats, order count, top-selling items, mealtime distribution, sales trends (daily/weekly/monthly), review insights</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Review System</td><td>Multi-criteria ratings (food, packing, delivery), comments, anonymous reviews, vendor replies</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Responsive UI</td><td>Mobile-first design with xs/sm/md/lg/xl/kiosk/tv breakpoints, skeleton loading, Framer Motion animations</td><td><span class="badge badge-done">Implemented</span></td></tr><tr><td>Payment Gateway</td><td>UPI/card/wallet integration for online payments</td><td><span class="badge badge-planned">Planned</span></td></tr><tr><td>Push Notifications</td><td>Mobile push notifications for order status changes</td><td><span class="badge badge-planned">Planned</span></td></tr><tr><td>Admin Panel</td><td>Super-admin dashboard for platform-wide management, vendor approval, analytics aggregation</td><td><span class="badge badge-planned">Planned</span></td></tr><tr><td>Delivery Tracking</td><td>Real-time delivery tracking with map integration</td><td><span class="badge badge-planned">Planned</span></td></tr></tbody></table>
+
+<h3 id="s2.3">2.3 User Classes and Characteristics</h3>
+<table><thead><tr><th>User Class</th><th>Description</th><th>Access Level</th></tr></thead><tbody><tr><td>Student (USER)</td><td>CHARUSAT students who browse canteen menus, place orders, track status, and write reviews</td><td>Browse menus, manage cart, place orders, view order history, manage profile</td></tr><tr><td>Faculty (USER)</td><td>CHARUSAT faculty/staff with the same ordering capabilities as students, with additional address fields</td><td>Same as Student + teacher-specific address fields</td></tr><tr><td>Canteen Owner (CANTEEN_OWNER)</td><td>Operates a registered canteen on campus. Manages menu, processes orders, runs promotions</td><td>Menu CRUD, order management, coupon management, analytics dashboard, profile settings</td></tr><tr><td>Administrator (ADMIN)</td><td>Platform administrator with full system access</td><td>All operations + user management + platform analytics + vendor approval</td></tr></tbody></table>
+
+<h3 id="s2.4">2.4 Operating Environment</h3>
+<table><thead><tr><th>Component</th><th>Technology</th><th>Version</th></tr></thead><tbody><tr><td>Frontend Runtime</td><td>Node.js</td><td>20.x LTS</td></tr><tr><td>Frontend Framework</td><td>React + TypeScript</td><td>18.x + 5.x</td></tr><tr><td>CSS Framework</td><td>Tailwind CSS</td><td>3.x</td></tr><tr><td>Build Tool</td><td>Vite</td><td>6.x</td></tr><tr><td>Backend Runtime</td><td>Java (JDK)</td><td>21</td></tr><tr><td>Backend Framework</td><td>Spring Boot</td><td>3.x</td></tr><tr><td>Database</td><td>PostgreSQL</td><td>15+</td></tr><tr><td>WebSocket</td><td>STOMP over Native WS + SockJS</td><td>—</td></tr><tr><td>Email Service</td><td>SMTP (Brevo/SendinBlue)</td><td>—</td></tr><tr><td>Browser Support</td><td>Chrome 90+, Firefox 88+, Safari 14+, Edge 90+</td><td>—</td></tr></tbody></table>
+
+<h3 id="s2.5">2.5 Design and Implementation Constraints</h3>
+<ul>
+<li>The system must use Spring Boot's JDBC template (not JPA/Hibernate) for database access</li>
+<li>Authentication must be stateless using JWT tokens</li>
+<li>All API endpoints must follow RESTful conventions</li>
+<li>Frontend must be a single-page application (SPA) with client-side routing</li>
+<li>The application must be responsive across 7 breakpoints (xs through tv)</li>
+<li>Security must comply with OWASP ASVS and NIST 800-63B</li>
+<li>Passwords must enforce policy: minimum length, complexity, and history checks</li>
+</ul>
+
+<h3 id="s2.6">2.6 Assumptions and Dependencies</h3>
+<ul>
+<li>Users have access to a modern web browser with JavaScript enabled</li>
+<li>Campus network provides stable internet connectivity</li>
+<li>PostgreSQL database server is available and configured</li>
+<li>SMTP service (Brevo) is accessible for email operations</li>
+<li>Google OAuth client credentials are configured for social login</li>
+<li>The application runs on localhost during development (frontend: 5173, backend: 8080)</li>
+</ul>
+</div>
+
+<!-- 3. SYSTEM ARCHITECTURE -->
+<div class="page-break"></div>
+<div id="s3"><h2>3. System Architecture</h2>
+
+<h3>3.1 High-Level Architecture</h3>
+<p>The system follows a <strong>3-tier client-server architecture</strong> with a clear separation of concerns:</p>
+
+<table><thead><tr><th>Layer</th><th>Technology</th><th>Responsibility</th></tr></thead><tbody><tr><td>Presentation Layer</td><td>React 18 + TypeScript + Tailwind CSS</td><td>UI rendering, state management, client-side routing, responsive layouts</td></tr><tr><td>Application Layer</td><td>Spring Boot 3.x (Java 21)</td><td>Business logic, REST API, authentication, WebSocket messaging, email services</td></tr><tr><td>Data Layer</td><td>PostgreSQL 15+ via JDBC</td><td>Data persistence, relational storage, indexing, constraints</td></tr></tbody></table>
+
+<h3>3.2 Component Diagram</h3>
+<p>The application consists of the following major components:</p>
+
+<h4>Frontend Components (11 Pages + 25 Components)</h4>
+<table><thead><tr><th>Page</th><th>Route</th><th>Description</th></tr></thead><tbody><tr><td>Login</td><td>/login</td><td>User authentication with email/password and Google OAuth</td></tr><tr><td>Signup</td><td>/signup</td><td>New user registration with email verification</td></tr><tr><td>Forgot Password</td><td>/forgot-password</td><td>Password reset request form</td></tr><tr><td>Reset Password</td><td>/reset-password</td><td>Token-validated password reset form</td></tr><tr><td>Student Dashboard</td><td>/customer/dashboard</td><td>Canteen browsing, search, filters, explore section</td></tr><tr><td>Customer Menu</td><td>/canteen/:id/menu</td><td>Menu browsing, item details, add to cart</td></tr><tr><td>Customer Profile</td><td>/customer/profile</td><td>Profile management, address, image upload</td></tr><tr><td>Cart Page</td><td>/cart</td><td>Shopping cart review and modification</td></tr><tr><td>Checkout</td><td>/checkout</td><td>Order placement and payment</td></tr><tr><td>Vendor Dashboard</td><td>/dashboard</td><td>Order management, live notifications, analytics</td></tr><tr><td>Menu Management</td><td>/canteen/menu</td><td>Menu item CRUD, categories, variants, add-ons</td></tr><tr><td>Order History</td><td>/order-history</td><td>Order history with filtering and real-time status</td></tr><tr><td>Analytics</td><td>/analytics</td><td>Sales data, top items, reviews, mealtime distribution</td></tr><tr><td>Vendor Profile</td><td>/vendor/profile</td><td>Vendor profile and canteen settings</td></tr><tr><td>Vendor Coupons</td><td>/vendor/coupons</td><td>Coupon creation and management</td></tr></tbody></table>
+
+<h4>Backend Components (11 Controllers + 16 Services)</h4>
+<table><thead><tr><th>Controller</th><th>Base Path</th><th>Endpoints</th></tr></thead><tbody><tr><td>AuthController</td><td>/api/auth</td><td>register, login, logout, refresh, google-callback, me, verify-email, resend-verification</td></tr><tr><td>UserController</td><td>/api/users</td><td>profile GET/PUT, address GET/PUT, profile-image upload/GET</td></tr><tr><td>CanteenController</td><td>/api/canteens</td><td>CRUD, open filter, menu CRUD, rush-hour toggle, availability toggle</td></tr><tr><td>OrderController</td><td>/api/orders</td><td>CRUD, my-orders, canteen orders, active/recent orders, status update, cancel, pending count</td></tr><tr><td>CartController</td><td>/api/cart</td><td>get, add, update quantity, remove, clear</td></tr><tr><td>VendorController</td><td>/api/vendor</td><td>add menu item, update item, create/get coupons</td></tr><tr><td>CouponController</td><td>/api/vendor/coupons</td><td>list, create, delete, toggle</td></tr><tr><td>AnalyticsController</td><td>/api/analytics</td><td>dashboard stats, sales data, top items, reviews, mealtime distribution</td></tr><tr><td>PasswordResetController</td><td>/api/auth</td><td>forgot-password, validate-token, reset-password</td></tr><tr><td>CaptchaController</td><td>/api/captcha</td><td>generate, validate</td></tr><tr><td>CategoryController</td><td>/api/categories</td><td>CRUD operations for menu categories</td></tr></tbody></table>
+
+<h3>3.3 Security Architecture</h3>
+<table><thead><tr><th>Security Layer</th><th>Implementation</th></tr></thead><tbody><tr><td>Authentication</td><td>JWT tokens (access + refresh), Google OAuth 2.0, CAPTCHA verification</td></tr><tr><td>Authorization</td><td>Role-Based Access Control (USER, CANTEEN_OWNER, ADMIN)</td></tr><tr><td>Password Policy</td><td>Minimum length, complexity rules, password history (prevent reuse), bcrypt hashing</td></tr><tr><td>Account Protection</td><td>Account lockout after failed attempts, IP-based rate limiting</td></tr><tr><td>Session Management</td><td>Stateless JWT, refresh token rotation, all-device logout</td></tr><tr><td>Input Validation</td><td>Server-side validation (Jakarta Bean Validation), input sanitization</td></tr><tr><td>Security Headers</td><td>X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Content-Security-Policy</td></tr><tr><td>Transport Security</td><td>HTTPS enforcement, CORS whitelisting, secure cookie flags</td></tr><tr><td>Email Security</td><td>Token-based email verification, single-use password reset tokens with expiry</td></tr><tr><td>Audit Logging</td><td>Security event logging with IP tracking, login attempt recording</td></tr></tbody></table>
+</div>
+
+<!-- 4. SPECIFIC REQUIREMENTS -->
+<div class="page-break"></div>
+<div id="s4"><h2>4. Specific Requirements</h2>
+
+<h3 id="s4.1">4.1 Functional Requirements</h3>
+
+<h4>FR-01: User Registration</h4>
+<ul>
+<li>FR-01.1: System shall allow users to register with email, password, full name, and mobile number</li>
+<li>FR-01.2: System shall validate email format and reject duplicates</li>
+<li>FR-01.3: System shall enforce password policy (min length, complexity)</li>
+<li>FR-01.4: System shall send email verification link upon registration</li>
+<li>FR-01.5: System shall support Google OAuth 2.0 registration</li>
+</ul>
+
+<h4>FR-02: User Authentication</h4>
+<ul>
+<li>FR-02.1: System shall authenticate users via email/password with JWT issuance</li>
+<li>FR-02.2: System shall support CAPTCHA verification during login</li>
+<li>FR-02.3: System shall implement account lockout after consecutive failed attempts</li>
+<li>FR-02.4: System shall provide refresh token rotation for session extension</li>
+<li>FR-02.5: System shall support single-device and all-device logout</li>
+<li>FR-02.6: System shall provide secure password reset via email tokens</li>
+</ul>
+
+<h4>FR-03: User Profile Management</h4>
+<ul>
+<li>FR-03.1: Users shall be able to view and update their profile (name, mobile, gender, DOB)</li>
+<li>FR-03.2: System shall enforce name validation (ID from email must be retained)</li>
+<li>FR-03.3: Users shall be able to upload and view profile images (stored in DB)</li>
+<li>FR-03.4: Students shall manage address (hostel, room, building)</li>
+<li>FR-03.5: Teachers shall manage address (department, staff room)</li>
+</ul>
+
+<h4>FR-04: Canteen Browsing</h4>
+<ul>
+<li>FR-04.1: System shall display all registered canteens with status, rating, and location</li>
+<li>FR-04.2: Users shall filter canteens by: nearest, great offers, rating 4.0+</li>
+<li>FR-04.3: Users shall search canteens and menu items by keyword</li>
+<li>FR-04.4: System shall display canteen open/closed status in real-time</li>
+</ul>
+
+<h4>FR-05: Menu Browsing and Ordering</h4>
+<ul>
+<li>FR-05.1: System shall display menu items with name, price, category, availability, dietary info</li>
+<li>FR-05.2: Users shall filter menu by category and search by name/description</li>
+<li>FR-05.3: Users shall add items to cart with variant selection, add-ons, and special instructions</li>
+<li>FR-05.4: System shall maintain server-side cart with auto-total recalculation</li>
+<li>FR-05.5: Users shall place orders with payment method selection</li>
+</ul>
+
+<h4>FR-06: Order Lifecycle Management</h4>
+<ul>
+<li>FR-06.1: Orders shall follow status lifecycle: Pending → Confirmed → Preparing → Ready → Completed</li>
+<li>FR-06.2: Vendors shall update order status with optional rejection reason</li>
+<li>FR-06.3: Users and vendors shall cancel orders (with reason tracking)</li>
+<li>FR-06.4: System shall broadcast order updates via WebSocket in real-time</li>
+<li>FR-06.5: Users shall view complete order history with filtering</li>
+</ul>
+
+<h4>FR-07: Vendor Operations</h4>
+<ul>
+<li>FR-07.1: Vendors shall perform full CRUD on menu items (with variants, add-ons, dietary tags)</li>
+<li>FR-07.2: Vendors shall manage menu categories (create, delete)</li>
+<li>FR-07.3: Vendors shall toggle item availability and canteen open/close status</li>
+<li>FR-07.4: Vendors shall create and manage coupons (percentage, flat, BOGO)</li>
+<li>FR-07.5: Vendors shall view analytics: revenue, order count, top items, mealtime distribution</li>
+<li>FR-07.6: Vendors shall manage canteen compliance (FSSAI, GST) and bank details</li>
+</ul>
+
+<h4>FR-08: Real-Time Notifications</h4>
+<ul>
+<li>FR-08.1: System shall provide WebSocket connection via STOMP protocol</li>
+<li>FR-08.2: New orders shall be broadcast to canteen-specific topics (/topic/canteen/{id}/orders)</li>
+<li>FR-08.3: Order status changes shall be broadcast to user-specific topics (/topic/user/{id}/orders)</li>
+<li>FR-08.4: WebSocket shall auto-reconnect with heartbeat monitoring</li>
+</ul>
+
+<h4>FR-09: Review System</h4>
+<ul>
+<li>FR-09.1: Users shall submit reviews with overall rating, food/packing/delivery sub-ratings</li>
+<li>FR-09.2: Users shall submit anonymous reviews</li>
+<li>FR-09.3: Vendors shall reply to reviews</li>
+</ul>
+
+<h3 id="s4.2">4.2 Non-Functional Requirements</h3>
+<table><thead><tr><th>ID</th><th>Category</th><th>Requirement</th></tr></thead><tbody><tr><td>NFR-01</td><td>Performance</td><td>Page load time shall not exceed 3 seconds on standard broadband</td></tr><tr><td>NFR-02</td><td>Performance</td><td>API response time shall not exceed 500ms for 95th percentile requests</td></tr><tr><td>NFR-03</td><td>Performance</td><td>WebSocket message delivery latency shall not exceed 1 second</td></tr><tr><td>NFR-04</td><td>Scalability</td><td>System shall support 500+ concurrent users</td></tr><tr><td>NFR-05</td><td>Availability</td><td>System shall maintain 99.5% uptime during operational hours (7 AM - 11 PM)</td></tr><tr><td>NFR-06</td><td>Security</td><td>All passwords shall be hashed with bcrypt (cost factor ≥ 10)</td></tr><tr><td>NFR-07</td><td>Security</td><td>JWT access tokens shall expire within 15-30 minutes</td></tr><tr><td>NFR-08</td><td>Security</td><td>System shall resist OWASP Top 10 vulnerabilities</td></tr><tr><td>NFR-09</td><td>Usability</td><td>UI shall be responsive across 7 breakpoints (475px to 1920px+)</td></tr><tr><td>NFR-10</td><td>Usability</td><td>System shall provide skeleton loading for all data-fetching states</td></tr><tr><td>NFR-11</td><td>Usability</td><td>All interactive elements shall have smooth animations (Framer Motion)</td></tr><tr><td>NFR-12</td><td>Maintainability</td><td>Codebase shall follow MVC architecture with clear separation of concerns</td></tr><tr><td>NFR-13</td><td>Portability</td><td>Frontend shall work on Chrome 90+, Firefox 88+, Safari 14+, Edge 90+</td></tr><tr><td>NFR-14</td><td>Reliability</td><td>Failed WebSocket connections shall auto-reconnect with exponential backoff</td></tr></tbody></table>
+
+<h3 id="s4.3">4.3 REST API Specification</h3>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td>/api/auth/register</td><td>Register new user</td><td>Public</td></tr><tr><td>POST</td><td>/api/auth/login</td><td>Authenticate user</td><td>Public</td></tr><tr><td>POST</td><td>/api/auth/refresh</td><td>Refresh access token</td><td>Public</td></tr><tr><td>POST</td><td>/api/auth/logout</td><td>Revoke refresh token</td><td>Authenticated</td></tr><tr><td>POST</td><td>/api/auth/google/callback</td><td>Google OAuth callback</td><td>Public</td></tr><tr><td>GET</td><td>/api/auth/me</td><td>Get current user</td><td>Authenticated</td></tr><tr><td>GET</td><td>/api/auth/verify-email</td><td>Verify email token</td><td>Public</td></tr><tr><td>POST</td><td>/api/auth/forgot-password</td><td>Request password reset</td><td>Public</td></tr><tr><td>POST</td><td>/api/auth/reset-password</td><td>Reset password with token</td><td>Public</td></tr><tr><td>GET</td><td>/api/users/profile</td><td>Get user profile</td><td>Authenticated</td></tr><tr><td>PUT</td><td>/api/users/profile</td><td>Update user profile</td><td>Authenticated</td></tr><tr><td>POST</td><td>/api/users/profile/image</td><td>Upload profile image</td><td>Authenticated</td></tr><tr><td>GET</td><td>/api/users/profile/image/:id</td><td>Get profile image</td><td>Public</td></tr><tr><td>PUT</td><td>/api/users/address</td><td>Update user address</td><td>Authenticated</td></tr><tr><td>GET</td><td>/api/canteens</td><td>List all canteens</td><td>Public</td></tr><tr><td>GET</td><td>/api/canteens/open</td><td>List open canteens</td><td>Public</td></tr><tr><td>GET</td><td>/api/canteens/:id</td><td>Get canteen details</td><td>Public</td></tr><tr><td>POST</td><td>/api/canteens</td><td>Create canteen</td><td>CANTEEN_OWNER</td></tr><tr><td>PUT</td><td>/api/canteens/:id</td><td>Update canteen</td><td>CANTEEN_OWNER</td></tr><tr><td>GET</td><td>/api/canteens/:id/menu</td><td>Get canteen menu</td><td>Public</td></tr><tr><td>POST</td><td>/api/canteens/:id/menu</td><td>Add menu item</td><td>CANTEEN_OWNER</td></tr><tr><td>PUT</td><td>/api/canteens/menu/:id</td><td>Update menu item</td><td>CANTEEN_OWNER</td></tr><tr><td>DELETE</td><td>/api/canteens/menu/:id</td><td>Delete menu item</td><td>CANTEEN_OWNER</td></tr><tr><td>GET</td><td>/api/cart</td><td>Get user cart</td><td>Authenticated</td></tr><tr><td>POST</td><td>/api/cart/add</td><td>Add item to cart</td><td>Authenticated</td></tr><tr><td>PUT</td><td>/api/cart/update/:id</td><td>Update cart item quantity</td><td>Authenticated</td></tr><tr><td>DELETE</td><td>/api/cart/remove/:id</td><td>Remove from cart</td><td>Authenticated</td></tr><tr><td>DELETE</td><td>/api/cart/clear</td><td>Clear entire cart</td><td>Authenticated</td></tr><tr><td>POST</td><td>/api/orders</td><td>Create order</td><td>Authenticated</td></tr><tr><td>GET</td><td>/api/orders/my-orders</td><td>Get user's orders</td><td>Authenticated</td></tr><tr><td>PUT</td><td>/api/orders/:id/status</td><td>Update order status</td><td>CANTEEN_OWNER</td></tr><tr><td>POST</td><td>/api/orders/:id/cancel</td><td>Cancel order</td><td>Authenticated</td></tr><tr><td>GET</td><td>/api/analytics/dashboard</td><td>Dashboard statistics</td><td>CANTEEN_OWNER</td></tr><tr><td>GET</td><td>/api/analytics/sales</td><td>Sales trend data</td><td>CANTEEN_OWNER</td></tr><tr><td>GET</td><td>/api/analytics/top-items</td><td>Top selling items</td><td>CANTEEN_OWNER</td></tr></tbody></table>
+
+<h3 id="s4.4">4.4 Database Schema</h3>
+<table><thead><tr><th>Entity</th><th>Key Fields</th><th>Relationships</th></tr></thead><tbody><tr><td>users</td><td>id, email, password, fullName, mobile, role, authProvider, isActive, lockedUntil, mfaEnabled, profileImageData</td><td>1:N → orders, carts, reviews</td></tr><tr><td>canteens</td><td>id, name, location, description, isOpen, rushHourEnabled, fssaiNumber, gstNo, bankDetails, ownerId</td><td>1:N → menu_items, orders, coupons; N:1 → users</td></tr><tr><td>menu_items</td><td>id, name, description, price, category, isAvailable, isVeg, preparationTime, hasVariants, hasAddons, canteenId</td><td>N:1 → canteens; 1:N → variants, addon_groups, cart_items</td></tr><tr><td>menu_item_variants</td><td>id, name, price, menuItemId</td><td>N:1 → menu_items</td></tr><tr><td>addon_groups</td><td>id, name, minSelection, maxSelection, menuItemId</td><td>N:1 → menu_items; 1:N → addon_options</td></tr><tr><td>orders</td><td>id, orderNumber, customerId, canteenId, status, totalAmount, paymentMethod, paymentStatus, specialInstructions</td><td>N:1 → users, canteens; 1:N → order_items</td></tr><tr><td>order_items</td><td>id, orderId, menuItemId, quantity, price, variant, addons</td><td>N:1 → orders, menu_items</td></tr><tr><td>carts</td><td>id, userId, canteenId, totalAmount</td><td>N:1 → users; 1:N → cart_items</td></tr><tr><td>cart_items</td><td>id, cartId, menuItemId, quantity, variant, addons, subtotal</td><td>N:1 → carts, menu_items</td></tr><tr><td>coupons</td><td>id, code, title, discountType, discountValue, scope, type (DISCOUNT/BOGO), canteenId, validFrom, validUntil</td><td>N:1 → canteens</td></tr><tr><td>reviews</td><td>id, orderId, customerId, canteenId, rating, foodRating, packingRating, deliveryRating, comment, vendorReply</td><td>N:1 → orders, users, canteens</td></tr><tr><td>categories</td><td>id, name, canteenId</td><td>N:1 → canteens</td></tr><tr><td>refresh_tokens</td><td>id, token, userId, expiresAt, revoked</td><td>N:1 → users</td></tr><tr><td>password_reset_tokens</td><td>id, token, userId, expiresAt, used</td><td>N:1 → users</td></tr><tr><td>password_history</td><td>id, userId, passwordHash, createdAt</td><td>N:1 → users</td></tr><tr><td>login_attempts</td><td>id, email, ip, success, timestamp</td><td>Audit log</td></tr></tbody></table>
+</div>
+
+<!-- 5. TEAM & WORK DISTRIBUTION -->
+<div class="page-break"></div>
+<div id="s5"><h2>5. Team Composition & Work Distribution</h2>
+
+<h3>5.1 Team Members</h3>
+<table><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Responsibilities</th></tr></thead><tbody><tr><td>1</td><td>Kush Shah</td><td>Team Lead + Full Stack Developer + Security Tester</td><td>Project management, full-stack development, architecture design, security testing, code reviews</td></tr><tr><td>2</td><td>Krina Parikh</td><td>Frontend Developer</td><td>UI/UX implementation, responsive design, React component development, frontend state management</td></tr><tr><td>3</td><td>Ishan Shastri</td><td>Full Stack Developer</td><td>Feature development across frontend and backend, API integration, database design</td></tr><tr><td>4</td><td>Dhairy Tanna</td><td>Backend Developer + Security Architecture</td><td>Backend API development, security architecture, database optimization, authentication system</td></tr><tr><td>5</td><td>Shrey Raval</td><td>System/Security Tester + QA</td><td>Test case design, security testing, quality assurance, performance testing, bug tracking</td></tr></tbody></table>
+
+<h3>5.2 Module-Wise Work Distribution</h3>
+<table><thead><tr><th>Module</th><th>Primary Owner</th><th>Support</th><th>Key Deliverables</th></tr></thead><tbody><tr><td>Authentication & Security</td><td>Dhairy Tanna</td><td>Kush Shah</td><td>JWT auth, Google OAuth, CAPTCHA, account lockout, password reset, security headers</td></tr><tr><td>Frontend Architecture</td><td>Krina Parikh</td><td>Kush Shah</td><td>React app structure, routing, responsive layout, Tailwind config, animations</td></tr><tr><td>Student-Facing Pages</td><td>Krina Parikh</td><td>Ishan Shastri</td><td>Dashboard, menu browsing, cart, checkout, order history, profile</td></tr><tr><td>Vendor Dashboard & Analytics</td><td>Ishan Shastri</td><td>Krina Parikh</td><td>Order management, analytics charts, menu management, coupon UI</td></tr><tr><td>Backend API & Services</td><td>Kush Shah</td><td>Dhairy Tanna</td><td>Controllers, services, repositories, JDBC queries, business logic</td></tr><tr><td>Database Design</td><td>Dhairy Tanna</td><td>Ishan Shastri</td><td>Schema design, migrations, indexes, seed data</td></tr><tr><td>WebSocket & Real-time</td><td>Kush Shah</td><td>Ishan Shastri</td><td>STOMP config, WebSocket service, frontend hook, live notifications</td></tr><tr><td>Coupon & Review System</td><td>Ishan Shastri</td><td>Dhairy Tanna</td><td>Coupon CRUD, discount logic, review submission, vendor replies</td></tr><tr><td>Testing & QA</td><td>Shrey Raval</td><td>All members</td><td>Test case design, manual testing, security testing, bug reporting</td></tr><tr><td>Documentation</td><td>Kush Shah</td><td>Shrey Raval</td><td>SRS, README, API documentation, code comments</td></tr></tbody></table>
+</div>
+
+<!-- 6. PROJECT PLANNING -->
+<div class="page-break"></div>
+<div id="s6"><h2>6. Project Planning & Phases</h2>
+
+<h3>6.1 Development Methodology</h3>
+<p>The project follows an <strong>Agile-Waterfall Hybrid</strong> approach — structured phases with iterative development within each phase. Each phase has defined deliverables and review checkpoints.</p>
+
+<h3>6.2 Phase-Wise Planning</h3>
+
+<table><thead><tr><th>Phase</th><th>Duration</th><th>Activities</th><th>Deliverables</th><th>Team Focus</th></tr></thead><tbody><tr><td>Phase 1: Requirement Analysis & Planning</td><td>Week 1-2</td><td>• Stakeholder interviews and requirement gathering<br>• Feasibility study and technology evaluation<br>• SRS document creation<br>• UI/UX wireframe design<br>• Database schema design</td><td>SRS Document, Wireframes, ER Diagram, Project Plan</td><td>Kush Shah (Lead), Shrey Raval (Requirements), All (Review)</td></tr><tr><td>Phase 2: System Design & Architecture</td><td>Week 3-4</td><td>• High-level system architecture design<br>• API contract definition (REST endpoints)<br>• Database schema finalization<br>• Security architecture planning<br>• Frontend component hierarchy design</td><td>Architecture Document, API Spec, DB Schema, Security Plan</td><td>Dhairy Tanna (Security), Kush Shah (Architecture), Krina Parikh (UI Design)</td></tr><tr><td>Phase 3: Core Backend Development</td><td>Week 5-8</td><td>• Spring Boot project setup and configuration<br>• Database tables creation and JDBC repositories<br>• Authentication system (JWT, OAuth, CAPTCHA)<br>• Core services: User, Canteen, Menu, Category<br>• Security configuration and headers</td><td>Working backend with auth, user, canteen, and menu APIs</td><td>Kush Shah, Dhairy Tanna, Ishan Shastri</td></tr><tr><td>Phase 4: Core Frontend Development</td><td>Week 5-8 (Parallel)</td><td>• React + Vite project setup with TypeScript<br>• Design system: Tailwind config, colors, animations<br>• Authentication pages (Login, Signup, Password Reset)<br>• Student dashboard and canteen browsing<br>• Menu browsing and cart implementation</td><td>Working frontend with auth flow, dashboard, menu, and cart</td><td>Krina Parikh, Ishan Shastri, Kush Shah</td></tr><tr><td>Phase 5: Order & Payment System</td><td>Week 9-11</td><td>• Order controller and service implementation<br>• Checkout flow and order placement<br>• Order management dashboard for vendors<br>• Order history page for users<br>• Payment method integration (COD initially)</td><td>Complete order lifecycle, vendor order management</td><td>Ishan Shastri, Kush Shah, Krina Parikh</td></tr><tr><td>Phase 6: Advanced Features</td><td>Week 12-14</td><td>• WebSocket integration (STOMP over WS)<br>• Real-time order notifications<br>• Coupon system (BOGO, percentage, flat)<br>• Review and rating system<br>• Analytics dashboard with charts<br>• Profile image upload</td><td>Real-time notifications, coupons, reviews, analytics</td><td>Kush Shah (WebSocket), Ishan Shastri (Coupons/Reviews), Krina Parikh (Analytics UI)</td></tr><tr><td>Phase 7: UI Polish & Responsiveness</td><td>Week 15-16</td><td>• Responsive breakpoint strategy (xs to tv)<br>• Skeleton loading for all pages<br>• Framer Motion animations<br>• Accessibility improvements<br>• Cross-browser testing</td><td>Fully responsive UI, polished UX across all devices</td><td>Krina Parikh, Kush Shah, Shrey Raval (Testing)</td></tr><tr><td>Phase 8: Security Hardening & Testing</td><td>Week 17-18</td><td>• OWASP vulnerability assessment<br>• Rate limiting implementation<br>• Input sanitization audit<br>• Password policy enforcement<br>• Security headers verification<br>• Penetration testing<br>• Performance testing</td><td>Security audit report, test results, bug fixes</td><td>Shrey Raval, Dhairy Tanna, Kush Shah</td></tr><tr><td>Phase 9: Integration Testing & Deployment</td><td>Week 19-20</td><td>• End-to-end integration testing<br>• User acceptance testing (UAT)<br>• Bug fixing and optimization<br>• Production deployment preparation<br>• Final documentation and README<br>• Project presentation preparation</td><td>Deployed application, final documentation, presentation</td><td>All members, Shrey Raval (QA Lead)</td></tr></tbody></table>
+
+<h3>6.3 Gantt Chart (Visual Timeline)</h3>
+<table class="gantt">
+<thead><tr><th style="width:200px">Phase</th><th>W1-2</th><th>W3-4</th><th>W5-6</th><th>W7-8</th><th>W9-10</th><th>W11-12</th><th>W13-14</th><th>W15-16</th><th>W17-18</th><th>W19-20</th></tr></thead>
+<tbody>
+<tr><td>1. Requirements</td><td><span class="bar bar-p" style="width:100%">&nbsp;</span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>2. Design</td><td></td><td><span class="bar bar-p" style="width:100%">&nbsp;</span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>3. Backend Core</td><td></td><td></td><td><span class="bar bar-e" style="width:100%">&nbsp;</span></td><td><span class="bar bar-e" style="width:100%">&nbsp;</span></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>4. Frontend Core</td><td></td><td></td><td><span class="bar bar-e" style="width:100%">&nbsp;</span></td><td><span class="bar bar-e" style="width:100%">&nbsp;</span></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>5. Orders & Payment</td><td></td><td></td><td></td><td></td><td><span class="bar bar-e" style="width:100%">&nbsp;</span></td><td><span class="bar bar-e" style="width:50%">&nbsp;</span></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>6. Advanced Features</td><td></td><td></td><td></td><td></td><td></td><td><span class="bar bar-e" style="width:50%">&nbsp;</span></td><td><span class="bar bar-e" style="width:100%">&nbsp;</span></td><td></td><td></td><td></td></tr>
+<tr><td>7. UI Polish</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td><span class="bar bar-e" style="width:100%">&nbsp;</span></td><td></td><td></td></tr>
+<tr><td>8. Security & Testing</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td><span class="bar bar-t" style="width:100%">&nbsp;</span></td><td></td></tr>
+<tr><td>9. Integration & Deploy</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td><span class="bar bar-d" style="width:100%">&nbsp;</span></td></tr>
+</tbody>
+</table>
+<p style="font-size:12px;margin-top:8px">
+<span class="bar bar-p" style="width:12px">&nbsp;</span> Planning &nbsp;&nbsp;
+<span class="bar bar-e" style="width:12px">&nbsp;</span> Execution &nbsp;&nbsp;
+<span class="bar bar-t" style="width:12px">&nbsp;</span> Testing &nbsp;&nbsp;
+<span class="bar bar-d" style="width:12px">&nbsp;</span> Deployment
+</p>
+
+<h3>6.4 Risk Management</h3>
+<table><thead><tr><th>Risk</th><th>Probability</th><th>Impact</th><th>Mitigation Strategy</th></tr></thead><tbody><tr><td>WebSocket connection instability</td><td>Medium</td><td>High</td><td>Auto-reconnect with exponential backoff, SockJS fallback</td></tr><tr><td>Database performance bottleneck</td><td>Low</td><td>High</td><td>Query optimization, indexing strategy, connection pooling</td></tr><tr><td>Security vulnerabilities</td><td>Medium</td><td>Critical</td><td>OWASP compliance, regular security audits, penetration testing</td></tr><tr><td>Scope creep</td><td>High</td><td>Medium</td><td>Strict phase-based deliverables, backlog prioritization</td></tr><tr><td>Team member unavailability</td><td>Medium</td><td>Medium</td><td>Cross-training, documented codebase, shared knowledge</td></tr></tbody></table>
+</div>
+
+<!-- 7. APPENDICES -->
+<div class="page-break"></div>
+<div id="s7"><h2>7. Appendices</h2>
+
+<h3>Appendix A: Technology Stack Summary</h3>
+<table><thead><tr><th>Category</th><th>Technology</th><th>Purpose</th></tr></thead><tbody><tr><td>Frontend Framework</td><td>React 18 + TypeScript 5</td><td>Component-based UI development</td></tr><tr><td>Styling</td><td>Tailwind CSS 3 + Custom Config</td><td>Utility-first responsive styling</td></tr><tr><td>Animations</td><td>Framer Motion</td><td>Page transitions and micro-interactions</td></tr><tr><td>Icons</td><td>Lucide React + Custom SVGs</td><td>Iconography</td></tr><tr><td>HTTP Client</td><td>Fetch API</td><td>REST API communication</td></tr><tr><td>WebSocket Client</td><td>@stomp/stompjs</td><td>Real-time STOMP messaging</td></tr><tr><td>Loading States</td><td>react-loading-skeleton</td><td>Skeleton placeholder UI</td></tr><tr><td>Backend Framework</td><td>Spring Boot 3.x</td><td>REST API server</td></tr><tr><td>Language</td><td>Java 21</td><td>Backend programming language</td></tr><tr><td>Database Access</td><td>Spring JDBC Template</td><td>SQL query execution</td></tr><tr><td>Security</td><td>Spring Security 6</td><td>Authentication and authorization</td></tr><tr><td>Token Management</td><td>jjwt (JSON Web Token)</td><td>JWT generation and validation</td></tr><tr><td>Encryption</td><td>BCrypt</td><td>Password hashing</td></tr><tr><td>Email</td><td>JavaMail + Brevo SMTP</td><td>Transactional emails</td></tr><tr><td>Database</td><td>PostgreSQL 15</td><td>Relational data storage</td></tr><tr><td>Build (Frontend)</td><td>Vite 6</td><td>Fast dev server and bundler</td></tr><tr><td>Build (Backend)</td><td>Maven</td><td>Java dependency management and build</td></tr></tbody></table>
+
+<h3>Appendix B: Responsive Breakpoint Configuration</h3>
+<table><thead><tr><th>Breakpoint</th><th>Width</th><th>Columns (Grid)</th><th>Target Device</th></tr></thead><tbody><tr><td>xs</td><td>475px</td><td>1</td><td>Small phones</td></tr><tr><td>sm</td><td>640px</td><td>1-2</td><td>Phones</td></tr><tr><td>md</td><td>768px</td><td>2</td><td>Tablets</td></tr><tr><td>lg</td><td>1024px</td><td>3</td><td>Small laptops</td></tr><tr><td>xl</td><td>1280px</td><td>4</td><td>Desktops</td></tr><tr><td>kiosk</td><td>1440px</td><td>4-5</td><td>Kiosk displays</td></tr><tr><td>tv</td><td>1920px</td><td>5-6</td><td>TV / large displays</td></tr></tbody></table>
+
+<h3>Appendix C: WebSocket Topic Architecture</h3>
+<table><thead><tr><th>Topic</th><th>Direction</th><th>Payload</th><th>Subscriber</th></tr></thead><tbody><tr><td>/topic/orders</td><td>Server → Client</td><td>Order object (JSON)</td><td>All vendors (global)</td></tr><tr><td>/topic/canteen/{'{id}'}/orders</td><td>Server → Client</td><td>Order object for specific canteen</td><td>Canteen vendor dashboard</td></tr><tr><td>/topic/canteen/{'{id}'}/order-updates</td><td>Server → Client</td><td>Updated order with new status</td><td>Canteen vendor dashboard</td></tr><tr><td>/topic/user/{'{id}'}/orders</td><td>Server → Client</td><td>User's order status change</td><td>User order history page</td></tr><tr><td>/topic/order-updates</td><td>Server → Client</td><td>Order status update (global)</td><td>All connected clients</td></tr></tbody></table>
+
+<h3>Appendix D: Document Revision History</h3>
+<table><thead><tr><th>Version</th><th>Date</th><th>Author</th><th>Changes</th></tr></thead><tbody><tr><td>1.0</td><td>February 2026</td><td>Kush Shah</td><td>Initial SRS document creation with all sections</td></tr></tbody></table>
+
+</div>
+
+</div><!-- /container -->
+
+<!-- PRINT BUTTON -->
+<button class="print-btn no-print" onclick="window.print()">📄 Download as PDF</button>
+
+</body>
+</html>

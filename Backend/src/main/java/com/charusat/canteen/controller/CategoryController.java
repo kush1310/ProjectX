@@ -41,7 +41,7 @@ public class CategoryController {
 
         Category category = Category.builder()
                 .name(name)
-                .canteen(canteen)
+                .canteenId(canteenId)
                 .build();
 
         return ResponseEntity.ok(categoryRepository.save(category));

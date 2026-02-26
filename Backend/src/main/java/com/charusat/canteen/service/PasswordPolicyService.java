@@ -115,7 +115,7 @@ public class PasswordPolicyService {
      * Check if password was recently used
      */
     public boolean isPasswordReused(User user, String newPassword) {
-        List<PasswordHistory> history = passwordHistoryRepository.findTop5ByUserOrderByCreatedAtDesc(user);
+        List<PasswordHistory> history = passwordHistoryRepository.findTop5ByUserIdOrderByCreatedAtDesc(user.getId());
         
         for (PasswordHistory ph : history) {
             if (passwordEncoder.matches(newPassword, ph.getPasswordHash())) {
@@ -136,11 +136,11 @@ public class PasswordPolicyService {
      */
     @Transactional
     public void saveToHistory(User user, String currentPasswordHash) {
-        PasswordHistory history = PasswordHistory.create(user, currentPasswordHash);
+        PasswordHistory history = PasswordHistory.create(user.getId(), currentPasswordHash);
         passwordHistoryRepository.save(history);
         
         // Cleanup old entries
-        long count = passwordHistoryRepository.countByUser(user);
+        long count = passwordHistoryRepository.countByUserId(user.getId());
         if (count > historyCount) {
             passwordHistoryRepository.deleteOldHistory(user.getId(), historyCount);
         }

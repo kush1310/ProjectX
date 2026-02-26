@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icons } from '@/components/Icons';
 import { ScrollTimeline } from './ScrollTimeline';
-import { Order } from '../utils/canteenStore';
+import { Order, OrderStatus } from '../utils/canteenStore';
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -35,12 +35,13 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
            ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const statusColors: Record<Order['status'], string> = {
-    new: 'border-orange-200 text-orange-700 bg-orange-50',
-    preparing: 'border-blue-200 text-blue-700 bg-blue-50',
-    ready: 'border-purple-200 text-purple-700 bg-purple-50',
-    completed: 'border-emerald-200 text-emerald-700 bg-emerald-50',
-    cancelled: 'border-red-200 text-red-700 bg-red-50',
+  const statusColors: Record<OrderStatus, string> = {
+    PENDING: 'border-orange-200 text-orange-700 bg-orange-50',
+    CONFIRMED: 'border-blue-200 text-blue-700 bg-blue-50',
+    PREPARING: 'border-blue-200 text-blue-700 bg-blue-50',
+    READY: 'border-purple-200 text-purple-700 bg-purple-50',
+    COMPLETED: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+    CANCELLED: 'border-red-200 text-red-700 bg-red-50',
   };
 
   return (
@@ -137,7 +138,7 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600 text-sm">Method</span>
                   <span className={`font-bold text-sm ${order.isPaid ? 'text-emerald-600' : 'text-orange-600'}`}>
-                    {order.paymentMethod.toUpperCase()} {order.isPaid ? '(Paid)' : '(Pending)'}
+                    {(order.paymentMethod || 'CASH').toUpperCase()} {order.isPaid ? '(Paid)' : '(Pending)'}
                   </span>
                 </div>
                 {order.isPaid && (
@@ -200,7 +201,7 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
           <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between shrink-0">
             <div>
               <span className="text-sm text-gray-500">Total Amount</span>
-              <p className="text-3xl font-bold text-gray-900">₹{order.total.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-gray-900">₹{(order.total || order.totalAmount || 0).toFixed(2)}</p>
             </div>
             <button
               onClick={onClose}

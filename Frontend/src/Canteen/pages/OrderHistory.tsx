@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getOrders, Order } from '../utils/canteenStore';
+import { getOrders, Order, OrderStatus } from '../utils/canteenStore';
 
 import { Search, MapPin, Phone, Clock } from 'lucide-react';
 import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
@@ -44,7 +44,7 @@ export default function OrderHistory() {
             setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
             
             // Notify user if their order is ready
-            if (updatedOrder.status === 'ready') {
+            if (updatedOrder.status === 'READY') {
                 toast.success(`Your Order #${updatedOrder.orderNumber} is Ready!`);
             }
         });
@@ -55,14 +55,15 @@ export default function OrderHistory() {
   const filteredOrders = useMemo(() => {
     return orders
       .filter(o => {
-        if (statusFilter === 'all') return o.status === 'completed' || o.status === 'cancelled';
-        return o.status === statusFilter;
+        if (statusFilter === 'all') return o.status === 'COMPLETED' || o.status === 'CANCELLED';
+        const filterUpper = statusFilter.toUpperCase();
+        return o.status === filterUpper;
       })
       .filter(o => {
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
         return (
-          o.customerName.toLowerCase().includes(q) ||
+          (o.customerName?.toLowerCase().includes(q) || false) ||
           o.orderNumber.toString().includes(q) ||
           o.items.some(i => i.name.toLowerCase().includes(q))
         );
@@ -81,12 +82,13 @@ export default function OrderHistory() {
     });
   };
 
-  const statusColors: Record<Order['status'], string> = {
-    new: 'bg-orange-100 text-orange-700',
-    preparing: 'bg-blue-100 text-blue-700',
-    ready: 'bg-purple-100 text-purple-700',
-    completed: 'bg-green-100 text-green-700',
-    cancelled: 'bg-red-100 text-red-700',
+  const statusColors: Record<OrderStatus, string> = {
+    PENDING: 'bg-orange-100 text-orange-700',
+    CONFIRMED: 'bg-blue-100 text-blue-700',
+    PREPARING: 'bg-blue-100 text-blue-700',
+    READY: 'bg-purple-100 text-purple-700',
+    COMPLETED: 'bg-green-100 text-green-700',
+    CANCELLED: 'bg-red-100 text-red-700',
   };
 
   return (
@@ -155,15 +157,15 @@ export default function OrderHistory() {
                         <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500">
                             #{order.orderNumber.slice(-3)}
                         </div>
-                        <div>
-                          <p className="font-bold text-gray-900 text-lg">{order.customerName}</p>
+                         <div>
+                          <p className="font-bold text-gray-900 text-lg">{order.customerName || 'Walk-in Customer'}</p>
                           <span className="text-sm text-gray-500">#{order.orderNumber}</span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-6 ml-auto">
                          <div className="text-right">
-                              <p className="font-bold text-gray-900 text-lg">₹{order.total.toFixed(2)}</p>
+                              <p className="font-bold text-gray-900 text-lg">₹{(order.total || order.totalAmount || 0).toFixed(2)}</p>
                               <div className="flex items-center gap-1 text-xs text-gray-500">
                                    <Clock className="w-3 h-3" />
                                    {formatDate(order.createdAt)}
@@ -240,7 +242,7 @@ export default function OrderHistory() {
                                    <div className="bg-white p-4 rounded-xl border border-gray-100">
                                        <p className="text-xs text-gray-500 font-bold uppercase mb-1">Payment</p>
                                        <p className={`font-bold ${order.isPaid ? 'text-emerald-600' : 'text-orange-600'}`}>
-                                           {order.paymentMethod.toUpperCase()}
+                                           {(order.paymentMethod || 'CASH').toUpperCase()}
                                        </p>
                                    </div>
                                </div>

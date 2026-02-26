@@ -2,13 +2,11 @@ package com.charusat.canteen.service;
 
 import com.charusat.canteen.controller.CanteenController;
 import com.charusat.canteen.model.*;
-import com.charusat.canteen.repository.CanteenRepository;
-import com.charusat.canteen.repository.MenuItemRepository;
+import com.charusat.canteen.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +21,9 @@ public class CanteenService {
     
     private final CanteenRepository canteenRepository;
     private final MenuItemRepository menuItemRepository;
+    private final MenuItemVariantRepository menuItemVariantRepository;
+    private final AddonGroupRepository addonGroupRepository;
+    private final AddonOptionRepository addonOptionRepository;
     
     // Canteen CRUD
     public List<Canteen> findAllCanteens() {
@@ -48,6 +49,7 @@ public class CanteenService {
                 .name(name)
                 .location(location)
                 .description(description)
+                .ownerId(ownerId)
                 .build();
         return canteenRepository.save(canteen);
     }
@@ -59,7 +61,7 @@ public class CanteenService {
             String location, 
             Boolean isOpen, 
             Boolean rushHourEnabled,
-            CanteenController.UpdateCanteenRequest request // Pass full request object for cleaner code
+            CanteenController.UpdateCanteenRequest request
     ) {
         Canteen canteen = canteenRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Canteen not found"));
@@ -94,24 +96,38 @@ public class CanteenService {
     
     // Menu Item CRUD
     public List<MenuItem> getMenuItems(Long canteenId) {
-        return menuItemRepository.findByCanteenId(canteenId);
+        List<MenuItem> items = menuItemRepository.findByCanteenId(canteenId);
+        items.forEach(this::loadMenuItemChildren);
+        return items;
     }
     
     public List<MenuItem> getAvailableMenuItems(Long canteenId) {
-        return menuItemRepository.findByCanteenIdAndIsAvailableTrue(canteenId);
+        List<MenuItem> items = menuItemRepository.findByCanteenIdAndIsAvailableTrue(canteenId);
+        items.forEach(this::loadMenuItemChildren);
+        return items;
     }
     
     public Optional<MenuItem> findMenuItemById(Long id) {
-        return menuItemRepository.findById(id);
+        Optional<MenuItem> opt = menuItemRepository.findById(id);
+        opt.ifPresent(this::loadMenuItemChildren);
+        return opt;
+    }
+    
+    private void loadMenuItemChildren(MenuItem item) {
+        item.setTags(menuItemRepository.findTagsByMenuItemId(item.getId()));
+        item.setVariants(menuItemVariantRepository.findByMenuItemId(item.getId()));
+        List<AddonGroup> groups = addonGroupRepository.findByMenuItemId(item.getId());
+        groups.forEach(g -> g.setOptions(addonOptionRepository.findByAddonGroupId(g.getId())));
+        item.setAddonGroups(groups);
     }
     
     @Transactional
     public MenuItem addMenuItem(Long canteenId, CanteenController.AddMenuItemRequest request) {
-        Canteen canteen = canteenRepository.findById(canteenId)
+        canteenRepository.findById(canteenId)
                 .orElseThrow(() -> new RuntimeException("Canteen not found"));
         
         MenuItem item = MenuItem.builder()
-                .canteen(canteen)
+                .canteenId(canteenId)
                 .name(request.name())
                 .description(request.description())
                 .price(request.price())
@@ -129,43 +145,43 @@ public class CanteenService {
                 .addonGroups(new ArrayList<>())
                 .build();
 
-        // Process Variants
+        MenuItem savedItem = menuItemRepository.save(item);
+
+        // Process Variants — save via their own repo
         if (Boolean.TRUE.equals(request.hasVariants()) && request.variants() != null) {
-            List<MenuItemVariant> variants = request.variants().stream().map(v -> {
+            for (var v : request.variants()) {
                 MenuItemVariant variant = new MenuItemVariant();
                 variant.setName(v.name());
                 variant.setPrice(v.price());
-                variant.setMenuItem(item);
-                return variant;
-            }).collect(Collectors.toList());
-            item.getVariants().addAll(variants);
+                variant.setMenuItemId(savedItem.getId());
+                menuItemVariantRepository.save(variant);
+            }
         }
 
-        // Process Addons
+        // Process Addons — save via their own repos
         if (Boolean.TRUE.equals(request.hasAddons()) && request.addonGroups() != null) {
-            List<AddonGroup> addonGroups = request.addonGroups().stream().map(g -> {
+            for (var g : request.addonGroups()) {
                 AddonGroup group = new AddonGroup();
                 group.setName(g.name());
                 group.setMinSelection(g.minSelection());
                 group.setMaxSelection(g.maxSelection());
-                group.setMenuItem(item);
+                group.setMenuItemId(savedItem.getId());
+                AddonGroup savedGroup = addonGroupRepository.save(group);
                 
                 if (g.options() != null) {
-                    List<AddonOption> options = g.options().stream().map(o -> {
+                    for (var o : g.options()) {
                         AddonOption option = new AddonOption();
                         option.setName(o.name());
                         option.setPrice(o.price());
-                        option.setAddonGroup(group);
-                        return option;
-                    }).collect(Collectors.toList());
-                    group.setOptions(options);
+                        option.setAddonGroupId(savedGroup.getId());
+                        addonOptionRepository.save(option);
+                    }
                 }
-                return group;
-            }).collect(Collectors.toList());
-            item.getAddonGroups().addAll(addonGroups);
+            }
         }
         
-        return menuItemRepository.save(item);
+        loadMenuItemChildren(savedItem);
+        return savedItem;
     }
     
     @Transactional
@@ -189,15 +205,15 @@ public class CanteenService {
         if (request.hasVariants() != null) {
             item.setHasVariants(request.hasVariants());
             if (Boolean.TRUE.equals(request.hasVariants()) && request.variants() != null) {
-                item.getVariants().clear();
-                List<MenuItemVariant> newVariants = request.variants().stream().map(v -> {
+                // Delete old variants and insert new ones
+                menuItemVariantRepository.deleteByMenuItemId(id);
+                for (var v : request.variants()) {
                     MenuItemVariant variant = new MenuItemVariant();
                     variant.setName(v.name());
                     variant.setPrice(v.price());
-                    variant.setMenuItem(item);
-                    return variant;
-                }).collect(Collectors.toList());
-                item.getVariants().addAll(newVariants);
+                    variant.setMenuItemId(id);
+                    menuItemVariantRepository.save(variant);
+                }
             }
         }
         
@@ -205,35 +221,48 @@ public class CanteenService {
         if (request.hasAddons() != null) {
             item.setHasAddons(request.hasAddons());
             if (Boolean.TRUE.equals(request.hasAddons()) && request.addonGroups() != null) {
-                item.getAddonGroups().clear();
-                List<AddonGroup> newGroups = request.addonGroups().stream().map(g -> {
+                // Delete old addon groups (and their options)
+                List<AddonGroup> oldGroups = addonGroupRepository.findByMenuItemId(id);
+                for (AddonGroup og : oldGroups) {
+                    addonOptionRepository.deleteByAddonGroupId(og.getId());
+                }
+                addonGroupRepository.deleteByMenuItemId(id);
+                
+                for (var g : request.addonGroups()) {
                     AddonGroup group = new AddonGroup();
                     group.setName(g.name());
                     group.setMinSelection(g.minSelection());
                     group.setMaxSelection(g.maxSelection());
-                    group.setMenuItem(item);
+                    group.setMenuItemId(id);
+                    AddonGroup savedGroup = addonGroupRepository.save(group);
                     
                     if (g.options() != null) {
-                        List<AddonOption> options = g.options().stream().map(o -> {
+                        for (var o : g.options()) {
                             AddonOption option = new AddonOption();
                             option.setName(o.name());
                             option.setPrice(o.price());
-                            option.setAddonGroup(group);
-                            return option;
-                        }).collect(Collectors.toList());
-                        group.setOptions(options);
+                            option.setAddonGroupId(savedGroup.getId());
+                            addonOptionRepository.save(option);
+                        }
                     }
-                    return group;
-                }).collect(Collectors.toList());
-                item.getAddonGroups().addAll(newGroups);
+                }
             }
         }
         
-        return menuItemRepository.save(item);
+        MenuItem saved = menuItemRepository.save(item);
+        loadMenuItemChildren(saved);
+        return saved;
     }
     
     @Transactional
     public void deleteMenuItem(Long id) {
+        // Delete children first
+        List<AddonGroup> groups = addonGroupRepository.findByMenuItemId(id);
+        for (AddonGroup g : groups) {
+            addonOptionRepository.deleteByAddonGroupId(g.getId());
+        }
+        addonGroupRepository.deleteByMenuItemId(id);
+        menuItemVariantRepository.deleteByMenuItemId(id);
         menuItemRepository.deleteById(id);
     }
     

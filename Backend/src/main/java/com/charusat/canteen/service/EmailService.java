@@ -38,10 +38,12 @@ public class EmailService {
     private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
     
     /**
-     * Send welcome email to new users
+     * Send welcome email to new users with token-based auto-login
      */
     @Async
-    public void sendWelcomeEmail(String toEmail, String fullName) {
+    public void sendWelcomeEmail(String toEmail, String fullName, String loginToken) {
+        String dashboardLink = frontendUrl + "/auth-callback?token=" + loginToken + "&welcome=true";
+        
         String htmlContent = """
             <!DOCTYPE html>
             <html>
@@ -66,38 +68,51 @@ public class EmailService {
                             <p style="color: #6b7280; font-size: 16px; margin: 0;">Your account has been created successfully</p>
                         </div>
                         
-                        <!-- Features -->
+                        <!-- Features Grid -->
                         <div style="background: linear-gradient(135deg, #fef2f2, #fff5f5); border-radius: 16px; padding: 24px; margin-bottom: 28px;">
                             <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0; font-weight: 500;">What you can do with CharusatNeeds:</p>
-                            <ul style="margin: 0; padding: 0 0 0 20px; color: #4b5563;">
-                                <li style="margin-bottom: 10px; line-height: 1.5;">Browse delicious campus food options</li>
-                                <li style="margin-bottom: 10px; line-height: 1.5;">Order ahead and skip the queue</li>
-                                <li style="margin-bottom: 10px; line-height: 1.5;">Apply exclusive coupons & discounts</li>
-                                <li style="margin-bottom: 0; line-height: 1.5;">Track your orders in real-time</li>
-                            </ul>
+                            <table style="width: 100%%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">&#127860; Browse 3 campus canteens</td>
+                                    <td style="padding: 8px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">&#9889; Real-time order tracking</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">&#127915; Exclusive coupons & deals</td>
+                                    <td style="padding: 8px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">&#128176; Secure UPI payments</td>
+                                </tr>
+                            </table>
                         </div>
                         
-                        <!-- CTA Button -->
+                        <!-- CTA Button - Opens Dashboard -->
                         <div style="text-align: center; margin-bottom: 28px;">
-                            <a href="%s/customer/menu" style="display: inline-block; background: linear-gradient(135deg, #e23744, #dc2626); color: white; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 8px 24px rgba(226, 55, 68, 0.3); transition: transform 0.2s;">
-                                Start Ordering
+                            <a href="%s" style="display: inline-block; background: linear-gradient(135deg, #e23744, #dc2626); color: white; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 8px 24px rgba(226, 55, 68, 0.3); transition: transform 0.2s;">
+                                Open Dashboard
                             </a>
+                            <p style="color: #9ca3af; font-size: 13px; margin: 10px 0 0 0;">Click to auto-login and start ordering</p>
+                        </div>
+                        
+                        <!-- Security Note -->
+                        <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border-left: 4px solid #f59e0b; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px;">
+                            <p style="color: #92400e; margin: 0; font-size: 13px; line-height: 1.5;">
+                                <strong>Security:</strong> This auto-login link expires in 24 hours.
+                                If you didn't create this account, please ignore this email.
+                            </p>
                         </div>
                         
                         <!-- Footer -->
                         <div style="text-align: center; padding-top: 24px; border-top: 1px solid #f3f4f6;">
                             <p style="color: #9ca3af; font-size: 13px; margin: 0;">
                                 Questions? Reply to this email or contact support.<br>
-                                © 2026 CharusatNeeds. Made for CHARUSAT
+                                &copy; 2026 CharusatNeeds. Made for CHARUSAT Campus
                             </p>
                         </div>
                     </div>
                 </div>
             </body>
             </html>
-            """.formatted(fullName, frontendUrl);
+            """.formatted(fullName, dashboardLink);
 
-        sendEmail(toEmail, "Welcome to CharusatNeeds!", htmlContent);
+        sendEmail(toEmail, "Welcome to CharusatNeeds! \uD83C\uDF7D\uFE0F", htmlContent);
     }
 
     /**

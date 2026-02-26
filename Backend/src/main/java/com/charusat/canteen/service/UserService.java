@@ -106,20 +106,20 @@ public class UserService {
     }
 
     @Transactional
-    public boolean verifyEmail(String token) {
+    public Optional<User> verifyEmail(String token) {
         Optional<User> userOpt = userRepository.findByEmailVerificationToken(token);
         if (userOpt.isEmpty()) {
-            return false;
+            return Optional.empty();
         }
         User user = userOpt.get();
         if (user.getEmailVerificationExpiry().isBefore(LocalDateTime.now())) {
-            return false;
+            return Optional.empty();
         }
         user.setIsEmailVerified(true);
         user.setEmailVerificationToken(null);
         user.setEmailVerificationExpiry(null);
         userRepository.save(user);
-        return true;
+        return Optional.of(user);
     }
 
     @Transactional

@@ -2,6 +2,7 @@ package com.charusat.canteen.service;
 
 import com.charusat.canteen.model.*;
 import com.charusat.canteen.repository.MenuItemRepository;
+import com.charusat.canteen.repository.OrderItemRepository;
 import com.charusat.canteen.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class OrderService {
     
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final MenuItemRepository menuItemRepository;
     private final WebSocketService webSocketService;
     
@@ -64,18 +66,19 @@ public class OrderService {
     public Order createOrder(User customer, Canteen canteen, List<Long> menuItemIds, 
                               List<Integer> quantities, String paymentMethod, String instructions) {
         
-        // ... existing logic ...
         String orderNumber = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         
         Order order = Order.builder()
                 .orderNumber(orderNumber)
-                .customer(customer)
-                .canteen(canteen)
+                .customerId(customer.getId())
+                .canteenId(canteen.getId())
                 .paymentMethod(paymentMethod)
                 .specialInstructions(instructions)
                 .status(Order.OrderStatus.PENDING)
                 .items(new ArrayList<>())
                 .build();
+        
+        Order savedOrder = orderRepository.save(order);
         
         BigDecimal total = BigDecimal.ZERO;
         
@@ -89,19 +92,20 @@ public class OrderService {
             BigDecimal itemTotal = menuItem.getPrice().multiply(BigDecimal.valueOf(qty));
             
             OrderItem orderItem = OrderItem.builder()
-                    .order(order)
-                    .menuItem(menuItem)
+                    .orderId(savedOrder.getId())
+                    .menuItemId(menuItem.getId())
                     .quantity(qty)
                     .unitPrice(menuItem.getPrice())
                     .totalPrice(itemTotal)
                     .build();
             
-            order.getItems().add(orderItem);
+            orderItemRepository.save(orderItem);
+            savedOrder.getItems().add(orderItem);
             total = total.add(itemTotal);
         }
         
-        order.setTotalAmount(total);
-        Order savedOrder = orderRepository.save(order);
+        savedOrder.setTotalAmount(total);
+        savedOrder = orderRepository.save(savedOrder);
         
         // Notify Vendors via WebSocket
         webSocketService.notifyNewOrder(savedOrder);

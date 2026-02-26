@@ -351,6 +351,17 @@ public class AuthController {
             // Log security event
             auditService.logSuccessfulLogin(user.getEmail(), ipAddress, userAgent);
             
+            // Send welcome email for new Google users
+            if (result.isNewUser()) {
+                try {
+                    String welcomeToken = authService.generateToken(user);
+                    emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), welcomeToken);
+                    log.info("Welcome email sent to new Google user: {}", user.getEmail());
+                } catch (Exception e) {
+                    log.warn("Failed to send welcome email to {}: {}", user.getEmail(), e.getMessage());
+                }
+            }
+            
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Google authentication successful");
@@ -358,6 +369,7 @@ public class AuthController {
             response.put("refreshToken", refreshTokenPair.token());
             response.put("expiresAt", refreshTokenPair.expiresAt().toString());
             response.put("user", buildUserResponse(user));
+            response.put("isNewUser", result.isNewUser());
             
             return ResponseEntity.ok(response);
             
@@ -442,7 +454,17 @@ public class AuthController {
     
     @GetMapping("/verify-email")
     public ResponseEntity<?> verifyEmail(@RequestParam("token") String token) {
-        if (userService.verifyEmail(token)) {
+        var verifiedUser = userService.verifyEmail(token);
+        if (verifiedUser.isPresent()) {
+             User user = verifiedUser.get();
+             // Send welcome email with auto-login token
+             try {
+                 String loginToken = authService.generateToken(user);
+                 emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), loginToken);
+                 log.info("Welcome email sent after verification for: {}", user.getEmail());
+             } catch (Exception e) {
+                 log.warn("Failed to send welcome email after verification: {}", e.getMessage());
+             }
              return ResponseEntity.ok(Map.of("success", true, "message", "Email verified successfully. You can now login."));
         } else {
              return badRequest("Invalid or expired verification token.");

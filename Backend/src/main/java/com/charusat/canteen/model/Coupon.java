@@ -1,6 +1,5 @@
 package com.charusat.canteen.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,89 +9,47 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Coupon - Discount management entity
+ * Coupon - Plain POJO (JDBC)
  */
-@Entity
-@Table(name = "coupons")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Coupon {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(unique = true, nullable = false)
-    private String code; // e.g., "WELCOME50"
-    
-    @Column(nullable = false)
-    private String title; // Short display name e.g. "Summer Sale"
-
+    private String code;
+    private String title;
     private String description;
-    
-    private String color; // Hex color for UI background
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = true)
-    private DiscountType discountType; // PERCENTAGE, FLAT
-    
-    @Column(nullable = true, precision = 10, scale = 2)
-    private BigDecimal discountValue; // 50.00 (amount) or 20.00 (%)
-    
-    @Column(name = "min_order_value", precision = 10, scale = 2)
+    private String color;
+    private DiscountType discountType;
+    private BigDecimal discountValue;
     private BigDecimal minOrderValue;
-    
-    @Column(name = "max_discount_amount", precision = 10, scale = 2)
-    private BigDecimal maxDiscountAmount; // Cap for percentage discounts
-    
-    @Column(name = "valid_from")
+    private BigDecimal maxDiscountAmount;
     private LocalDateTime validFrom;
-    
-    @Column(name = "valid_until")
     private LocalDateTime validUntil;
+    private Integer usageLimit;
     
-    @Column(name = "usage_limit")
-    private Integer usageLimit; // Total times this coupon can be used globally
-    
-    @Column(name = "usage_count")
     @Builder.Default
     private Integer usageCount = 0;
     
-    @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;
     
-    @Column(name = "is_custom")
     @Builder.Default
-    private Boolean isCustom = true; // To distinguish system vs vendor coupons
+    private Boolean isCustom = true;
     
-    // Vendor specific (null = global platform coupon)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "canteen_id")
-    private Canteen canteen;
+    private Long canteenId; // FK
     
-    // Advanced Logic Fields
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type")
     @Builder.Default
-    private CouponType type = CouponType.DISCOUNT; // DISCOUNT or BOGO
+    private CouponType type = CouponType.DISCOUNT;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "scope")
     @Builder.Default
-    private Scope scope = Scope.GLOBAL; // GLOBAL, CATEGORY, ITEM
+    private Scope scope = Scope.GLOBAL;
 
-    @Column(name = "target_ids")
-    private String targetIds; // Comma-separated IDs (Category names or Item IDs)
-
-    @Column(name = "bogo_buy_qty")
-    private Integer bogoBuyQty; // Buy X
-
-    @Column(name = "bogo_get_qty")
-    private Integer bogoGetQty; // Get Y
+    private String targetIds;
+    private Integer bogoBuyQty;
+    private Integer bogoGetQty;
     
     public enum DiscountType {
         PERCENTAGE,

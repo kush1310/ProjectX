@@ -118,7 +118,7 @@ export default function CartPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
+      <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl p-6 animate-pulse">
             <div className="h-6 bg-slate-200 rounded w-1/4 mb-6"></div>
@@ -139,7 +139,7 @@ export default function CartPage() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6">
         <div className="text-center">
           <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingBag className="w-10 h-10 text-slate-400" />
@@ -158,12 +158,12 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">Your Cart</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Your Cart</h1>
             {cart.canteen && (
               <p className="text-slate-500">{cart.canteen.name}</p>
             )}

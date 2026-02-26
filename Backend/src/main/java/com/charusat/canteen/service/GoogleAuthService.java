@@ -67,14 +67,17 @@ public class GoogleAuthService {
                 return GoogleAuthResult.failure("Only @charusat.edu.in email addresses are allowed");
             }
 
-            // Step 4: Find or create user
+            // Step 4: Check if user is new before findOrCreate
+            boolean isNew = userRepository.findByEmailIgnoreCase(userInfo.email()).isEmpty();
+            
+            // Step 5: Find or create user
             User user = findOrCreateUser(userInfo);
 
-            // Step 5: Generate JWT token
+            // Step 6: Generate JWT token
             String jwtToken = authService.generateToken(user);
 
-            log.info("Google OAuth successful for user: {}", userInfo.email());
-            return GoogleAuthResult.success(user, jwtToken);
+            log.info("Google OAuth successful for user: {} (new: {})", userInfo.email(), isNew);
+            return GoogleAuthResult.success(user, jwtToken, isNew);
 
         } catch (Exception e) {
             log.error("Google OAuth error: {}", e.getMessage(), e);
@@ -228,14 +231,15 @@ public class GoogleAuthService {
             boolean success,
             String message,
             User user,
-            String token
+            String token,
+            boolean isNewUser
     ) {
-        public static GoogleAuthResult success(User user, String token) {
-            return new GoogleAuthResult(true, "Authentication successful", user, token);
+        public static GoogleAuthResult success(User user, String token, boolean isNewUser) {
+            return new GoogleAuthResult(true, "Authentication successful", user, token, isNewUser);
         }
 
         public static GoogleAuthResult failure(String message) {
-            return new GoogleAuthResult(false, message, null, null);
+            return new GoogleAuthResult(false, message, null, null, false);
         }
     }
 }

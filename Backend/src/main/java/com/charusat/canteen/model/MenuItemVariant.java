@@ -1,30 +1,22 @@
 package com.charusat.canteen.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import java.math.BigDecimal;
 
-@Entity
+/**
+ * MenuItemVariant - Plain POJO (JDBC)
+ */
 @Data
-@Table(name = "menu_item_variants")
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class MenuItemVariant {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    private String name; // e.g., "Small", "Large"
-    
+    private String name;
     private BigDecimal price;
-
-    @JsonBackReference
-    @ManyToOne
-    @JoinColumn(name = "menu_item_id")
-    private MenuItem menuItem;
+    private Long menuItemId; // FK
 }

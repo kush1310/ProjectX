@@ -89,15 +89,15 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 gap-4">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-[#e23744]">CharusatNeeds</h1>
-            <span className="text-xs text-slate-500">— vendor partner —</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#e23744]">CharusatNeeds</h1>
+            <span className="hidden sm:inline text-xs text-slate-500">— vendor partner —</span>
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-xl mx-8">
+          <div className="hidden md:block flex-1 max-w-xl mx-8">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
@@ -114,9 +114,9 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-green-600 font-medium">online</span>
-              <span className="text-slate-400">|</span>
-              <span className="text-slate-500">1 offline</span>
+              <span className="hidden sm:inline text-green-600 font-medium">online</span>
+              <span className="hidden sm:inline text-slate-400">|</span>
+              <span className="hidden sm:inline text-slate-500">1 offline</span>
               <ChevronDown className="w-4 h-4 text-slate-400" />
             </div>
             <button className="relative p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -131,7 +131,7 @@ export default function Dashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 px-6 pb-4">
+        <div className="flex gap-2 px-4 sm:px-6 pb-4 overflow-x-auto no-scrollbar">
           {(['preparing', 'ready', 'completed'] as TabType[]).map((tab) => (
             <button
               key={tab}
@@ -161,7 +161,7 @@ export default function Dashboard() {
       </header>
 
       {/* Orders Grid */}
-      <main className="p-6">
+      <main className="p-4 sm:p-6">
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map(i => (
@@ -182,7 +182,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 kiosk:grid-cols-4 tv:grid-cols-5">
               {filteredOrders.map((order) => (
                 <OrderCard 
                   key={order.id} 

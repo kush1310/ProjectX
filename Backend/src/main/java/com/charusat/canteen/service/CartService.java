@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -27,14 +28,18 @@ public class CartService {
         return cartRepository.findByUserId(user.getId())
                 .orElseGet(() -> {
                     Cart cart = Cart.builder()
-                            .user(user)
+                            .userId(user.getId())
                             .build();
                     return cartRepository.save(cart);
                 });
     }
     
     public Cart getCartByUserId(Long userId) {
-        return cartRepository.findByUserId(userId).orElse(null);
+        Cart cart = cartRepository.findByUserId(userId).orElse(null);
+        if (cart != null) {
+            cart.setItems(cartItemRepository.findByCartId(cart.getId()));
+        }
+        return cart;
     }
     
     @Transactional
@@ -42,12 +47,16 @@ public class CartService {
                          String variant, String addons, String instructions) {
         Cart cart = getOrCreateCart(user);
         
+        // Load cart items
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+        cart.setItems(items);
+        
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
                 .orElseThrow(() -> new RuntimeException("Menu item not found"));
         
         // Check if same item already in cart
         Optional<CartItem> existingItem = cart.getItems().stream()
-                .filter(item -> item.getMenuItem().getId().equals(menuItemId) 
+                .filter(item -> item.getMenuItemId().equals(menuItemId) 
                         && (variant == null || variant.equals(item.getSelectedVariant())))
                 .findFirst();
         
@@ -59,8 +68,8 @@ public class CartService {
         } else {
             // Add new item
             CartItem cartItem = CartItem.builder()
-                    .cart(cart)
-                    .menuItem(menuItem)
+                    .cartId(cart.getId())
+                    .menuItemId(menuItem.getId())
                     .quantity(quantity)
                     .unitPrice(menuItem.getPrice())
                     .selectedVariant(variant)
@@ -72,8 +81,8 @@ public class CartService {
         }
         
         // Set canteen if first item
-        if (cart.getCanteen() == null) {
-            cart.setCanteen(menuItem.getCanteen());
+        if (cart.getCanteenId() == null) {
+            cart.setCanteenId(menuItem.getCanteenId());
         }
         
         cart.recalculateTotal();
@@ -93,7 +102,9 @@ public class CartService {
         item.setQuantity(quantity);
         cartItemRepository.save(item);
         
-        Cart cart = item.getCart();
+        Cart cart = cartRepository.findById(item.getCartId())
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
+        cart.setItems(cartItemRepository.findByCartId(cart.getId()));
         cart.recalculateTotal();
         return cartRepository.save(cart);
     }
@@ -103,12 +114,14 @@ public class CartService {
         CartItem item = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
         
-        Cart cart = item.getCart();
+        Cart cart = cartRepository.findById(item.getCartId())
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
+        cart.setItems(cartItemRepository.findByCartId(cart.getId()));
         cart.removeItem(item);
-        cartItemRepository.delete(item);
+        cartItemRepository.deleteById(item.getId());
         
         if (cart.getItems().isEmpty()) {
-            cart.setCanteen(null);
+            cart.setCanteenId(null);
         }
         
         cart.recalculateTotal();
@@ -119,6 +132,7 @@ public class CartService {
     public void clearCart(Long userId) {
         Cart cart = cartRepository.findByUserId(userId).orElse(null);
         if (cart != null) {
+            cartItemRepository.deleteByCartId(cart.getId());
             cart.clear();
             cartRepository.save(cart);
         }

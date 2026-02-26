@@ -4,11 +4,11 @@ import { MenuVariant, AddonGroup } from '../types/menu';
 
 
 export interface DietaryInfo {
-  vegetarian: boolean;
-  vegan: boolean;
-  glutenFree: boolean;
-  spicy: boolean;
-  containsNuts: boolean;
+  vegetarian?: boolean;
+  vegan?: boolean;
+  glutenFree?: boolean;
+  spicy?: boolean;
+  containsNuts?: boolean;
 }
 
 export interface Variant {
@@ -23,6 +23,7 @@ export interface AddOn {
 
 export interface MenuItem {
   id: number;
+  canteenId?: number;
   name: string;
   description: string;
   price: number;
@@ -32,6 +33,7 @@ export interface MenuItem {
   isAvailable: boolean;
   visibleInMenu?: boolean; // Legacy
   dietary?: DietaryInfo;
+  dietaryInfo?: DietaryInfo; // Alias used in Menu.tsx
   isVegetarian?: boolean; // For compat
   rating?: number;
   salesCount?: number;
@@ -47,6 +49,18 @@ export interface MenuItem {
   variants?: MenuVariant[];
   hasAddons?: boolean;
   addonGroups?: AddonGroup[];
+
+  // Missing properties from Menu.tsx
+  sugarLevel?: string;
+  spiceLevel?: string;
+  discount?: number;
+  isPopular?: boolean;
+  isLimitedTime?: boolean;
+  isCouponApplicable?: boolean;
+  availabilityTime?: string;
+  variantType?: 'None' | 'Size' | 'Quantity' | 'Type' | 'Crust';
+  addOns?: AddOn[];
+  imageUrl?: string;
 }
 
 export interface Canteen {

@@ -11,7 +11,6 @@ import {
   Category
 } from '../utils/canteenStore';
 import { Icons } from '@/components/Icons';
-import { getSession } from '@/utils/authStore';
 import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
 
 // Reuse dietary tags
@@ -176,7 +175,7 @@ export default function CustomerMenuPage() {
              </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 kiosk:grid-cols-5 tv:grid-cols-6 gap-6">
             {filteredItems.map(item => (
               <motion.div
                 key={item.id}

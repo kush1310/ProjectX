@@ -3,6 +3,7 @@ package com.charusat.canteen.service;
 import com.charusat.canteen.model.RefreshToken;
 import com.charusat.canteen.model.User;
 import com.charusat.canteen.repository.RefreshTokenRepository;
+import com.charusat.canteen.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,19 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
  * Refresh Token Service - Secure token rotation and management
- * 
- * Security Features:
- * - Cryptographically secure token generation (64 bytes)
- * - Token stored as hash (not plaintext)
- * - Single-use with automatic rotation
- * - Revoke all tokens on security events
- * - Device and IP tracking
- * 
- * Industry Standard: RFC 6749 OAuth 2.0, OWASP Token Guidelines
  */
 @Service
 @RequiredArgsConstructor
@@ -31,6 +24,7 @@ import java.util.Optional;
 public class RefreshTokenService {
     
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     
     @Value("${security.refresh-token.expiry-days:30}")
@@ -45,11 +39,10 @@ public class RefreshTokenService {
     @Transactional
     public TokenPair generateRefreshToken(User user, String deviceInfo, String ipAddress) {
         // Clean up old tokens if user has too many
-        long activeTokens = refreshTokenRepository.countByUserAndRevokedFalse(user);
+        long activeTokens = refreshTokenRepository.countByUserIdAndRevokedFalse(user.getId());
         if (activeTokens >= maxTokensPerUser) {
             log.info("User {} has {} active tokens, revoking oldest", user.getEmail(), activeTokens);
-            // Revoke oldest tokens - keep only last (maxTokensPerUser - 1)
-            refreshTokenRepository.revokeAllByUser(user, LocalDateTime.now(), "Max tokens exceeded");
+            refreshTokenRepository.revokeAllByUserId(user.getId(), LocalDateTime.now(), "Max tokens exceeded");
         }
         
         // Generate secure token
@@ -58,7 +51,7 @@ public class RefreshTokenService {
         
         // Create and save token entity
         RefreshToken refreshToken = RefreshToken.builder()
-                .user(user)
+                .userId(user.getId())
                 .tokenHash(tokenHash)
                 .createdAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusDays(expiryDays))
@@ -80,37 +73,35 @@ public class RefreshTokenService {
     @Transactional
     public Optional<RotationResult> rotateToken(String rawToken, String deviceInfo, String ipAddress) {
         // Find all non-revoked tokens for validation
-        // This is O(n) but necessary for security since we hash tokens
-        var allTokens = refreshTokenRepository.findAll();
-        
-        for (RefreshToken storedToken : allTokens) {
-            if (storedToken.getRevoked()) continue;
-            
-            // Constant-time comparison via BCrypt
-            if (passwordEncoder.matches(rawToken, storedToken.getTokenHash())) {
-                // Found matching token
-                if (!storedToken.isValid()) {
-                    log.warn("Attempted use of expired/revoked token for user {}", 
-                            storedToken.getUser().getEmail());
-                    return Optional.empty();
+        // We iterate non-revoked tokens per-user approach isn't possible since we don't know the user yet
+        // This is acceptable for the expected token volume
+        List<User> allUsers = userRepository.findAll();
+        for (User user : allUsers) {
+            List<RefreshToken> activeTokens = refreshTokenRepository.findByUserIdAndRevokedFalse(user.getId());
+            for (RefreshToken storedToken : activeTokens) {
+                if (passwordEncoder.matches(rawToken, storedToken.getTokenHash())) {
+                    // Found matching token
+                    if (!storedToken.isValid()) {
+                        log.warn("Attempted use of expired/revoked token for user {}", user.getEmail());
+                        return Optional.empty();
+                    }
+                    
+                    // Check for token theft (different IP/device)
+                    if (storedToken.getIpAddress() != null && !storedToken.getIpAddress().equals(ipAddress)) {
+                        log.warn("Token used from different IP. Original: {}, Current: {}",
+                                storedToken.getIpAddress(), ipAddress);
+                    }
+                    
+                    // Revoke the old token
+                    storedToken.revoke("Rotated");
+                    refreshTokenRepository.save(storedToken);
+                    
+                    // Generate new token
+                    TokenPair newToken = generateRefreshToken(user, deviceInfo, ipAddress);
+                    
+                    log.info("Token rotated for user {}", user.getEmail());
+                    return Optional.of(new RotationResult(user, newToken));
                 }
-                
-                // Check for token theft (different IP/device)
-                if (!storedToken.getIpAddress().equals(ipAddress)) {
-                    log.warn("Token used from different IP. Original: {}, Current: {}",
-                            storedToken.getIpAddress(), ipAddress);
-                    // Don't block, but log for security monitoring
-                }
-                
-                // Revoke the old token
-                storedToken.revoke("Rotated");
-                refreshTokenRepository.save(storedToken);
-                
-                // Generate new token
-                TokenPair newToken = generateRefreshToken(storedToken.getUser(), deviceInfo, ipAddress);
-                
-                log.info("Token rotated for user {}", storedToken.getUser().getEmail());
-                return Optional.of(new RotationResult(storedToken.getUser(), newToken));
             }
         }
         
@@ -123,7 +114,7 @@ public class RefreshTokenService {
      */
     @Transactional
     public void revokeAllUserTokens(User user, String reason) {
-        int revoked = refreshTokenRepository.revokeAllByUser(user, LocalDateTime.now(), reason);
+        int revoked = refreshTokenRepository.revokeAllByUserId(user.getId(), LocalDateTime.now(), reason);
         log.info("Revoked {} refresh tokens for user {} - Reason: {}", revoked, user.getEmail(), reason);
     }
     
@@ -132,14 +123,17 @@ public class RefreshTokenService {
      */
     @Transactional
     public boolean revokeToken(String rawToken) {
-        var allTokens = refreshTokenRepository.findAll();
-        
-        for (RefreshToken storedToken : allTokens) {
-            if (passwordEncoder.matches(rawToken, storedToken.getTokenHash())) {
-                storedToken.revoke("User logout");
-                refreshTokenRepository.save(storedToken);
-                log.info("Token revoked for user {}", storedToken.getUser().getEmail());
-                return true;
+        // Search active tokens across all users
+        List<User> allUsers = userRepository.findAll();
+        for (User user : allUsers) {
+            List<RefreshToken> activeTokens = refreshTokenRepository.findByUserIdAndRevokedFalse(user.getId());
+            for (RefreshToken storedToken : activeTokens) {
+                if (passwordEncoder.matches(rawToken, storedToken.getTokenHash())) {
+                    storedToken.revoke("User logout");
+                    refreshTokenRepository.save(storedToken);
+                    log.info("Token revoked for user {}", user.getEmail());
+                    return true;
+                }
             }
         }
         return false;

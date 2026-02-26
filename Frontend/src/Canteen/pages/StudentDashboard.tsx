@@ -84,7 +84,7 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-white pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white shadow-sm">
-        <div className="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl kiosk:max-w-7xl tv:max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex flex-col">
             <button 
               onClick={() => setShowAddressModal(true)}
@@ -96,7 +96,7 @@ export default function StudentDashboard() {
                  : 'CHARUSAT Campus'}</span>
                <Icons.ChevronRight className="w-3 h-3 opacity-50" />
             </button>
-            <h1 className="font-bold text-sm text-gray-900 truncate max-w-[200px]">
+            <h1 className="font-bold text-sm sm:text-base lg:text-lg text-gray-900 truncate max-w-[200px] sm:max-w-none">
               {user?.fullName || 'Student Needs'}
             </h1>
           </div>
@@ -109,7 +109,7 @@ export default function StudentDashboard() {
         </div>
         
         {/* Search Bar - Real-time Fuzzy Search */}
-        <div className="px-4 pb-4 max-w-xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-8 pb-4 max-w-6xl kiosk:max-w-7xl tv:max-w-[1800px] mx-auto">
           <div className={`relative flex items-center bg-gray-100 rounded-xl transition-all ${isSearchFocused ? 'ring-2 ring-[#e23744]/20 bg-white border border-[#e23744]' : ''}`}>
             <Icons.Search className="w-5 h-5 text-gray-400 ml-4" />
             <input
@@ -133,7 +133,7 @@ export default function StudentDashboard() {
         </div>
       </header>
       
-      <main className="max-w-xl mx-auto px-4 pt-4">
+      <main className="max-w-6xl kiosk:max-w-7xl tv:max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           
           {/* Quick Filters */}
           <div className="flex gap-3 overflow-x-auto no-scrollbar mb-6 pb-2">
@@ -205,11 +205,11 @@ export default function StudentDashboard() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="space-y-4"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 kiosk:grid-cols-4 tv:grid-cols-5 gap-4 sm:gap-6"
               >
                 {/* Results Header */}
                 {showResults && (
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="col-span-full flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-500">
                       {filteredCanteens.length} {filteredCanteens.length === 1 ? 'result' : 'results'}
                       {searchQuery && ` for "${searchQuery}"`}
@@ -220,9 +220,9 @@ export default function StudentDashboard() {
                 {!showResults && (
                   <>
                     {/* Featured Section */}
-                    <div className="mb-6">
+                    <div className="col-span-full mb-6">
                       <h2 className="font-black text-gray-800 tracking-tight text-lg mb-4">Explore</h2>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 kiosk:grid-cols-5 tv:grid-cols-6 gap-4">
                         <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-2xl border border-indigo-100 relative overflow-hidden h-32 flex flex-col justify-between group cursor-pointer">
                           <span className="font-bold text-indigo-900 z-10">Best Offers</span>
                           <span className="text-xs text-indigo-600 font-medium z-10">Up to 60% OFF</span>
@@ -240,7 +240,7 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                     
-                    <h2 className="font-black text-gray-800 tracking-tight text-lg">All Canteens</h2>
+                    <h2 className="col-span-full font-black text-gray-800 tracking-tight text-lg">All Canteens</h2>
                   </>
                 )}
 

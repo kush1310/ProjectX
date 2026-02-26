@@ -16,7 +16,6 @@ import {
   deleteCategory,
   MenuItem,
   Category,
-  DietaryInfo,
   Variant,
   AddOn
 } from '../utils/canteenStore';
@@ -36,14 +35,7 @@ const Icons = {
   Tag: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>,
 };
 
-// Dietary tag configs
-const DIETARY_TAGS: { key: keyof DietaryInfo; label: string; icon: string; color: string }[] = [
-  { key: 'vegetarian', label: 'Vegetarian', icon: 'Veg', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { key: 'vegan', label: 'Vegan', icon: 'Vegan', color: 'bg-green-50 text-green-700 border-green-200' },
-  { key: 'glutenFree', label: 'Gluten-Free', icon: 'GF', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'spicy', label: 'Spicy', icon: 'Hot', color: 'bg-red-50 text-red-700 border-red-200' },
-  { key: 'containsNuts', label: 'Contains Nuts', icon: 'Nuts', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-];
+
 
 export default function CanteenMenuPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -60,7 +52,7 @@ export default function CanteenMenuPage() {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [showCategoryDeleteAlert, setShowCategoryDeleteAlert] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
 
   // Load data
   const loadMenu = async () => {
@@ -110,7 +102,7 @@ export default function CanteenMenuPage() {
     }
   };
 
-  const confirmDeleteCategory = (id: string) => {
+  const confirmDeleteCategory = (id: number) => {
     setCategoryToDelete(id);
     setShowCategoryDeleteAlert(true);
   };
@@ -145,7 +137,7 @@ export default function CanteenMenuPage() {
     setShowCategoryModal(false);
   };
 
-  const handleDeleteCategory = async (id: string) => {
+  const handleDeleteCategory = async (id: number) => {
     confirmDeleteCategory(id);
   };
 
@@ -451,7 +443,7 @@ function ItemModal({ item, categories, onSave, onClose }: {
   const addVariant = () => {
     setFormData({
       ...formData,
-      variants: [...(formData.variants || []), { name: '', price: 0 }]
+      variants: [...(formData.variants || []), { id: String(Date.now()), name: '', price: 0 }]
     });
   };
 

@@ -1,21 +1,27 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Client, StompSubscription } from "@stomp/stompjs";
+import { Client } from "@stomp/stompjs";
 
-export const useWebSocket = (url: string = "http://localhost:8080/ws") => {
+/**
+ * WebSocket hook using STOMP over native WebSocket.
+ * 
+ * Connects to the backend /ws-native endpoint and provides
+ * subscribe and publish capabilities. Auto-reconnects on disconnect.
+ */
+export const useWebSocket = () => {
   const clientRef = useRef<Client | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const client = new Client({
-      brokerURL: "ws://localhost:8080/ws", // Native WebSocket URL
-      // If using SockJS (which we enabled in backend configs with .withSockJS())
-      // stompjs v6+ usually prefers native WS.
-      // But if we want SockJS fallback, we'd need a specific factory.
-      // For this modern setup, let's try native WS first which usually works best.
-      // If that fails, we can add SockJS factory locally.
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsHost = window.location.hostname;
+    const wsPort = "8080"; // Backend port
+    const brokerURL = `${wsProtocol}//${wsHost}:${wsPort}/ws-native`;
 
+    const client = new Client({
+      brokerURL,
+      
       onConnect: () => {
-        console.log("✅ WebSocket Connected");
+        console.log("✅ WebSocket Connected to", brokerURL);
         setIsConnected(true);
       },
       onDisconnect: () => {
@@ -23,10 +29,19 @@ export const useWebSocket = (url: string = "http://localhost:8080/ws") => {
         setIsConnected(false);
       },
       onStompError: (frame) => {
-        console.error("Broker reported error: " + frame.headers["message"]);
-        console.error("Additional details: " + frame.body);
+        console.error("STOMP error:", frame.headers["message"]);
+        console.error("Details:", frame.body);
       },
+      onWebSocketError: (event) => {
+        console.error("WebSocket error:", event);
+      },
+      
+      // Reconnect with 5s delay
       reconnectDelay: 5000,
+      
+      // Heartbeat: send every 10s, expect every 10s
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
     });
 
     client.activate();
@@ -35,8 +50,12 @@ export const useWebSocket = (url: string = "http://localhost:8080/ws") => {
     return () => {
       client.deactivate();
     };
-  }, [url]);
+  }, []);
 
+  /**
+   * Subscribe to a STOMP topic.
+   * Returns the subscription object which can be unsubscribed.
+   */
   const subscribe = useCallback(
     (topic: string, callback: (message: any) => void) => {
       if (!clientRef.current || !isConnected) return null;
@@ -46,12 +65,30 @@ export const useWebSocket = (url: string = "http://localhost:8080/ws") => {
           const body = JSON.parse(message.body);
           callback(body);
         } catch (e) {
-          console.error("Failed to parse websocket message", e);
+          console.error("Failed to parse WebSocket message:", e);
         }
       });
     },
     [isConnected],
   );
 
-  return { isConnected, subscribe };
+  /**
+   * Publish a message to a STOMP destination.
+   */
+  const publish = useCallback(
+    (destination: string, body: any) => {
+      if (!clientRef.current || !isConnected) {
+        console.warn("Cannot publish: WebSocket not connected");
+        return;
+      }
+
+      clientRef.current.publish({
+        destination,
+        body: JSON.stringify(body),
+      });
+    },
+    [isConnected],
+  );
+
+  return { isConnected, subscribe, publish };
 };

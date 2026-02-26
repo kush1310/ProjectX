@@ -10,14 +10,14 @@
 
 import { useState, FormEvent, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import CharusatNeedsLogo from '@/components/Logo'
 import LightweightBorder from '@/components/LightweightBorder'
 import { toast } from 'react-hot-toast'
 import { validateEmailStrict } from '@/utils/validation'
 
 export default function ForgotPassword() {
-  const navigate = useNavigate()
+
   const location = useLocation()
   
   const [email, setEmail] = useState('')
@@ -95,15 +95,7 @@ export default function ForgotPassword() {
     setIsSubmitting(false)
   }
 
-  // Demo function to simulate clicking link from email
-  const handleSimulateEmailClick = () => {
-    // In real app, user clicks link in email -> /reset-password?token=XYZ
-    // For demo, we just navigate to reset password. 
-    // Ideally we need a token, but ResetPassword page handles "no token" with error.
-    // We can't easily simulate a valid token from frontend without backend help or hardcoding.
-    // For flow smoothness, we'll navigate, but user will see "Invalid Token" error on next page unless we cheat.
-    toast('Check your actual email for the link!', { icon: '📧' });
-  }
+
 
   return (
     <motion.div 

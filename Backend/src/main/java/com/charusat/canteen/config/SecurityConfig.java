@@ -53,8 +53,8 @@ public class SecurityConfig {
                 // Public profile image endpoint (so images can be displayed without auth)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/users/profile/image/**").permitAll()
                 
-                // WebSocket endpoint
-                .requestMatchers("/ws/**").permitAll()
+                // WebSocket endpoints
+                .requestMatchers("/ws/**", "/ws-native/**").permitAll()
                 
                 // H2 Console (dev only)
                 .requestMatchers("/h2-console/**").permitAll()
