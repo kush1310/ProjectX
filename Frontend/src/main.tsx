@@ -38,10 +38,14 @@ function Root() {
   )
 }
 
+import { ErrorBoundary } from './ErrorBoundary'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <Root />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Root />
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )

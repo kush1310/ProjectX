@@ -4,18 +4,20 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import Sidebar from '@/components/Sidebar';
 import ElectroBorder from '@/components/ElectroBorder';
-import { 
+import {
   fetchMenu,
-  getCategories, 
+  getCategories,
   addMenuItem,
   updateMenuItem,
-  deleteMenuItem, 
+  deleteMenuItem,
   toggleItemAvailability,
   saveCategory,
   deleteCategory,
-  MenuItem, 
+  MenuItem,
   Category,
-  DietaryInfo 
+  DietaryInfo,
+  Coupon,
+  getActiveCoupons
 } from '../utils/canteenStore';
 
 // Icons 
@@ -41,6 +43,7 @@ const DIETARY_TAGS: { key: keyof DietaryInfo; label: string; icon: string; color
 
 export default function CanteenMenuPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,15 +58,45 @@ export default function CanteenMenuPage() {
   // Load data
   const loadMenu = async () => {
     setLoading(true);
-    const menuData = await fetchMenu(canteenId);
+    const [menuData, couponsData, categoriesData] = await Promise.all([
+      fetchMenu(canteenId),
+      getActiveCoupons(canteenId),
+      getCategories(canteenId)
+    ]);
     setItems(menuData);
-    setCategories(getCategories());
+    setCoupons(couponsData);
+    setCategories(categoriesData);
     setLoading(false);
   };
-  
+
   useEffect(() => {
     loadMenu();
   }, [canteenId]);
+
+  // Compute discounts map
+  const itemDiscounts = useMemo(() => {
+    const discounts: Record<number, { value: number; type: string; label: string }> = {};
+
+    coupons.forEach(coupon => {
+      // General coupons don't apply to specific items directly for tags usually, 
+      // unless we want to show "Site-wide 20% OFF" on everything.
+      // For now, let's focus on ITEM_SPECIFIC and COMBO
+      if (coupon.couponType === 'ITEM_SPECIFIC' && coupon.applicableItems) {
+        coupon.applicableItems.forEach(appItem => {
+          // Check if this coupon gives a better discount than existing
+          // simple check: just take the first one or max value
+          const value = coupon.discountValue;
+          const type = coupon.discountType;
+          const label = type === 'PERCENTAGE' ? `${value}% OFF` : `₹${value} OFF`;
+
+          if (!discounts[appItem.menuItemId] || value > discounts[appItem.menuItemId].value) {
+            discounts[appItem.menuItemId] = { value, type, label };
+          }
+        });
+      }
+    });
+    return discounts;
+  }, [coupons]);
 
   // Filter logic
   const filteredItems = useMemo(() => {
@@ -79,9 +112,9 @@ export default function CanteenMenuPage() {
   const handleToggleAvailability = async (id: number) => { // Changed id details
     const item = items.find(i => i.id === id);
     if (item) {
-        await toggleItemAvailability(id, !item.isAvailable);
-        // Refresh locally or reload
-        setItems(prev => prev.map(i => i.id === id ? { ...i, isAvailable: !i.isAvailable } : i));
+      await toggleItemAvailability(id, !item.isAvailable);
+      // Refresh locally or reload
+      setItems(prev => prev.map(i => i.id === id ? { ...i, isAvailable: !i.isAvailable } : i));
     }
   };
 
@@ -94,30 +127,26 @@ export default function CanteenMenuPage() {
 
   const handleSaveItem = async (item: MenuItem) => {
     if (editingItem) {
-        await updateMenuItem(item.id, item);
+      await updateMenuItem(item.id, item);
     } else {
-        await addMenuItem(canteenId, item);
+      await addMenuItem(canteenId, item);
     }
     loadMenu();
     setShowItemModal(false);
     setEditingItem(null);
   };
 
-  const handleAddCategory = (name: string) => {
-    const newCategory: Category = {
-      id: name.toLowerCase().replace(/\s+/g, '-'),
-      name,
-      color: '#10b981'
-    };
-    saveCategory(newCategory);
-    setCategories(getCategories());
+  const handleAddCategory = async (name: string) => {
+    // legacy saveCategory usage fixed to createCategory signature
+    await saveCategory(canteenId, name);
+    setCategories(await getCategories(canteenId));
     setShowCategoryModal(false);
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: number) => {
     if (confirm('Delete this category?')) {
-      deleteCategory(id);
-      setCategories(getCategories());
+      await deleteCategory(id);
+      setCategories(await getCategories(canteenId));
     }
   };
 
@@ -133,7 +162,7 @@ export default function CanteenMenuPage() {
 
   return (
     <Sidebar>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
@@ -185,11 +214,10 @@ export default function CanteenMenuPage() {
             <div className="flex gap-2 overflow-x-auto pb-2 flex-1 scrollbar-hide">
               <button
                 onClick={() => setSelectedCategory('All')}
-                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap flex-shrink-0 ${
-                  selectedCategory === 'All'
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-200'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50'
-                }`}
+                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap flex-shrink-0 ${selectedCategory === 'All'
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-200'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50'
+                  }`}
               >
                 All Items
               </button>
@@ -197,11 +225,10 @@ export default function CanteenMenuPage() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.name)}
-                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap flex-shrink-0 ${
-                    selectedCategory === cat.name
-                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-200'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50'
-                  }`}
+                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap flex-shrink-0 ${selectedCategory === cat.name
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-200'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50'
+                    }`}
                 >
                   {cat.name}
                 </button>
@@ -242,6 +269,7 @@ export default function CanteenMenuPage() {
                     <MenuItemCard
                       key={item.id}
                       item={item}
+                      discountTag={itemDiscounts[item.id]}
                       onEdit={() => openEditModal(item)}
                       onDelete={() => handleDeleteItem(item.id)}
                       onToggle={() => handleToggleAvailability(item.id)}
@@ -278,23 +306,30 @@ export default function CanteenMenuPage() {
 }
 
 // Menu Item Card Component
-function MenuItemCard({ item, onEdit, onDelete, onToggle }: { 
-  item: MenuItem; 
-  onEdit: () => void; 
-  onDelete: () => void; 
+function MenuItemCard({ item, discountTag, onEdit, onDelete, onToggle }: {
+  item: MenuItem;
+  discountTag?: { label: string; value: number; type: string };
+  onEdit: () => void;
+  onDelete: () => void;
   onToggle: () => void;
 }) {
   return (
-    <div className={`bg-white rounded-2xl border-2 p-4 transition-all hover:shadow-lg ${
-      item.isAvailable ? 'border-gray-100 hover:border-emerald-200' : 'border-gray-200 opacity-60'
-    }`}>
+    <div className={`bg-white rounded-2xl border-2 p-4 transition-all hover:shadow-lg ${item.isAvailable ? 'border-gray-100 hover:border-emerald-200' : 'border-gray-200 opacity-60'
+      }`}>
       {/* Image */}
-      <div className="aspect-video bg-gray-100 rounded-xl mb-3 overflow-hidden">
+      <div className="aspect-video bg-gray-100 rounded-xl mb-3 overflow-hidden relative">
         {item.image ? (
           <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
             <span className="text-4xl">🍽️</span>
+          </div>
+        )}
+
+        {/* Discount Badge */}
+        {discountTag && (
+          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-sm animate-pulse z-10">
+            {discountTag.label}
           </div>
         )}
       </div>
@@ -305,7 +340,17 @@ function MenuItemCard({ item, onEdit, onDelete, onToggle }: {
           <h3 className="font-bold text-gray-900 truncate uppercase tracking-wider text-sm">{item.name}</h3>
           <p className="text-xs text-gray-500 truncate uppercase tracking-wider">{item.category}</p>
         </div>
-        <p className="text-lg font-bold text-emerald-600">₹{item.price}</p>
+        <div className="text-right">
+          <p className="text-lg font-bold text-emerald-600">
+            {discountTag && discountTag.type === 'PERCENTAGE'
+              ? <>
+                <span className="text-xs text-gray-400 line-through mr-1">₹{item.price}</span>
+                ₹{Math.round(item.price * (1 - discountTag.value / 100))}
+              </>
+              : `₹${item.price}`
+            }
+          </p>
+        </div>
       </div>
 
       {/* Dietary Tags */}
@@ -323,11 +368,10 @@ function MenuItemCard({ item, onEdit, onDelete, onToggle }: {
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
         <button
           onClick={onToggle}
-          className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all uppercase tracking-wider ${
-            item.isAvailable 
-              ? 'bg-emerald-100 text-emerald-700' 
+          className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all uppercase tracking-wider ${item.isAvailable
+              ? 'bg-emerald-100 text-emerald-700'
               : 'bg-gray-100 text-gray-500'
-          }`}
+            }`}
         >
           {item.isAvailable ? 'Available' : 'Unavailable'}
         </button>
@@ -449,7 +493,7 @@ function ItemModal({ item, categories, onSave, onClose }: {
 function CategoryModal({ categories, onAdd, onDelete, onClose }: {
   categories: Category[];
   onAdd: (name: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   onClose: () => void;
 }) {
   const [newCategory, setNewCategory] = useState('');
@@ -475,7 +519,7 @@ function CategoryModal({ categories, onAdd, onDelete, onClose }: {
             <Icons.X />
           </button>
         </div>
-        
+
         {/* Add new */}
         <div className="flex gap-2 mb-4">
           <input

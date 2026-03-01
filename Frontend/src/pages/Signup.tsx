@@ -229,10 +229,17 @@ export default function Signup() {
       mobile: formData.mobile
     })
 
-    if (registerResult.success && registerResult.user && registerResult.token) {
-      createSession(registerResult.user, registerResult.token, true)
-      toast.success("Account created successfully!")
-      setTimeout(() => navigate('/dashboard', { replace: true }), 600)
+    if (registerResult.success) {
+      if (registerResult.token) {
+        // Auto-login (Legacy/Dev)
+        createSession(registerResult.user!, registerResult.token, true)
+        toast.success("Account created successfully!")
+        setTimeout(() => navigate('/dashboard', { replace: true }), 600)
+      } else {
+        // Verification Required Flow
+        toast.success(registerResult.message || "Registration successful! Please check your email.")
+        setTimeout(() => navigate('/login'), 2000)
+      }
     } else {
       setErrors({ general: registerResult.message })
     }

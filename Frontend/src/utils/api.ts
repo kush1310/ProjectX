@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { getSession, logout } from './authStore';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -15,7 +15,7 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const session = getSession();
     if (session && (session as any).token) {
-        config.headers.set('Authorization', `Bearer ${(session as any).token}`);
+      config.headers.set('Authorization', `Bearer ${(session as any).token}`);
     }
     return config;
   },

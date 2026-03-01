@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CharusatNeeds SGP — Algorithms & APIs Description</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            line-height: 1.7;
+            padding: 40px 60px;
+            max-width: 900px;
+            margin: auto;
+            background: #fff
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 4px
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            color: #fff;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            padding: 10px 18px;
+            border-radius: 8px;
+            margin: 28px 0 12px;
+            page-break-after: avoid
+        }
+
+        h3 {
+            font-size: 16px;
+            color: #4f46e5;
+            margin: 16px 0 6px;
+            border-bottom: 2px solid #e0e7ff;
+            padding-bottom: 4px
+        }
+
+        p,
+        li {
+            font-size: 13px
+        }
+
+        ul {
+            padding-left: 22px;
+            margin-bottom: 10px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 18px;
+            font-size: 12.5px
+        }
+
+        th {
+            background: #6366f1;
+            color: #fff;
+            padding: 8px 10px;
+            text-align: left
+        }
+
+        td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #e2e8f0
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 24px
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px
+        }
+
+        .section {
+            page-break-inside: avoid
+        }
+
+        @media print {
+            body {
+                padding: 20px 30px
+            }
+
+            h2 {
+                break-after: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>CharusatNeeds — Campus Canteen Aggregator</h1>
+    <p class="subtitle">Algorithms, APIs & Technologies Description Document &bull; SGP Project &bull; February 2026</p>
+
+    <!-- ===== 1. TECH STACK ===== -->
+    <h2>1. Technology Stack Overview</h2>
+    <table>
+        <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+            <th>Version</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td>Backend Framework</td>
+            <td>Spring Boot</td>
+            <td>3.2.2</td>
+            <td>REST API server, dependency injection, auto-configuration</td>
+        </tr>
+        <tr>
+            <td>Language</td>
+            <td>Java</td>
+            <td>17</td>
+            <td>Backend business logic</td>
+        </tr>
+        <tr>
+            <td>Database</td>
+            <td>PostgreSQL / H2</td>
+            <td>—</td>
+            <td>Relational data storage (H2 for dev)</td>
+        </tr>
+        <tr>
+            <td>ORM</td>
+            <td>Spring Data JPA + JDBC</td>
+            <td>—</td>
+            <td>Database queries and schema init</td>
+        </tr>
+        <tr>
+            <td>Security</td>
+            <td>Spring Security</td>
+            <td>—</td>
+            <td>Authentication, authorization, CORS</td>
+        </tr>
+        <tr>
+            <td>JWT Library</td>
+            <td>jjwt (io.jsonwebtoken)</td>
+            <td>0.12.3</td>
+            <td>Token generation and validation</td>
+        </tr>
+        <tr>
+            <td>API Docs</td>
+            <td>SpringDoc OpenAPI</td>
+            <td>2.3.0</td>
+            <td>Swagger UI for API documentation</td>
+        </tr>
+        <tr>
+            <td>WebSocket</td>
+            <td>Spring WebSocket + STOMP</td>
+            <td>—</td>
+            <td>Real-time order notifications</td>
+        </tr>
+        <tr>
+            <td>Email</td>
+            <td>Brevo HTTP API</td>
+            <td>—</td>
+            <td>Transactional emails (welcome, reset, verify)</td>
+        </tr>
+        <tr>
+            <td>Frontend</td>
+            <td>React + TypeScript</td>
+            <td>18.3</td>
+            <td>Single-page application UI</td>
+        </tr>
+        <tr>
+            <td>Build Tool</td>
+            <td>Vite</td>
+            <td>6.0</td>
+            <td>Frontend bundling and dev server</td>
+        </tr>
+        <tr>
+            <td>HTTP Client</td>
+            <td>Axios</td>
+            <td>1.13</td>
+            <td>REST API communication</td>
+        </tr>
+        <tr>
+            <td>Animations</td>
+            <td>Framer Motion</td>
+            <td>11.0</td>
+            <td>UI animations and transitions</td>
+        </tr>
+        <tr>
+            <td>Charts</td>
+            <td>Recharts</td>
+            <td>3.7</td>
+            <td>Analytics dashboard visualizations</td>
+        </tr>
+        <tr>
+            <td>Validation</td>
+            <td>Zod</td>
+            <td>4.3</td>
+            <td>Runtime schema validation on frontend</td>
+        </tr>
+        <tr>
+            <td>Routing</td>
+            <td>React Router DOM</td>
+            <td>6.22</td>
+            <td>Client-side routing and navigation</td>
+        </tr>
+        <tr>
+            <td>Search</td>
+            <td>fuzzy-search</td>
+            <td>3.2</td>
+            <td>Fuzzy/elastic search for menu items and coupons</td>
+        </tr>
+        <tr>
+            <td>Styling</td>
+            <td>TailwindCSS</td>
+            <td>3.4</td>
+            <td>Utility-first CSS framework</td>
+        </tr>
+    </table>
+
+    <!-- ===== 2. AUTH ALGORITHMS ===== -->
+    <h2>2. Authentication & Security Algorithms</h2>
+
+    <div class="section">
+        <h3>2.1 JWT (JSON Web Token) — HS256 HMAC Algorithm</h3>
+        <p><span class="badge">JwtService.java</span><span class="badge">AuthService.java</span></p>
+        <p><b>What it is:</b> JWT is an open standard (RFC 7519) for securely transmitting information between parties
+            as a JSON object. The token is digitally signed using HMAC-SHA256.</p>
+        <p><b>How it works:</b></p>
+        <ul>
+            <li><b>Token Generation:</b> When a user logs in, the server creates a JWT containing claims (userId, email,
+                role) and signs it with a 256-bit secret key using HMAC-SHA256.</li>
+            <li><b>Token Structure:</b> Header (algorithm + type) + Payload (claims + expiry) + Signature — all
+                Base64-encoded and separated by dots.</li>
+            <li><b>Validation:</b> On each request, the JwtAuthenticationFilter extracts the token from the
+                Authorization header, verifies the signature and expiration, and loads the user into Spring Security
+                context.</li>
+            <li><b>Expiry:</b> Tokens expire after 24 hours (86,400,000 ms) to limit exposure if compromised.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>2.2 BCrypt Password Hashing Algorithm</h3>
+        <p><span class="badge">SecurityConfig.java</span><span class="badge">PasswordPolicyService.java</span></p>
+        <p><b>What it is:</b> BCrypt is an adaptive cryptographic hash function designed for password storage. It
+            incorporates a salt to protect against rainbow table attacks.</p>
+        <p><b>How it works:</b></p>
+        <ul>
+            <li>When a user registers, their plaintext password is hashed using BCrypt with a random 128-bit salt and a
+                cost factor (default 10 rounds = 2<sup>10</sup> iterations).</li>
+            <li>Only the hash is stored in the database — the original password is never saved.</li>
+            <li>During login, BCrypt re-hashes the input with the stored salt and compares the results in constant time
+                to prevent timing attacks.</li>
+            <li>BCrypt is deliberately slow, making brute-force attacks computationally expensive.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>2.3 Google OAuth 2.0 (Authorization Code Flow)</h3>
+        <p><span class="badge">GoogleAuthService.java</span></p>
+        <p><b>What it is:</b> OAuth 2.0 (RFC 6749) allows users to log in using their Google account without sharing
+            their password with our application.</p>
+        <p><b>How it works:</b></p>
+        <ul>
+            <li><b>Step 1:</b> User clicks "Sign in with Google" — the frontend redirects to Google's consent screen.
+            </li>
+            <li><b>Step 2:</b> Google returns an authorization code to the redirect URI (<code>/auth/callback</code>).
+            </li>
+            <li><b>Step 3:</b> Backend exchanges the code for an access token via Google's token endpoint using
+                RestTemplate.</li>
+            <li><b>Step 4:</b> Backend uses the access token to fetch user profile (email, name, picture) from Google's
+                UserInfo API.</li>
+            <li><b>Step 5:</b> If the email domain is valid (e.g., @charusat.edu.in), the system finds or creates the
+                user and issues a JWT.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>2.4 Refresh Token Rotation Algorithm</h3>
+        <p><span class="badge">RefreshTokenService.java</span></p>
+        <p><b>What it is:</b> A security mechanism (RFC 6749, OWASP guidelines) where refresh tokens are single-use and
+            rotated on each use.</p>
+        <p><b>How it works:</b></p>
+        <ul>
+            <li>A 64-byte cryptographically secure random token is generated using <code>SecureRandom</code>.</li>
+            <li>The token is hashed with BCrypt before storage — only the hash is saved in the database.</li>
+            <li>When the access token expires, the client sends the refresh token. The server validates it via BCrypt
+                matching, revokes the old token, and issues a new token pair.</li>
+            <li>Max 5 active tokens per user; oldest tokens are auto-revoked. Tokens expire after 30 days.</li>
+            <li>IP and device tracking detects potential token theft (token used from a different IP).</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>2.5 Progressive Account Lockout Algorithm</h3>
+        <p><span class="badge">AccountLockoutService.java</span></p>
+        <p><b>What it is:</b> A brute-force prevention mechanism following OWASP A07:2021 guidelines with escalating
+            lockout durations.</p>
+        <p><b>How it works:</b></p>
+        <ul>
+            <li>Failed login attempts are tracked per user (email) and per IP address within a 15-minute sliding window.
+            </li>
+            <li><b>Progressive lockout:</b> 5 failures → 5 min lock, 10 failures → 15 min lock, 15+ failures → 1 hour
+                lock.</li>
+            <li>IP-based rate limiting: 20 failed attempts from any single IP triggers an IP block.</li>
+            <li>After 3 failures, CAPTCHA verification is required before allowing further login attempts.</li>
+            <li>Lockout resets immediately after a successful login.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>2.6 NIST 800-63B Password Policy Algorithm</h3>
+        <p><span class="badge">PasswordPolicyService.java</span></p>
+        <p><b>What it is:</b> Password strength enforcement following NIST Digital Identity Guidelines.</p>
+        <p><b>Rules enforced:</b> Min 8 chars, max 128 chars, at least 1 uppercase, 1 lowercase, 1 digit. Common
+            passwords (e.g., "password", "123456") are blocked. Password cannot contain the username.</p>
+        <p><b>Password History:</b> Last 5 passwords are stored as BCrypt hashes. Users cannot reuse recent passwords.
+        </p>
+        <p><b>Strength Scoring (0–100):</b> Length contributes up to 40 points (4 pts/char); each complexity category
+            (uppercase, lowercase, digit, special) adds 15 points.</p>
+    </div>
+
+    <div class="section">
+        <h3>2.7 CAPTCHA Generation Algorithm</h3>
+        <p><span class="badge">CaptchaService.java</span></p>
+        <p><b>What it is:</b> Server-side CAPTCHA generation using Java 2D Graphics API to prevent automated login
+            attacks.</p>
+        <p><b>How it works:</b></p>
+        <ul>
+            <li>A 6-character random code is generated from an ambiguity-free character set (excludes I, O, 1, 0).</li>
+            <li>A 160×50 pixel image is rendered using Java2D with random noise lines, random text colors, and slight
+                vertical offsets for each character.</li>
+            <li>The image is encoded as Base64 PNG and sent to the client. The code is stored in a ConcurrentHashMap
+                with a UUID key and 5-minute TTL.</li>
+            <li>Validation is one-time-use and case-insensitive. Expired entries are cleaned every 10 minutes by a
+                scheduled executor.</li>
+        </ul>
+    </div>
+
+    <!-- ===== 3. REST APIs ===== -->
+    <h2>3. REST API Endpoints</h2>
+    <table>
+        <tr>
+            <th>Controller</th>
+            <th>Base Path</th>
+            <th>Key Endpoints</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>AuthController</td>
+            <td>/api/auth</td>
+            <td>POST /login, /register, /google, /refresh, /logout</td>
+            <td>User authentication, registration, Google OAuth, token refresh</td>
+        </tr>
+        <tr>
+            <td>PasswordResetController</td>
+            <td>/api/password</td>
+            <td>POST /forgot, /reset, /change, /validate-token</td>
+            <td>Password reset flow with email tokens</td>
+        </tr>
+        <tr>
+            <td>UserController</td>
+            <td>/api/users</td>
+            <td>GET /profile, PUT /profile, POST /profile/image</td>
+            <td>User profile management with image upload</td>
+        </tr>
+        <tr>
+            <td>CanteenController</td>
+            <td>/api/canteens</td>
+            <td>GET /, GET /{id}, GET /{id}/menu</td>
+            <td>Canteen listing and menu browsing</td>
+        </tr>
+        <tr>
+            <td>CartController</td>
+            <td>/api/cart</td>
+            <td>GET /, POST /add, PUT /update, DELETE /remove</td>
+            <td>Shopping cart CRUD operations</td>
+        </tr>
+        <tr>
+            <td>OrderController</td>
+            <td>/api/orders</td>
+            <td>POST /create, PUT /{id}/status, GET /my-orders</td>
+            <td>Order placement and status management</td>
+        </tr>
+        <tr>
+            <td>CouponController</td>
+            <td>/api/coupons</td>
+            <td>POST /create, /validate, /suggest, GET /dashboard</td>
+            <td>Coupon CRUD, validation, analytics</td>
+        </tr>
+        <tr>
+            <td>CategoryController</td>
+            <td>/api/categories</td>
+            <td>GET /, POST /</td>
+            <td>Menu category management</td>
+        </tr>
+        <tr>
+            <td>AnalyticsController</td>
+            <td>/api/analytics</td>
+            <td>GET /dashboard, /sales, /vendor-impact</td>
+            <td>Business analytics and reporting</td>
+        </tr>
+        <tr>
+            <td>CaptchaController</td>
+            <td>/api/captcha</td>
+            <td>GET /generate, POST /validate</td>
+            <td>CAPTCHA generation and verification</td>
+        </tr>
+        <tr>
+            <td>VendorController</td>
+            <td>/api/vendors</td>
+            <td>GET /, PUT /profile</td>
+            <td>Vendor profile management</td>
+        </tr>
+    </table>
+
+    <!-- ===== 4. THIRD-PARTY APIs ===== -->
+    <h2>4. External / Third-Party APIs</h2>
+
+    <div class="section">
+        <h3>4.1 Google OAuth2 API</h3>
+        <p><b>Token Endpoint:</b> <code>https://oauth2.googleapis.com/token</code> — Exchanges authorization code for
+            access token.</p>
+        <p><b>UserInfo Endpoint:</b> <code>https://www.googleapis.com/oauth2/v2/userinfo</code> — Fetches user profile
+            (email, name, picture).</p>
+        <p><b>Use:</b> Enables single sign-on for CHARUSAT university students using their institutional Google
+            accounts.</p>
+    </div>
+
+    <div class="section">
+        <h3>4.2 Brevo (Sendinblue) Email API</h3>
+        <p><span class="badge">EmailService.java</span></p>
+        <p><b>Endpoint:</b> <code>https://api.brevo.com/v3/smtp/email</code></p>
+        <p><b>Method:</b> HTTP POST with API key in <code>api-key</code> header. Sends HTML-formatted transactional
+            emails.</p>
+        <p><b>Use:</b> Sends welcome emails, email verification links, and password reset tokens to users.</p>
+    </div>
+
+    <div class="section">
+        <h3>4.3 WebSocket (STOMP over SockJS)</h3>
+        <p><span class="badge">WebSocketConfig.java</span><span class="badge">WebSocketService.java</span></p>
+        <p><b>Endpoint:</b> <code>/ws</code> (with SockJS fallback)</p>
+        <p><b>Protocol:</b> STOMP (Simple Text Oriented Messaging Protocol) over WebSocket.</p>
+        <p><b>Broker:</b> In-memory simple broker on <code>/topic</code> prefix; app destination prefix
+            <code>/app</code>.</p>
+        <p><b>Use:</b> Real-time push notifications to vendors when new orders are placed and to customers when order
+            status changes.</p>
+    </div>
+
+    <!-- ===== 5. BUSINESS ALGORITHMS ===== -->
+    <h2>5. Business Logic Algorithms</h2>
+
+    <div class="section">
+        <h3>5.1 Coupon Validation Engine (10-Step Sequence)</h3>
+        <p><span class="badge">CouponValidationService.java</span></p>
+        <p>A rule-based validation pipeline that checks coupons in this exact order:</p>
+        <ol style="padding-left:22px;font-size:13px">
+            <li><b>Existence:</b> Coupon code exists in the database.</li>
+            <li><b>Active Status:</b> Coupon is currently enabled (not paused).</li>
+            <li><b>Date Validity:</b> Current time is between start and end dates.</li>
+            <li><b>Global Usage Limit:</b> Total redemptions haven't exceeded the maximum.</li>
+            <li><b>Per-User Usage Limit:</b> This specific user hasn't exceeded their allowed uses.</li>
+            <li><b>Minimum Order Value:</b> Cart total meets the coupon's minimum threshold.</li>
+            <li><b>Item Applicability:</b> For ITEM_SPECIFIC coupons, at least one applicable item is in cart.</li>
+            <li><b>Combo Validation:</b> For COMBO coupons, all required combo items are present.</li>
+            <li><b>Rush Hour Window:</b> For RUSH_HOUR coupons, current time falls within the specified window.</li>
+            <li><b>New Customer Check:</b> For new-customer-only coupons, user has zero prior orders.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h3>5.2 Discount Calculation Algorithm</h3>
+        <p><span class="badge">CouponService.java</span></p>
+        <p>Supports multiple discount strategies:</p>
+        <ul>
+            <li><b>PERCENTAGE:</b> discount = orderTotal × (percentage / 100), capped at maxDiscount.</li>
+            <li><b>FLAT:</b> discount = fixed amount, cannot exceed orderTotal.</li>
+            <li><b>BOGO (Buy One Get One):</b> Identifies the cheapest qualifying item and applies it as the discount.
+            </li>
+            <li><b>COMBO:</b> Applies a fixed combo discount when all required items are in the cart.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>5.3 Best Coupon Suggestion Algorithm</h3>
+        <p><span class="badge">CouponService.java</span> — <code>suggestBestCoupon()</code></p>
+        <p><b>How it works:</b> Iterates through all active coupons for the canteen, validates each against the current
+            cart, calculates the potential discount, and returns the coupon offering the maximum discount amount. This
+            is a greedy optimization approach — O(n) where n = number of active coupons.</p>
+    </div>
+
+    <div class="section">
+        <h3>5.4 Order Processing Pipeline</h3>
+        <p><span class="badge">OrderService.java</span></p>
+        <ul>
+            <li>Generates a unique order number using UUID (<code>ORD-XXXXXXXX</code>).</li>
+            <li>Validates all menu items and calculates subtotal.</li>
+            <li>If a coupon code is provided, runs the full validation engine and applies discount.</li>
+            <li>Saves order with items, records coupon usage, and sends real-time WebSocket notification to vendor.</li>
+            <li>Order follows a state machine: PENDING → CONFIRMED → PREPARING → READY → COMPLETED (or CANCELLED).</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>5.5 Analytics Computation Algorithms</h3>
+        <p><span class="badge">CouponAnalyticsService.java</span></p>
+        <ul>
+            <li><b>Sales vs Discount:</b> Groups coupon usage by time period (weekly/monthly/yearly) and aggregates
+                total sales and discounts using Java Streams with groupingBy collectors.</li>
+            <li><b>Vendor Impact:</b> Calculates revenue impact per vendor — total orders, discount given, and ROI.</li>
+            <li><b>Type Performance:</b> Aggregates usage count, total discount, and average discount per coupon type.
+            </li>
+            <li><b>Customer Analytics:</b> Identifies top users by redemption count and total savings.</li>
+        </ul>
+    </div>
+
+    <!-- ===== 6. SECURITY ===== -->
+    <h2>6. Security Architecture Summary</h2>
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Standard</th>
+            <th>Implementation</th>
+        </tr>
+        <tr>
+            <td>Password Hashing</td>
+            <td>OWASP</td>
+            <td>BCrypt with auto-generated salt, cost factor 10</td>
+        </tr>
+        <tr>
+            <td>Token Auth</td>
+            <td>RFC 7519</td>
+            <td>JWT with HS256, 24-hour expiry</td>
+        </tr>
+        <tr>
+            <td>Token Refresh</td>
+            <td>RFC 6749</td>
+            <td>Single-use rotation, BCrypt-hashed storage</td>
+        </tr>
+        <tr>
+            <td>Brute Force Protection</td>
+            <td>OWASP A07:2021</td>
+            <td>Progressive lockout (5/10/15 failure tiers)</td>
+        </tr>
+        <tr>
+            <td>Password Policy</td>
+            <td>NIST 800-63B</td>
+            <td>Length, complexity, history, common password blocking</td>
+        </tr>
+        <tr>
+            <td>Session Security</td>
+            <td>OWASP</td>
+            <td>Stateless JWT, HTTP-only cookies, SameSite=Lax</td>
+        </tr>
+        <tr>
+            <td>Audit Logging</td>
+            <td>NIST 800-53</td>
+            <td>All auth events logged with IP, user agent, timestamp</td>
+        </tr>
+        <tr>
+            <td>CORS</td>
+            <td>W3C</td>
+            <td>Whitelist-based origin validation</td>
+        </tr>
+        <tr>
+            <td>CSRF</td>
+            <td>OWASP</td>
+            <td>Disabled (stateless JWT — no cookies for auth)</td>
+        </tr>
+        <tr>
+            <td>API Security</td>
+            <td>—</td>
+            <td>JWT filter before UsernamePasswordAuthenticationFilter</td>
+        </tr>
+    </table>
+
+    <!-- ===== 7. FRONTEND ===== -->
+    <h2>7. Frontend Libraries & Their Use</h2>
+    <table>
+        <tr>
+            <th>Library</th>
+            <th>Use in Project</th>
+        </tr>
+        <tr>
+            <td>React 18 + TypeScript</td>
+            <td>Component-based UI with type safety</td>
+        </tr>
+        <tr>
+            <td>React Router DOM v6</td>
+            <td>Client-side routing (login, dashboard, canteen pages)</td>
+        </tr>
+        <tr>
+            <td>Axios</td>
+            <td>HTTP client for REST API calls with interceptors for JWT</td>
+        </tr>
+        <tr>
+            <td>@stomp/stompjs</td>
+            <td>WebSocket client for real-time order notifications</td>
+        </tr>
+        <tr>
+            <td>Framer Motion</td>
+            <td>Page transitions, card animations, micro-interactions</td>
+        </tr>
+        <tr>
+            <td>Recharts (D3-based)</td>
+            <td>Analytics charts — bar, line, pie, area charts</td>
+        </tr>
+        <tr>
+            <td>Zod</td>
+            <td>Form validation schemas (coupon forms, login, registration)</td>
+        </tr>
+        <tr>
+            <td>fuzzy-search</td>
+            <td>Fuzzy/elastic search for menu items and coupons</td>
+        </tr>
+        <tr>
+            <td>Lucide React</td>
+            <td>Premium SVG icon library for UI elements</td>
+        </tr>
+        <tr>
+            <td>react-hot-toast</td>
+            <td>Toast notifications for success/error messages</td>
+        </tr>
+        <tr>
+            <td>react-loading-skeleton</td>
+            <td>Loading placeholders while data fetches</td>
+        </tr>
+        <tr>
+            <td>Lenis (smooth scroll)</td>
+            <td>Smooth scrolling experience across pages</td>
+        </tr>
+        <tr>
+            <td>TailwindCSS</td>
+            <td>Utility-first CSS for rapid, consistent styling</td>
+        </tr>
+        <tr>
+            <td>clsx + tailwind-merge</td>
+            <td>Conditional and conflict-free CSS class merging</td>
+        </tr>
+    </table>
+
+    <hr style="margin:30px 0 20px;border:none;border-top:2px solid #e2e8f0">
+    <p style="text-align:center;font-size:12px;color:#94a3b8">
+        CharusatNeeds SGP Project &bull; CHARUSAT University &bull; Generated February 2026<br>
+        <b>To save as PDF:</b> Open this file in a browser → Press Ctrl+P → Select "Save as PDF"
+    </p>
+
+</body>
+
+</html>

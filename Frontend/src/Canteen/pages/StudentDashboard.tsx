@@ -1,125 +1,329 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
+import FuzzySearch from 'fuzzy-search';
 import { fetchCanteens, Canteen } from '../utils/canteenStore';
 import { logout, getSession } from '@/utils/authStore';
 import { Icons } from '@/components/Icons';
 import LogoutConfirmModal from '../components/LogoutConfirmModal';
+import AddressModal from '../components/AddressModal';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const [canteens, setCanteens] = useState<Canteen[]>([]);
   const [loading, setLoading] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [userAddress, setUserAddress] = useState<any>(null);
   const user = getSession();
+
+  // Quick Filters - No veg filter (campus is 100% veg)
+  const filters = [
+    { id: 'All', label: 'All', icon: <Icons.Settings className="w-4 h-4" /> },
+    { id: 'Near', label: 'Nearest', icon: <Icons.MapPin className="w-4 h-4" /> },
+    { id: 'Offers', label: 'Great Offers', icon: <Icons.Tag className="w-4 h-4" /> },
+    { id: 'Rating', label: 'Rating 4.0+', icon: <Icons.Star className="w-4 h-4" /> },
+  ];
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      const startTime = Date.now();
       const data = await fetchCanteens();
-      setCanteens(data);
-      setLoading(false);
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 800 - elapsed);
+      
+      setTimeout(() => {
+        setCanteens(data);
+        setLoading(false);
+      }, remaining);
     };
     loadData();
   }, []);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
+  // Fuzzy search implementation - real-time as user types
+  const filteredCanteens = useMemo(() => {
+    let results = canteens;
+    
+    if (searchQuery.trim()) {
+      const searcher = new FuzzySearch(canteens, ['name', 'location'], {
+        caseSensitive: false,
+        sort: true
+      });
+      results = searcher.search(searchQuery);
+    }
+
+    // Apply filter
+    if (activeFilter !== 'All') {
+      results = results.filter(canteen => {
+        switch (activeFilter) {
+          case 'Near': return true; // Would need location data
+          case 'Offers': return canteen.hasOffer || Math.random() > 0.5; // Mock
+          case 'Rating': return true; // All have constant 4.4 rating
+          default: return true;
+        }
+      });
+    }
+
+    return results;
+  }, [canteens, searchQuery, activeFilter]);
+
+  const showResults = searchQuery.trim().length > 0 || activeFilter !== 'All';
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-white pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-xl tracking-tight text-gray-900">
-              Charusat<span className="text-emerald-600">Needs</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-600 hidden sm:block">
-              Welcome, {user?.fullName || 'Student'}
-            </span>
+      <header className="sticky top-0 z-40 bg-white shadow-sm">
+        <div className="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex flex-col">
             <button 
-              onClick={() => setShowLogoutModal(true)}
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={() => setShowAddressModal(true)}
+              className="flex items-center gap-1 text-xs font-bold text-[#e23744] uppercase tracking-wider hover:opacity-80 transition-opacity"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
-              </svg>
+               <Icons.MapPin className="w-3 h-3" />
+               <span>{userAddress?.hostelName || userAddress?.buildingNumber ? 
+                 (userAddress.userType === 'STUDENT' ? `${userAddress.hostelName} - ${userAddress.roomNumber || 'Room'}` : `Building ${userAddress.buildingNumber}`) 
+                 : 'CHARUSAT Campus'}</span>
+               <Icons.ChevronRight className="w-3 h-3 opacity-50" />
             </button>
+            <h1 className="font-bold text-sm text-gray-900 truncate max-w-[200px]">
+              {user?.fullName || 'Student Needs'}
+            </h1>
+          </div>
+          <button 
+             onClick={() => navigate('/customer/profile')}
+             className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+          >
+             <span className="font-bold text-xs">{user?.fullName?.charAt(0) || 'U'}</span>
+          </button>
+        </div>
+        
+        {/* Search Bar - Real-time Fuzzy Search */}
+        <div className="px-4 pb-4 max-w-xl mx-auto">
+          <div className={`relative flex items-center bg-gray-100 rounded-xl transition-all ${isSearchFocused ? 'ring-2 ring-[#e23744]/20 bg-white border border-[#e23744]' : ''}`}>
+            <Icons.Search className="w-5 h-5 text-gray-400 ml-4" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+              placeholder="Search canteens, items..."
+              className="flex-1 py-3 px-3 bg-transparent outline-none text-gray-900 placeholder:text-gray-500"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="mr-3 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <Icons.X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Select a Canteen</h1>
-        
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100">
-                <Skeleton height={160} className="rounded-xl mb-4" />
-                <Skeleton count={2} />
-              </div>
+      
+      <main className="max-w-xl mx-auto px-4 pt-4">
+          
+          {/* Quick Filters */}
+          <div className="flex gap-3 overflow-x-auto no-scrollbar mb-6 pb-2">
+            {filters.map(filter => (
+               <button
+                  key={filter.id}
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                     activeFilter === filter.id 
+                       ? 'bg-gray-900 text-white border-gray-900' 
+                       : 'bg-white text-gray-700 border-gray-200 shadow-sm hover:border-gray-300'
+                  }`}
+               >
+                  {filter.icon}
+                  {filter.label}
+               </button>
             ))}
           </div>
-        ) : canteens.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-gray-500">No canteens available at the moment.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {canteens.map(canteen => (
+
+          {/* Search Results */}
+          <AnimatePresence mode="wait">
+            {loading ? (
               <motion.div
-                key={canteen.id}
-                whileHover={{ y: -4 }}
-                onClick={() => navigate(`/canteen/${canteen.id}/menu`)}
-                className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-emerald-200 transition-all cursor-pointer group"
+                key="skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-4"
               >
-                <div className="h-40 bg-gray-100 relative">
-                  {canteen.imageUrl ? (
-                    <img src={canteen.imageUrl} alt={canteen.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-emerald-50 text-emerald-600">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h18v18H3zM9 9h6v6H9z" /></svg>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                    <Skeleton height={160} />
+                    <div className="p-4">
+                      <Skeleton width="60%" height={20} className="mb-2" />
+                      <Skeleton width="40%" height={16} />
+                      <div className="flex gap-4 mt-3">
+                        <Skeleton width={60} height={16} />
+                        <Skeleton width={80} height={16} />
+                      </div>
                     </div>
-                  )}
-                  {canteen.isOpen && (
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-emerald-600 shadow-sm border border-emerald-100">
-                      OPEN
-                    </div>
-                  )}
+                  </div>
+                ))}
+              </motion.div>
+            ) : filteredCanteens.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-16"
+              >
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icons.Search className="w-8 h-8 text-gray-400" />
                 </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors">
-                    {canteen.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-                    {canteen.location}
-                  </p>
-                  <div className="flex items-center justify-between text-xs font-medium text-gray-400">
-                    <span>{canteen.openingTime} - {canteen.closingTime}</span>
-                    <span className="flex items-center gap-1 text-orange-500">
-                      <Icons.Star className="w-3 h-3 fill-current" /> 4.5
+                <h3 className="text-lg font-bold text-gray-900 mb-2">No results found</h3>
+                <p className="text-gray-500 text-sm">
+                  {searchQuery ? `No canteens matching "${searchQuery}"` : 'No canteens match the selected filter'}
+                </p>
+                <button 
+                  onClick={() => { setSearchQuery(''); setActiveFilter('All'); }}
+                  className="mt-4 text-[#e23744] font-semibold text-sm hover:underline"
+                >
+                  Clear filters
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-4"
+              >
+                {/* Results Header */}
+                {showResults && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-500">
+                      {filteredCanteens.length} {filteredCanteens.length === 1 ? 'result' : 'results'}
+                      {searchQuery && ` for "${searchQuery}"`}
                     </span>
                   </div>
-                </div>
+                )}
+
+                {!showResults && (
+                  <>
+                    {/* Featured Section */}
+                    <div className="mb-6">
+                      <h2 className="font-black text-gray-800 tracking-tight text-lg mb-4">Explore</h2>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-2xl border border-indigo-100 relative overflow-hidden h-32 flex flex-col justify-between group cursor-pointer">
+                          <span className="font-bold text-indigo-900 z-10">Best Offers</span>
+                          <span className="text-xs text-indigo-600 font-medium z-10">Up to 60% OFF</span>
+                          <div className="absolute right-[-10px] bottom-[-10px] opacity-20 group-hover:scale-110 transition-transform">
+                            <Icons.Tag className="w-24 h-24" />
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-2xl border border-amber-100 relative overflow-hidden h-32 flex flex-col justify-between group cursor-pointer">
+                          <span className="font-bold text-amber-900 z-10">Campus Special</span>
+                          <span className="text-xs text-amber-600 font-medium z-10">New items daily</span>
+                          <div className="absolute right-[-10px] bottom-[-10px] opacity-20 group-hover:scale-110 transition-transform">
+                            <Icons.Star className="w-24 h-24" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <h2 className="font-black text-gray-800 tracking-tight text-lg">All Canteens</h2>
+                  </>
+                )}
+
+                {/* Canteen Cards */}
+                {filteredCanteens.map((canteen, index) => (
+                  <motion.div
+                    key={canteen.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => navigate(`/canteen/${canteen.id}/menu`)}
+                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+                  >
+                    {/* Image */}
+                    <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                      {canteen.imageUrl ? (
+                        <img 
+                          src={canteen.imageUrl} 
+                          alt={canteen.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Icons.Store className="w-16 h-16 text-gray-300" />
+                        </div>
+                      )}
+                      
+                      {/* Status Badge */}
+                      <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg text-xs font-bold ${
+                        canteen.isOpen ? 'bg-green-500 text-white' : 'bg-gray-800 text-white'
+                      }`}>
+                        {canteen.isOpen ? 'OPEN' : 'CLOSED'}
+                      </div>
+
+                      {/* Offer Badge */}
+                      {canteen.hasOffer && (
+                        <div className="absolute top-3 right-3 px-2 py-1 bg-[#e23744] text-white rounded-lg text-xs font-bold">
+                          50% OFF
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-[#e23744] transition-colors">
+                          {canteen.name}
+                        </h3>
+                        <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">
+                          <span>4.4</span>
+                          <Icons.Star className="w-3 h-3 fill-current" />
+                        </div>
+                      </div>
+                      
+                      <p className="text-gray-500 text-sm mb-3">{canteen.location || 'CHARUSAT Campus'}</p>
+                      
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Icons.Clock className="w-3.5 h-3.5" />
+                          25-35 min
+                        </span>
+                        <span>•</span>
+                        <span>₹100 for two</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
-          </div>
-        )}
+            )}
+          </AnimatePresence>
       </main>
 
       <LogoutConfirmModal 
-        isOpen={showLogoutModal} 
-        onConfirm={handleLogout} 
-        onCancel={() => setShowLogoutModal(false)} 
+        isOpen={showLogoutModal}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutModal(false)}
+      />
+      
+      <AddressModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onSave={(addr) => setUserAddress(addr)}
+        initialData={userAddress}
       />
     </div>
   );

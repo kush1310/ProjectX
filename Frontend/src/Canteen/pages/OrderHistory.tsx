@@ -8,15 +8,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOrders, Order } from '../utils/canteenStore';
-import Sidebar from '@/components/Sidebar';
 
-// Icons
-const Icons = {
-  Search: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
-  MapPin: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>,
-  Phone: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>,
-  Clock: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
-};
+import { Search, MapPin, Phone, Clock } from 'lucide-react';
+import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { toast } from '@/utils/toast';
 
 const statusFilters = ['all', 'completed', 'cancelled'] as const;
 type StatusFilter = typeof statusFilters[number];
@@ -38,6 +34,22 @@ export default function OrderHistory() {
     };
     fetchOrders();
   }, []);
+
+  // Real-Time Updates
+  const { isConnected, subscribe } = useWebSocket();
+  
+  useEffect(() => {
+    if (isConnected) {
+        subscribe('/topic/order-updates', (updatedOrder: Order) => {
+            setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+            
+            // Notify user if their order is ready
+            if (updatedOrder.status === 'ready') {
+                toast.success(`Your Order #${updatedOrder.orderNumber} is Ready!`);
+            }
+        });
+    }
+  }, [isConnected, subscribe]);
 
   // Filter orders
   const filteredOrders = useMemo(() => {
@@ -78,189 +90,171 @@ export default function OrderHistory() {
   };
 
   return (
-    <Sidebar>
+    <>
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="min-h-screen bg-gray-50 font-sans"
+        className="max-w-[1600px] mx-auto pb-20"
       >
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-20">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Order History</h1>
-              <p className="text-sm text-gray-500">{filteredOrders.length} orders found</p>
+              <h1 className="text-3xl font-display font-bold text-gray-900">Order History</h1>
+              <p className="text-gray-500 mt-1">{filteredOrders.length} past orders found</p>
             </div>
   
-            {/* Search */}
-            <div className="relative flex-1 max-w-xs">
-              <input
-                type="text"
-                placeholder="Search orders..."
-                value={searchQuery}
+            <div className="relative w-full md:w-80 h-14">
+              <PlaceholdersAndVanishInput
+                placeholders={["Search orders...", "Order #123", "Search by customer..."]}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all text-sm"
+                onSubmit={(e) => e.preventDefault()}
               />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <Icons.Search />
             </div>
-          </div>
         </div>
-      </header>
 
-      {/* Filters */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <div className="flex gap-2">
+        {/* Filters */}
+        <div className="bg-white/80 backdrop-blur-xl p-2 rounded-2xl border border-white/50 shadow-sm mb-8 inline-flex gap-2">
           {statusFilters.map((filter) => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all capitalize ${
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${
                 statusFilter === filter
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                  : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
               {filter === 'all' ? 'All History' : filter}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Orders List */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
-        {filteredOrders.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
-            <h3 className="font-bold text-gray-900">No orders found</h3>
-            <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filters</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-              {filteredOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                  onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                >
-                  {/* Basic Info */}
-                  <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <span className="text-lg font-bold text-gray-900">#{order.orderNumber}</span>
-                        <p className="text-sm text-gray-500">{order.customerName}</p>
+        {/* Orders List */}
+        <div>
+          {filteredOrders.length === 0 ? (
+            <div className="text-center py-20 bg-white/50 rounded-3xl border border-dashed border-gray-200">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 text-gray-400">
+                   <Search className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">No orders found</h3>
+              <p className="text-gray-500 mt-2">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+                {filteredOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer"
+                    onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                  >
+                    {/* Basic Info */}
+                    <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500">
+                            #{order.orderNumber.slice(-3)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900 text-lg">{order.customerName}</p>
+                          <span className="text-sm text-gray-500">#{order.orderNumber}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6 ml-auto">
+                         <div className="text-right">
+                              <p className="font-bold text-gray-900 text-lg">₹{order.total.toFixed(2)}</p>
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                   <Clock className="w-3 h-3" />
+                                   {formatDate(order.createdAt)}
+                              </div>
+                         </div>
+                         <span className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider ${statusColors[order.status]}`}>
+                            {order.status}
+                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">₹{order.total.toFixed(2)}</p>
-                        <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
-                      </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${statusColors[order.status]}`}>
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Expanded Details */}
-                  <AnimatePresence>
-                    {expandedOrderId === order.id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="border-t border-gray-100 overflow-hidden"
-                      >
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Left: Items and Notes */}
-                          <div className="space-y-4">
-                            <div>
-                              <h4 className="text-sm font-bold text-gray-900 mb-2">Items</h4>
-                              <div className="space-y-2">
+                    {/* Expanded Details */}
+                    <AnimatePresence>
+                      {expandedOrderId === order.id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-gray-100 bg-gray-50/50"
+                        >
+                          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Left: Items and Notes */}
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Order Items</h4>
+                              <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-100">
                                 {order.items.map((item, i) => (
-                                  <div key={i} className="flex justify-between text-sm">
-                                    <span className="text-gray-600">
-                                      <span className="font-semibold text-gray-900">{item.quantity}x</span> {item.name}
-                                    </span>
-                                    <span className="font-medium text-gray-900">₹{item.price.toFixed(2)}</span>
+                                  <div key={i} className="flex justify-between items-center text-sm">
+                                    <div className="flex items-center gap-3">
+                                        <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center font-bold text-xs">{item.quantity}</span>
+                                        <span className="text-gray-700 font-medium">{item.name}</span>
+                                    </div>
+                                    <span className="font-bold text-gray-900">₹{item.price.toFixed(2)}</span>
                                   </div>
                                 ))}
                               </div>
-                            </div>
 
-                            {order.specialNotes && (
-                              <div className="p-3 bg-yellow-50 rounded-xl border border-yellow-100">
-                                <p className="text-xs text-yellow-700">
-                                  <span className="font-bold">Special Notes:</span> {order.specialNotes}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Customer Info */}
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Icons.Phone />
-                                <span>{order.customerPhone}</span>
-                              </div>
-                              <div className="flex items-start gap-2 text-sm text-gray-600">
-                                <Icons.MapPin />
-                                <span>{order.customerAddress}</span>
-                              </div>
-                            </div>
-
-                            {/* Payment */}
-                            <div className="flex items-center justify-between text-sm p-3 bg-gray-50 rounded-xl">
-                              <span className="text-gray-500">Payment Method</span>
-                              <span className={`font-semibold ${order.isPaid ? 'text-green-600' : 'text-orange-600'}`}>
-                                {order.paymentMethod.toUpperCase()} {order.isPaid ? '(Paid)' : '(Pending)'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Right: Map Placeholder */}
-                          <div className="space-y-3">
-                            <h4 className="text-sm font-bold text-gray-900">Delivery Location</h4>
-                            <div className="h-48 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200">
-                              <img 
-                                src="https://maps.googleapis.com/maps/api/staticmap?center=22.5937,72.9629&zoom=15&size=400x300&maptype=roadmap"
-                                alt="Map location"
-                                className="w-full h-full object-cover opacity-60"
-                                onError={(e) => {
-                                  e.currentTarget.src = 'https://via.placeholder.com/400x300/e5e7eb/9ca3af?text=📍+Map+Location';
-                                }}
-                              />
-                            </div>
-
-                            {/* Timeline */}
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-3 text-xs">
-                                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                <span className="text-gray-600">Created: {formatDate(order.createdAt)}</span>
-                              </div>
-                              {order.acceptedAt && (
-                                <div className="flex items-center gap-3 text-xs">
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                  <span className="text-gray-600">Accepted: {formatDate(order.acceptedAt)}</span>
+                              {order.specialNotes && (
+                                <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                                  <p className="text-sm text-yellow-800">
+                                    <span className="font-bold block mb-1">Note from Customer:</span> {order.specialNotes}
+                                  </p>
                                 </div>
                               )}
-                              {order.completedAt && (
-                                <div className="flex items-center gap-3 text-xs">
-                                  <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                                  <span className="text-gray-600">Completed: {formatDate(order.completedAt)}</span>
+                              
+                              {order.rejectionReason && (
+                                <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                                  <p className="text-sm text-red-800">
+                                    <span className="font-bold block mb-1">Rejection Reason:</span> {order.rejectionReason}
+                                  </p>
                                 </div>
                               )}
                             </div>
+
+                            {/* Right: Customer & Delivery */}
+                            <div className="space-y-6">
+                               <div className="bg-white p-4 rounded-xl border border-gray-100 space-y-4">
+                                  <div className="flex items-center gap-3">
+                                      <Phone className="w-5 h-5 text-gray-400" />
+                                      <div>
+                                          <p className="text-xs text-gray-500 font-bold uppercase">Phone</p>
+                                          <p className="text-gray-900 font-medium">{order.customerPhone}</p>
+                                      </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                      <MapPin className="w-5 h-5 text-gray-400" />
+                                      <div>
+                                          <p className="text-xs text-gray-500 font-bold uppercase">Address</p>
+                                          <p className="text-gray-900 font-medium">{order.customerAddress}</p>
+                                      </div>
+                                  </div>
+                               </div>
+
+                               <div className="grid grid-cols-2 gap-4">
+                                   <div className="bg-white p-4 rounded-xl border border-gray-100">
+                                       <p className="text-xs text-gray-500 font-bold uppercase mb-1">Payment</p>
+                                       <p className={`font-bold ${order.isPaid ? 'text-emerald-600' : 'text-orange-600'}`}>
+                                           {order.paymentMethod.toUpperCase()}
+                                       </p>
+                                   </div>
+                               </div>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
-          </div>
-        )}
-      </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
       </motion.div>
-    </Sidebar>
+    </>
   );
 }

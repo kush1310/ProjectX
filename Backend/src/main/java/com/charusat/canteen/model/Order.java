@@ -1,6 +1,6 @@
 package com.charusat.canteen.model;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,61 +13,55 @@ import java.util.List;
 /**
  * Order Entity - Represents a customer order
  */
-@Entity
-@Table(name = "orders")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Order {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Long id;
-    
-    @Column(name = "order_number", nullable = false, unique = true)
     private String orderNumber;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+
     private User customer;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "canteen_id", nullable = false)
+    private Long customerId; // For JDBC convenience
+
+    @JsonIgnoreProperties({ "menuItems", "owner", "hibernateLazyInitializer", "handler" })
     private Canteen canteen;
-    
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Long canteenId; // For JDBC convenience
+
     private List<OrderItem> items;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING;
-    
-    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+
     private BigDecimal totalAmount;
-    
-    @Column(name = "payment_method")
+    private BigDecimal subTotal;
+
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Builder.Default
+    private BigDecimal deliveryFee = BigDecimal.ZERO;
+
+    @JsonIgnoreProperties({ "applicableItems", "canteen", "hibernateLazyInitializer", "handler" })
+    private Coupon appliedCoupon;
+    private java.util.UUID appliedCouponId; // For JDBC convenience
+
     private String paymentMethod;
-    
-    @Column(name = "payment_status")
-    @Enumerated(EnumType.STRING)
+
     @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
-    
-    @Column(name = "special_instructions")
+
     private String specialInstructions;
-    
-    @Column(name = "created_at")
+    private String rejectionReason;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
-    
-    @Column(name = "updated_at")
+
     private LocalDateTime updatedAt;
-    
-    @Column(name = "completed_at")
     private LocalDateTime completedAt;
-    
+
     public enum OrderStatus {
         PENDING,
         CONFIRMED,
@@ -76,7 +70,7 @@ public class Order {
         COMPLETED,
         CANCELLED
     }
-    
+
     public enum PaymentStatus {
         PENDING,
         PAID,
