@@ -48,6 +48,7 @@ CREATE TABLE canteens (
     location VARCHAR(255),
     description TEXT,
     image_url VARCHAR(500),
+    logo_url VARCHAR(500),
     is_open BOOLEAN DEFAULT TRUE,
     rush_hour_enabled BOOLEAN DEFAULT FALSE,
     opening_time VARCHAR(10),
@@ -320,5 +321,16 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO charusatneeds_app;
 */
 
 -- ============================================================================
+-- PERFORMANCE INDEXES (On-Demand Tab Queries)
+-- ============================================================================
+CREATE INDEX IF NOT EXISTS idx_orders_canteen_created  ON orders(canteen_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_menu_items_canteen_created ON menu_items(canteen_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_canteen_created ON reviews(canteen_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_created ON reviews(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_complaints_canteen_created ON complaints(canteen_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_complaints_created ON complaints(created_at DESC);
+
+-- ============================================================================
 -- END OF SCHEMA
 -- ============================================================================
+

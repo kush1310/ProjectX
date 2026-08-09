@@ -74,6 +74,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle Razorpay payment gateway exceptions
+     */
+    @ExceptionHandler(com.razorpay.RazorpayException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRazorpayException(
+            com.razorpay.RazorpayException ex) {
+        log.error("Razorpay payment gateway error: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error("Payment gateway error. Please try again later."));
+    }
+
+    /**
      * Handle all other exceptions
      */
     @ExceptionHandler(Exception.class)

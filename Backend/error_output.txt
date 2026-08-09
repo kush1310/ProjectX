@@ -1,0 +1,195 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< com.charusat:canteen-aggregator >-------------------
+[INFO] Building CHARUSAT Campus Canteen Aggregator 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.2:run (default-cli) > test-compile @ canteen-aggregator >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ canteen-aggregator ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ canteen-aggregator ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ canteen-aggregator ---
+[INFO] skip non existing resourceDirectory D:\CharusatNeeds_SGP_today\CharusatNeeds_SGP\Backend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ canteen-aggregator ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.2.2:run (default-cli) < test-compile @ canteen-aggregator <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.2:run (default-cli) @ canteen-aggregator ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.2)
+
+2026-04-30T01:08:12.743+05:30 DEBUG 21764 --- [kground-preinit] o.h.v.i.xml.config.ValidationXmlParser   : Trying to load META-INF/validation.xml for XML based Validator configuration.
+2026-04-30T01:08:12.751+05:30 DEBUG 21764 --- [kground-preinit] o.h.v.i.xml.config.ResourceLoaderHelper  : Trying to load META-INF/validation.xml via TCCL
+2026-04-30T01:08:12.752+05:30 DEBUG 21764 --- [kground-preinit] o.h.v.i.xml.config.ResourceLoaderHelper  : Trying to load META-INF/validation.xml via Hibernate Validator's class loader
+2026-04-30T01:08:12.753+05:30 DEBUG 21764 --- [kground-preinit] o.h.v.i.xml.config.ValidationXmlParser   : No META-INF/validation.xml found. Using annotation based configuration only.
+2026-04-30T01:08:12.760+05:30 DEBUG 21764 --- [kground-preinit] o.h.v.i.e.resolver.TraversableResolvers  : Cannot find jakarta.persistence.Persistence on classpath. Assuming non JPA 2 environment. All properties will per default be traversable.
+2026-04-30T01:08:12.821+05:30 DEBUG 21764 --- [kground-preinit] .h.v.m.ResourceBundleMessageInterpolator : Loaded expression factory via original TCCL
+2026-04-30T01:08:12.821+05:30  INFO 21764 --- [  restartedMain] c.charusat.canteen.CanteenApplication    : Starting CanteenApplication using Java 21.0.10 with PID 21764 (D:\CharusatNeeds_SGP_today\CharusatNeeds_SGP\Backend\target\classes started by ishan shastri in D:\CharusatNeeds_SGP_today\CharusatNeeds_SGP\Backend)
+2026-04-30T01:08:12.824+05:30  INFO 21764 --- [  restartedMain] c.charusat.canteen.CanteenApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-04-30T01:08:12.957+05:30  INFO 21764 --- [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-04-30T01:08:12.958+05:30  INFO 21764 --- [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-04-30T01:08:13.078+05:30 DEBUG 21764 --- [kground-preinit] .i.e.ValidatorFactoryConfigurationHelper : HV000252: Using org.hibernate.validator.internal.engine.DefaultPropertyNodeNameProvider as property node name provider.
+2026-04-30T01:08:13.090+05:30 DEBUG 21764 --- [kground-preinit] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator as ValidatorFactory-scoped message interpolator.
+2026-04-30T01:08:13.091+05:30 DEBUG 21764 --- [kground-preinit] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.engine.resolver.TraverseAllTraversableResolver as ValidatorFactory-scoped traversable resolver.
+2026-04-30T01:08:13.092+05:30 DEBUG 21764 --- [kground-preinit] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.util.ExecutableParameterNameProvider as ValidatorFactory-scoped parameter name provider.
+2026-04-30T01:08:13.092+05:30 DEBUG 21764 --- [kground-preinit] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.engine.DefaultClockProvider as ValidatorFactory-scoped clock provider.
+2026-04-30T01:08:13.092+05:30 DEBUG 21764 --- [kground-preinit] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.engine.scripting.DefaultScriptEvaluatorFactory as ValidatorFactory-scoped script evaluator factory.
+2026-04-30T01:08:17.982+05:30  INFO 21764 --- [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8000 (http)
+2026-04-30T01:08:18.044+05:30  INFO 21764 --- [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-30T01:08:18.044+05:30  INFO 21764 --- [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.18]
+2026-04-30T01:08:18.221+05:30  INFO 21764 --- [  restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-30T01:08:18.224+05:30  INFO 21764 --- [  restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 5263 ms
+2026-04-30T01:08:18.339+05:30  INFO 21764 --- [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-30T01:08:18.709+05:30  INFO 21764 --- [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@9b02eb8
+2026-04-30T01:08:18.713+05:30  INFO 21764 --- [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-30T01:08:18.758+05:30  INFO 21764 --- [  restartedMain] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:postgresql://localhost:5432/charusatneeds'
+2026-04-30T01:08:19.326+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.CouponDataSeeder      : Checking system offers...
+2026-04-30T01:08:19.437+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.CouponDataSeeder      : System offers seeding complete. Seeded 5 new offers.
+2026-04-30T01:08:20.572+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.RazorpayConfig        : Initializing Razorpay client with key ID: rzp_test_SYH...
+2026-04-30T01:08:21.865+05:30 DEBUG 21764 --- [  restartedMain] o.s.w.s.s.s.WebSocketHandlerMapping      : Patterns [/ws/**] in 'stompWebSocketHandlerMapping'
+2026-04-30T01:08:22.224+05:30 DEBUG 21764 --- [  restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 102 mappings in 'requestMappingHandlerMapping'
+2026-04-30T01:08:22.737+05:30 DEBUG 21764 --- [  restartedMain] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2026-04-30T01:08:22.873+05:30  INFO 21764 --- [  restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6424b77c, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@3ecb9d35, org.springframework.security.web.context.SecurityContextHolderFilter@35426927, org.springframework.security.web.header.HeaderWriterFilter@3067d797, org.springframework.web.filter.CorsFilter@572f6bfc, org.springframework.security.web.authentication.logout.LogoutFilter@6313499, com.charusat.canteen.config.JwtAuthenticationFilter@6e85d638, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@453bee5, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@5a6b00c8, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@6285d235, org.springframework.security.web.session.SessionManagementFilter@790f0d1f, org.springframework.security.web.access.ExceptionTranslationFilter@680f658c, org.springframework.security.web.access.intercept.AuthorizationFilter@3dea9cec]
+2026-04-30T01:08:22.985+05:30 DEBUG 21764 --- [  restartedMain] .h.v.m.ResourceBundleMessageInterpolator : Loaded expression factory via original TCCL
+2026-04-30T01:08:22.991+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.e.AbstractConfigurationImpl      : Setting custom MessageInterpolator of type org.springframework.validation.beanvalidation.LocaleContextMessageInterpolator
+2026-04-30T01:08:22.992+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.e.AbstractConfigurationImpl      : Setting custom ConstraintValidatorFactory of type org.springframework.validation.beanvalidation.SpringConstraintValidatorFactory
+2026-04-30T01:08:22.995+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.xml.config.ValidationXmlParser   : Trying to load META-INF/validation.xml for XML based Validator configuration.
+2026-04-30T01:08:23.026+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.xml.config.ResourceLoaderHelper  : Trying to load META-INF/validation.xml via user class loader
+2026-04-30T01:08:23.027+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.xml.config.ResourceLoaderHelper  : Trying to load META-INF/validation.xml via TCCL
+2026-04-30T01:08:23.028+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.xml.config.ResourceLoaderHelper  : Trying to load META-INF/validation.xml via Hibernate Validator's class loader
+2026-04-30T01:08:23.028+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.xml.config.ValidationXmlParser   : No META-INF/validation.xml found. Using annotation based configuration only.
+2026-04-30T01:08:23.040+05:30 DEBUG 21764 --- [  restartedMain] o.h.v.i.e.resolver.TraversableResolvers  : Cannot find jakarta.persistence.Persistence on classpath. Assuming non JPA 2 environment. All properties will per default be traversable.
+2026-04-30T01:08:23.057+05:30 DEBUG 21764 --- [  restartedMain] .i.e.ValidatorFactoryConfigurationHelper : HV000252: Using org.hibernate.validator.internal.engine.DefaultPropertyNodeNameProvider as property node name provider.
+2026-04-30T01:08:23.072+05:30 DEBUG 21764 --- [  restartedMain] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.springframework.validation.beanvalidation.LocaleContextMessageInterpolator as ValidatorFactory-scoped message interpolator.
+2026-04-30T01:08:23.073+05:30 DEBUG 21764 --- [  restartedMain] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.engine.resolver.TraverseAllTraversableResolver as ValidatorFactory-scoped traversable resolver.
+2026-04-30T01:08:23.073+05:30 DEBUG 21764 --- [  restartedMain] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.util.ExecutableParameterNameProvider as ValidatorFactory-scoped parameter name provider.
+2026-04-30T01:08:23.073+05:30 DEBUG 21764 --- [  restartedMain] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.engine.DefaultClockProvider as ValidatorFactory-scoped clock provider.
+2026-04-30T01:08:23.085+05:30 DEBUG 21764 --- [  restartedMain] .i.e.ValidatorFactoryConfigurationHelper : HV000234: Using org.hibernate.validator.internal.engine.scripting.DefaultScriptEvaluatorFactory as ValidatorFactory-scoped script evaluator factory.
+2026-04-30T01:08:23.350+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.AnalyticsController:
+	
+2026-04-30T01:08:23.359+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.AuthController:
+	
+2026-04-30T01:08:23.375+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.CanteenController:
+	
+2026-04-30T01:08:23.387+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.CaptchaController:
+	
+2026-04-30T01:08:23.388+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.CartController:
+	
+2026-04-30T01:08:23.388+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.CategoryController:
+	
+2026-04-30T01:08:23.388+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.CouponController:
+	
+2026-04-30T01:08:23.388+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.FavoriteController:
+	
+2026-04-30T01:08:23.388+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.MfaController:
+	
+2026-04-30T01:08:23.389+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.OrderController:
+	
+2026-04-30T01:08:23.407+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.PasswordResetController:
+	
+2026-04-30T01:08:23.411+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.PaymentController:
+	
+2026-04-30T01:08:23.412+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.UserController:
+	
+2026-04-30T01:08:23.413+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.VendorController:
+	
+2026-04-30T01:08:23.414+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.c.c.c.WebhookController:
+	
+2026-04-30T01:08:23.417+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.b.a.w.s.e.BasicErrorController:
+	
+2026-04-30T01:08:23.419+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.w.a.OpenApiWebMvcResource:
+	
+2026-04-30T01:08:23.421+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.w.u.SwaggerWelcomeWebMvc:
+	
+2026-04-30T01:08:23.421+05:30 DEBUG 21764 --- [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.w.u.SwaggerConfigResource:
+	
+2026-04-30T01:08:23.542+05:30 DEBUG 21764 --- [  restartedMain] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-04-30T01:08:23.630+05:30 DEBUG 21764 --- [  restartedMain] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-04-30T01:08:24.010+05:30  INFO 21764 --- [  restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2026-04-30T01:08:24.086+05:30  INFO 21764 --- [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8000 (http) with context path ''
+2026-04-30T01:08:24.090+05:30 DEBUG 21764 --- [  restartedMain] org.springframework.web.SimpLogging      : clientOutboundChannel added SubProtocolWebSocketHandler[StompSubProtocolHandler[v10.stomp, v11.stomp, v12.stomp]]
+2026-04-30T01:08:24.092+05:30 DEBUG 21764 --- [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel added WebSocketAnnotationMethodMessageHandler[prefixes=[/app/]]
+2026-04-30T01:08:24.092+05:30  INFO 21764 --- [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-04-30T01:08:24.093+05:30 DEBUG 21764 --- [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel added SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@4482359c]
+2026-04-30T01:08:24.093+05:30 DEBUG 21764 --- [  restartedMain] org.springframework.web.SimpLogging      : brokerChannel added SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@4482359c]
+2026-04-30T01:08:24.094+05:30  INFO 21764 --- [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@4482359c]]
+2026-04-30T01:08:24.094+05:30  INFO 21764 --- [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-04-30T01:08:24.095+05:30 DEBUG 21764 --- [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel added UserDestinationMessageHandler[DefaultUserDestinationResolver[prefix=/user/]]
+2026-04-30T01:08:24.096+05:30 DEBUG 21764 --- [  restartedMain] org.springframework.web.SimpLogging      : brokerChannel added UserDestinationMessageHandler[DefaultUserDestinationResolver[prefix=/user/]]
+2026-04-30T01:08:24.122+05:30  INFO 21764 --- [  restartedMain] c.charusat.canteen.CanteenApplication    : Started CanteenApplication in 12.144 seconds (process running for 13.155)
+2026-04-30T01:08:24.130+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒÜÇ Starting Data Initialization...
+2026-04-30T01:08:24.130+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒº╣ Cleaning transactional data for fresh seed...
+2026-04-30T01:08:25.069+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒùæ∩╕Å All tables truncated for fresh seed.
+2026-04-30T01:08:25.075+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒæñ Seeding Users...
+2026-04-30T01:08:26.006+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒÅ¬ Seeding 3 Canteens...
+2026-04-30T01:08:26.028+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒì╜∩╕Å Seeding Honest Restaurant Menu...
+2026-04-30T01:08:26.028+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Gujarati Thali...
+2026-04-30T01:08:26.051+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Combo Meals...
+2026-04-30T01:08:26.106+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding South Indian...
+2026-04-30T01:08:26.124+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Starters - Chaat...
+2026-04-30T01:08:26.144+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Starters - Kabab & Pakoda...
+2026-04-30T01:08:26.162+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Starters - Tandoor...
+2026-04-30T01:08:26.172+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Starters - Continental...
+2026-04-30T01:08:26.178+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Starters - Chinese...
+2026-04-30T01:08:26.189+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Starters - Gujarati...
+2026-04-30T01:08:26.221+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Detailed Beverages...
+2026-04-30T01:08:26.279+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Rotis...
+2026-04-30T01:08:26.342+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª Adding Rice Preparations...
+2026-04-30T01:08:26.360+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : Γ£à Added 120 menu items!
+2026-04-30T01:08:26.360+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒìö Seeding Campus Bites Menu...
+2026-04-30T01:08:26.360+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª CB: Adding Burgers...
+2026-04-30T01:08:26.371+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª CB: Adding Wraps & Rolls...
+2026-04-30T01:08:26.379+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª CB: Adding Pizzas...
+2026-04-30T01:08:26.400+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª CB: Adding Pasta & Noodles...
+2026-04-30T01:08:26.406+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª CB: Adding Fries & Sides...
+2026-04-30T01:08:26.412+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª CB: Adding Shakes & Smoothies...
+2026-04-30T01:08:26.423+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª CB: Adding Coffee & Beverages...
+2026-04-30T01:08:26.432+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : Γ£à Campus Bites: Added 39 menu items!
+2026-04-30T01:08:26.432+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒî╢∩╕Å Seeding Spice Junction Menu...
+2026-04-30T01:08:26.432+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª SJ: Adding Thali Meals...
+2026-04-30T01:08:26.441+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª SJ: Adding Biryanis...
+2026-04-30T01:08:26.450+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª SJ: Adding North Indian Curries...
+2026-04-30T01:08:26.459+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª SJ: Adding South Indian...
+2026-04-30T01:08:26.472+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª SJ: Adding Tandoor & Breads...
+2026-04-30T01:08:26.482+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª SJ: Adding Street Food...
+2026-04-30T01:08:26.492+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒôª SJ: Adding Desserts...
+2026-04-30T01:08:26.500+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : Γ£à Spice Junction: Added 41 menu items!
+2026-04-30T01:08:26.500+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒÄƒ∩╕Å Seeding Coupons...
+2026-04-30T01:08:26.538+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : ≡ƒ¢ì∩╕Å Seeding Trial Orders...
+2026-04-30T01:08:26.643+05:30  INFO 21764 --- [  restartedMain] c.c.canteen.config.DataInitializer       : Γ£à Database seeding complete!
+2026-04-30T01:09:24.055+05:30  INFO 21764 --- [MessageBroker-3] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 5, active threads = 1, queued tasks = 2, completed tasks = 2]

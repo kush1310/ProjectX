@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+Frontend/node_modules/
+Frontend/src/Canteen/coupon-app/node_modules/
+
+# Build outputs
+target/
+Backend/target/
+dist/
+Frontend/dist/
+Frontend/src/Canteen/coupon-app/dist/
+*.jar
+*.war
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Temporary logs & build caches
+*.log
+Frontend/ts_errors.txt
+Frontend/tsc-errors.txt
+Frontend/tsc-errors2.txt
+Frontend/tsc_log.txt
+.vite/
+Frontend/node_modules/.vite/

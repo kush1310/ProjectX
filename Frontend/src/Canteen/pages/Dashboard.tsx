@@ -1,638 +1,643 @@
-/**
- * Canteen Dashboard - Premium Green Theme
- * 
- * Features:
- * - GREEN theme throughout
- * - Premium order cards with InteractiveGradient
- * - Centered modals with scroll lock
- * - Collapsible navigation (no Orders tab - shown by default)
- * - Read More for long descriptions
- */
-
-import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  getOrders,
-  updateOrderStatus,
-  getOrderStats,
-  Order
-} from '../utils/canteenStore';
-import { logout, getSession } from '@/utils/authStore';
-import StudentDashboard from './StudentDashboard';
-import AdminDashboard from './AdminDashboard';
-import ConfettiButton from '../components/ConfettiButton';
-import LogoutConfirmModal from '../components/LogoutConfirmModal';
-import AnimatedBorder from '../components/AnimatedBorder';
-import OrderDetailsModal from '../components/OrderDetailsModal';
-import { Icons } from '@/components/Icons';
-import { toast } from '@/utils/toast';
+  Search, Bell, X,
+  Check, Clock, RefreshCw, User, MapPin, Printer, Leaf,
+  Store, ToggleLeft, ToggleRight,
+} from 'lucide-react';
+import { getOrders, updateOrderStatus, type Order } from '../utils/canteenStore';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { toast } from '../../utils/toast';
+import api from '../../utils/api';
 
-// Icons
-// Icons imported from @/components/Icons
+type TabType = 'live' | 'ready' | 'done';
 
-// Nav Items - REMOVED "Orders" as it's shown by default
-const navItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: Icons.Grid, enabled: true },
-  { label: 'Menu Management', path: '/canteen/menu', icon: Icons.Menu, enabled: true },
-  { label: 'Order History', path: '/order-history', icon: Icons.History, enabled: true },
-  { label: 'Analytics', path: '#', icon: Icons.Chart, enabled: false },
-  { label: 'Coupon Management', path: '/vendor/coupons', icon: Icons.Tag, enabled: true },
-  { label: 'Recent Reviews', path: '#', icon: Icons.Star, enabled: false },
-  { label: 'Help & Support', path: '#', icon: Icons.Help, enabled: false },
-  { label: 'Restaurant Details', path: '#', icon: Icons.Settings, enabled: false },
-];
+/**
+ * useElapsedTime
+ *
+ * Returns a formatted elapsed time string (MM:SS) since the given ISO timestamp.
+ * Updates every second while the component is mounted. Used to show vendors
+ * how long an order has been waiting — critical for SLA management.
+ *
+ * @param createdAt {string} - ISO 8601 timestamp of order creation.
+ * @returns {string}         - Formatted string like "04:32" or "1h 12m".
+ */
+function useElapsedTime(createdAt: string): string {
+  const [elapsed, setElapsed] = useState('');
+  useEffect(() => {
+    const compute = () => {
+      const seconds = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+      if (seconds < 3600) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        setElapsed(`${m}:${s}`);
+      } else {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        setElapsed(`${h}h ${m}m`);
+      }
+    };
+    compute();
+    const interval = setInterval(compute, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+  return elapsed;
+}
 
-const ORDER_TABS = ['new', 'preparing', 'ready', 'completed'] as const;
-type OrderTab = typeof ORDER_TABS[number];
+/**
+ * printKOT
+ *
+ * Opens a browser print dialog with a formatted KOT (Kitchen Order Ticket).
+ * KOT includes: order number, creation time, item list with quantities,
+ * special instructions, and total amount. No external library dependency.
+ *
+ * @param order {Order} - The order object to print.
+ */
+function printKOT(order: Order) {
+  const lines = (order.items || []).map(i =>
+    `<tr><td>${i.quantity}x</td><td>${i.menuItem?.name || i.name}</td><td>\u20b9${i.totalPrice || (i.price * i.quantity)}</td></tr>`
+  ).join('');
+  const html = `
+    <html><head><title>KOT #${order.orderNumber}</title>
+    <style>body{font-family:monospace;font-size:14px;padding:16px}h2{text-align:center}table{width:100%}td{padding:2px 4px}hr{border:1px dashed #000}.total{font-weight:bold;font-size:16px}</style>
+    </head><body>
+    <h2>CHARUSAT NEEDS</h2><hr/>
+    <p><b>Order #${order.orderNumber}</b><br/>${new Date(order.createdAt).toLocaleString()}</p>
+    <hr/><table>${lines}</table><hr/>
+    <p class="total">TOTAL: \u20b9${order.totalAmount || order.total || 0}</p>
+    ${order.specialInstructions ? `<p>Note: ${order.specialInstructions}</p>` : ''}
+    <hr/><p style="text-align:center">*** KOT COPY ***</p>
+    </body></html>`;
+  const win = window.open('', '_blank', 'width=320,height=480');
+  if (win) { win.document.write(html); win.document.close(); win.print(); }
+}
 
-const tabLabels: Record<OrderTab, string> = {
-  new: 'New',
-  preparing: 'Preparing',
-  ready: 'Ready for Pickup',
-  completed: 'Completed'
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.1 } }
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
 };
 
+/* ═══════ Animated Skeleton ═══════ */
+function OrderSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-100 overflow-hidden shadow-sm">
+      {/* Payment header skeleton */}
+      <div className="h-8 ag-skeleton rounded-none" />
+      <div className="p-4 space-y-3">
+        {/* Title row */}
+        <div className="flex justify-between items-start">
+          <div className="space-y-1.5 flex-1">
+            <div className="h-4 w-28 ag-skeleton" />
+            <div className="h-3 w-36 ag-skeleton" />
+          </div>
+          <div className="h-5 w-16 ag-skeleton rounded-lg" />
+        </div>
+        {/* Items skeleton */}
+        <div className="space-y-2 py-3 border-t border-b border-neutral-50">
+          <div className="flex justify-between">
+            <div className="h-3 w-40 ag-skeleton" />
+            <div className="h-3 w-10 ag-skeleton" />
+          </div>
+          <div className="flex justify-between">
+            <div className="h-3 w-32 ag-skeleton" />
+            <div className="h-3 w-10 ag-skeleton" />
+          </div>
+        </div>
+        {/* Footer */}
+        <div className="flex justify-between items-center">
+          <div className="h-3 w-14 ag-skeleton" />
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-12 ag-skeleton rounded" />
+            <div className="h-5 w-14 ag-skeleton" />
+          </div>
+        </div>
+        {/* Button */}
+        <div className="h-10 w-full ag-skeleton rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const navigate = useNavigate();
-
-  // State
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [activeTab, setActiveTab] = useState<OrderTab>('new');
-  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
-  
-  // Check User Role
-  const user = getSession();
-  if (user?.role === 'USER') {
-      return <StudentDashboard />;
-  }
-  if (user?.role === 'ADMIN') {
-      return <AdminDashboard />;
-  }
-
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [mobileView, setMobileView] = useState<'live' | 'recent'>('live');
-  const [rushHour, setRushHour] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 968);
+  const [orders, setOrders]   = useState<Order[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>('live');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  // Canteen open/close toggle state
+  const [canteenId, setCanteenId] = useState<number | null>(null);
+  const [isOpen, setIsOpen] = useState<boolean>(true);
+  const [isTogglingOpen, setIsTogglingOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const { isConnected, subscribe } = useWebSocket();
 
   useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 968);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    fetchOrders();
+    // Fetch the vendor's canteen to get id + isOpen state
+    api.get('/canteens/my-canteen')
+      .then(res => {
+        if (res.data?.canteen) {
+          setCanteenId(res.data.canteen.id);
+          setIsOpen(res.data.canteen.isOpen ?? true);
+        }
+      })
+      .catch(() => { /* vendor canteen not yet set up */ });
   }, []);
 
-  const toggleRushHour = () => {
-    const newState = !rushHour;
-    setRushHour(newState);
-    if (newState) {
-      toast.success('Rush Hour Enabled');
-    } else {
-      toast.info('Rush Hour Disabled');
+  useEffect(() => {
+    if (!isConnected) return;
+    const sub1 = subscribe('/topic/orders', (newOrder) => {
+      setOrders(prev => [newOrder, ...prev]);
+      toast.success('New order received!');
+    });
+    const sub2 = subscribe('/topic/order-updates', (updated) => {
+      setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
+    });
+    return () => { sub1?.unsubscribe(); sub2?.unsubscribe(); };
+  }, [isConnected, subscribe]);
+
+  const fetchOrders = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getOrders();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      toast.error('Failed to load orders');
+      setOrders([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Load orders
-  useEffect(() => {
-    const fetch = async () => {
-        const data = await getOrders();
-        setOrders(data);
-    };
-    fetch();
-  }, []);
-
-  // Lock body scroll when logout modal is open
-  useEffect(() => {
-    if (showLogoutModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-        document.body.style.overflow = '';
+  const handleStatusUpdate = async (orderId: number, status: string) => {
+    try {
+      await updateOrderStatus(orderId, status);
+      toast.success(`Order ${status.toLowerCase()}`);
+      fetchOrders();
+    } catch (err) {
+      toast.error('Failed to update order');
     }
-    return () => { document.body.style.overflow = ''; };
-  }, [showLogoutModal]);
-
-  // Stats
-  const stats = useMemo(() => getOrderStats(orders), [orders]);
-
-  // Filtered orders by tab
-  const filteredOrders = useMemo(() => {
-    return orders.filter(o => o.status === activeTab);
-  }, [orders, activeTab]);
-
-  // Recent 5 orders
-  const recentOrders = useMemo(() => {
-    return [...orders]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
-  }, [orders]);
-
-  // Tab counts
-  const tabCounts = useMemo(() => ({
-    new: orders.filter(o => o.status === 'new').length,
-    preparing: orders.filter(o => o.status === 'preparing').length,
-    ready: orders.filter(o => o.status === 'ready').length,
-    completed: orders.filter(o => o.status === 'completed').length,
-  }), [orders]);
-
-  // Handlers
-  // Handlers
-  const handleAcceptOrder = async (id: number) => {
-    const updated = await updateOrderStatus(id, 'preparing');
-    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
   };
 
-  const handleDeclineOrder = async (id: number) => {
-    const updated = await updateOrderStatus(id, 'cancelled');
-    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
+  /**
+   * toggleRestaurantOpen
+   *
+   * Calls PATCH /api/canteens/{id}/toggle-open to flip the restaurant's
+   * open/closed state. Optimistically updates local UI before the backend
+   * responds. On success the backend broadcasts CANTEEN_STATUS_CHANGED via
+   * WebSocket so all customers see the update in real-time.
+   *
+   * @returns {void}
+   */
+  const toggleRestaurantOpen = async () => {
+    if (isTogglingOpen) return;
+    setIsTogglingOpen(true);
+    const previousState = isOpen;
+    setIsOpen(!isOpen); // Optimistic update
+    try {
+      let res;
+      try {
+        res = await api.patch('/canteens/my-canteen/toggle-open');
+      } catch (e) {
+        if (canteenId) {
+          res = await api.patch(`/canteens/${canteenId}/toggle-open`);
+        } else {
+          throw e;
+        }
+      }
+      if (res.data?.canteen?.id) {
+        setCanteenId(res.data.canteen.id);
+      }
+      const nextOpen = res.data.isOpen ?? !previousState;
+      setIsOpen(nextOpen);
+      toast.success(nextOpen ? 'Restaurant is now OPEN' : 'Restaurant is now CLOSED');
+    } catch (err: any) {
+      setIsOpen(previousState); // Rollback on failure
+      toast.error(err.response?.data?.message || 'Failed to toggle restaurant status');
+    } finally {
+      setIsTogglingOpen(false);
+    }
   };
 
-  const handleMarkReady = async (id: number) => {
-    const updated = await updateOrderStatus(id, 'ready');
-    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
-  };
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = searchQuery === '' ||
+      order.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customer?.fullName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTab =
+      (activeTab === 'live'  && ['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.status)) ||
+      (activeTab === 'ready' && order.status === 'READY') ||
+      (activeTab === 'done'  && ['COMPLETED', 'CANCELLED'].includes(order.status));
+    return matchesSearch && matchesTab;
+  });
 
-  const handleMarkComplete = async (id: number) => {
-    const updated = await updateOrderStatus(id, 'completed');
-    if (updated) setOrders(prev => prev.map(o => o.id ===id ? updated : o));
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const getTimeSince = (dateStr: string) => {
-    const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+  const tabCounts = {
+    live: orders.filter(o => ['PENDING', 'CONFIRMED', 'PREPARING'].includes(o.status)).length,
+    ready: orders.filter(o => o.status === 'READY').length,
+    done: orders.filter(o => ['COMPLETED', 'CANCELLED'].includes(o.status)).length,
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex font-sans text-gray-900">
-
-      {/* LEFT NAVIGATION (Collapsible) */}
-      {/* LEFT NAVIGATION (Responsive) */}
-      <AnimatePresence>
-        {(isMobileNavOpen || isDesktop) && (
-          <>
-            {/* Mobile Overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileNavOpen(false)}
-              className="fixed inset-0 bg-black/50 z-40 min-[968px]:hidden"
-            />
-
-            <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0, width: isNavCollapsed ? 72 : 260 }}
-              exit={{ x: -280 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className={`fixed top-0 left-0 z-50 h-full bg-white flex flex-col shadow-2xl min-[968px]:translate-x-0`}
-            >
-              {/* Logo - NO Green C Icon */}
-              <div className={`p-5 border-b border-gray-100/80 flex items-center ${isNavCollapsed ? 'justify-center' : 'gap-3'}`}>
-                {!isNavCollapsed ? (
-                  <span className="font-bold text-lg tracking-tight text-gray-900">
-                    Charusat<span className="text-emerald-600">Needs</span>
-                  </span>
-                ) : (
-                  <span className="font-bold text-lg text-emerald-600">CN</span>
-                )}
-
-                {/* Mobile Close Button */}
-                {!isDesktop && (
-                  <button
-                    onClick={() => setIsMobileNavOpen(false)}
-                    className="ml-auto p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Icons.X />
-                  </button>
-                )}
+    <div className="min-h-screen">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-30 ag-glass-strong border-b border-white/30">
+        <div className="px-3 sm:px-5 py-3 sm:py-4 space-y-3">
+          {/* Row 1: Title + Actions */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Title + Status */}
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-extrabold text-neutral-900 truncate">Order Dashboard</h1>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-emerald-500 ag-status-pulse' : 'bg-red-500'}`} />
+                <span className={`text-[11px] sm:text-xs font-bold ${isOpen ? 'text-emerald-700' : 'text-red-700'}`}>
+                  {isOpen ? 'Store Open' : 'Store Closed'}
+                </span>
+                <span className="text-[11px] sm:text-xs text-neutral-300">|</span>
+                <span className="text-[11px] sm:text-xs text-neutral-500 font-medium">{orders.length} total orders</span>
               </div>
-
-              {/* Navigation */}
-              <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                {navItems.map((item) => {
-                  const isActive = item.path === '/dashboard' && item.label === 'Dashboard';
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.enabled ? item.path : '#'}
-                      onClick={(e) => {
-                        if (!item.enabled) e.preventDefault();
-                        setIsMobileNavOpen(false); // Auto-close on mobile
-                      }}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
-                          ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 font-semibold'
-                          : item.enabled
-                            ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                            : 'text-gray-400 cursor-not-allowed opacity-50'
-                        } ${isNavCollapsed ? 'justify-center px-3' : ''}`}
-                      title={isNavCollapsed ? item.label : undefined}
-                    >
-                      <span className={isActive ? 'text-emerald-600' : ''}><item.icon /></span>
-                      {!isNavCollapsed && <span className="text-sm truncate">{item.label}</span>}
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              {/* Collapse Toggle - ONLY VERTICAL VISIBLE ON DESKTOP */}
-              {isDesktop && (
-                <button
-                  onClick={() => setIsNavCollapsed(!isNavCollapsed)}
-                  className="absolute -right-3 top-24 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-200 shadow-md transition-all"
-                >
-                  {isNavCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
-                </button>
-              )}
-
-              {/* Logout - Fixed icon size */}
-              <div className="p-4 border-t border-gray-100/80">
-                <button
-                  onClick={() => setShowLogoutModal(true)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all ${isNavCollapsed ? 'justify-center px-3' : ''}`}
-                >
-                  {/* Fixed size logout icon - shrink-0 prevents shrinking when collapsed */}
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
-                  </svg>
-                  {!isNavCollapsed && <span className="text-sm font-medium">Logout</span>}
-                </button>
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-
-      <main
-        className={`flex-1 transition-all duration-200 min-h-screen ${isNavCollapsed ? 'min-[968px]:ml-[72px]' : 'min-[968px]:ml-[260px]'} lg:mr-[300px] w-full bg-gray-50/50`}
-      >
-        {/* Header */}
-        <header className="bg-white/70 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-8 py-4 sm:py-6 sticky top-0 z-20">
-
-          {/* Mobile Header Controls */}
-          <div className="flex flex-wrap items-center justify-between min-[968px]:hidden mb-4 gap-3">
-            <button onClick={() => setIsMobileNavOpen(true)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-              <Icons.Menu />
-            </button>
-
-            {/* Mobile View Toggle */}
-            <div className="flex bg-gray-100 rounded-lg p-1 flex-1 max-w-[250px] mx-auto min-w-[200px]">
-              <button
-                onClick={() => setMobileView('live')}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mobileView === 'live' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'}`}
-              >
-                Live Orders
-              </button>
-              <button
-                onClick={() => setMobileView('recent')}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mobileView === 'recent' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'}`}
-              >
-                Recent
-              </button>
             </div>
 
-            <div className="w-8" /> {/* Spacer balance */}
+            {/* Restaurant Toggle + Refresh + Bell */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+
+              {/* Open / Closed toggle — prominent vendor control */}
+              <button
+                id="restaurant-toggle-btn"
+                onClick={toggleRestaurantOpen}
+                disabled={isTogglingOpen}
+                title={isOpen ? 'Click to close restaurant' : 'Click to open restaurant'}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border shadow-sm transition-all duration-200 ${
+                  isOpen
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400'
+                    : 'bg-red-50 border-red-300 text-red-800 hover:bg-red-100 hover:border-red-400'
+                } ${isTogglingOpen ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
+              >
+                {isTogglingOpen ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-neutral-600" />
+                ) : isOpen ? (
+                  <ToggleRight className="w-5 h-5 text-emerald-600" />
+                ) : (
+                  <ToggleLeft className="w-5 h-5 text-red-600" />
+                )}
+                <span className="font-extrabold">{isOpen ? 'STORE OPEN' : 'STORE CLOSED'}</span>
+              </button>
+
+              <button
+                onClick={fetchOrders}
+                className="p-2 sm:p-2.5 rounded-xl bg-white/60 border border-neutral-200 hover:bg-white hover:shadow-sm transition-all"
+              >
+                <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-neutral-500 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button className="relative p-2 sm:p-2.5 rounded-xl bg-white/60 border border-neutral-200 hover:bg-white hover:shadow-sm transition-all">
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-600" />
+                {orders.filter(o => o.status === 'PREPARING').length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-[#e23744] text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center ag-status-pulse">
+                    {orders.filter(o => o.status === 'PREPARING').length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between max-w-7xl 2xl:max-w-[1920px] mx-auto gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Live Orders</h1>
-              <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-2 mt-1">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                Updates live every 30s
-              </p>
-            </div>
-
-            {/* Rush Hour Toggle */}
-            <div className="flex items-center gap-3 sm:gap-4 bg-white px-3 sm:px-5 py-2 sm:py-3 rounded-2xl border border-gray-100 shadow-sm w-full sm:w-auto justify-between sm:justify-start">
-              <span className="text-sm font-semibold text-gray-700">Rush Hour</span>
+          {/* Row 2: Search Bar (full width on mobile) */}
+          <div className="ag-search-wrapper">
+            <Search className="ag-search-icon" />
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Search orders..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="ag-search-input"
+            />
+            {searchQuery && (
               <button
-                onClick={toggleRushHour}
-                className={`relative w-12 h-7 rounded-full transition-all duration-300 ${rushHour ? 'bg-gradient-to-r from-orange-400 to-orange-500 shadow-orange-200 shadow-md' : 'bg-gray-200'}`}
+                onClick={() => { setSearchQuery(''); searchRef.current?.focus(); }}
+                className="ag-search-clear"
               >
-                <motion.div
-                  animate={{ x: rushHour ? 22 : 3 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-md"
-                />
+                <X size={14} />
               </button>
-              {rushHour && (
-                <span className="text-xs font-bold text-orange-600 bg-orange-100 px-3 py-1 rounded-full animate-pulse">
-                  ACTIVE
+            )}
+          </div>
+
+          {/* Row 3: Tabs — Zomato vendor labels */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+            {([
+              { key: 'live',  label: 'Live Orders' },
+              { key: 'ready', label: 'Ready'        },
+              { key: 'done',  label: 'Done'          },
+            ] as { key: TabType; label: string }[]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === key
+                    ? 'bg-gradient-to-r from-[#3D6EEE] to-[#5B8AF5] text-white shadow-lg shadow-blue-200/40'
+                    : 'bg-white/60 text-neutral-500 border border-neutral-200 hover:bg-white hover:border-neutral-300'
+                }`}
+              >
+                {label}
+                <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold ${
+                  activeTab === key ? 'bg-white/25' : 'bg-neutral-100'
+                }`}>
+                  {tabCounts[key]}
+                </span>
+                {/* Pulsing dot for live orders with activity */}
+                {key === 'live' && tabCounts.live > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#E23744] rounded-full animate-pulse" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* ── Orders Grid ── */}
+      <main className="px-3 sm:px-5 py-4 sm:py-6">
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div
+              key="skeleton"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.2 } }}
+              className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                >
+                  <OrderSkeleton />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : filteredOrders.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="text-center py-16 sm:py-20"
+            >
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-neutral-100 rounded-full flex items-center justify-center ag-float">
+                <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-neutral-300" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-neutral-800">No orders in {activeTab}</h3>
+              <p className="text-neutral-400 text-xs sm:text-sm mt-1">Orders will appear here when received</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="orders"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              {filteredOrders.map((order) => (
+                <OrderCard key={order.id} order={order} onStatusUpdate={handleStatusUpdate} />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+    </div>
+  );
+}
+
+const VENDOR_STEPS = [
+  { label: 'Placed', status: 'PENDING' },
+  { label: 'Confirmed', status: 'CONFIRMED' },
+  { label: 'Preparing', status: 'PREPARING' },
+  { label: 'Ready', status: 'READY' },
+  { label: 'Completed', status: 'COMPLETED' },
+];
+
+function VendorOrderTimeline({ currentStatus }: { currentStatus: string }) {
+  if (currentStatus === 'CANCELLED') {
+    return (
+      <div className="my-2 px-2.5 py-1 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between text-[10px] font-bold text-red-700">
+        <span>Order Cancelled</span>
+        <X className="w-3 h-3 text-red-500" />
+      </div>
+    );
+  }
+
+  let stepIndex = VENDOR_STEPS.findIndex(s => s.status === currentStatus);
+  if (stepIndex === -1 && currentStatus === 'DELIVERED') stepIndex = 4;
+  if (stepIndex === -1) stepIndex = 0;
+
+  const progressPercent = (stepIndex / (VENDOR_STEPS.length - 1)) * 100;
+
+  return (
+    <div className="my-2.5 px-0.5">
+      <div className="relative flex items-center justify-between">
+        {/* Background line */}
+        <div className="absolute inset-x-0 top-[7px] h-[2px] bg-neutral-200" />
+        {/* Progress line */}
+        <motion.div
+          className="absolute top-[7px] left-0 h-[2px] bg-gradient-to-r from-[#e23744] to-emerald-500 origin-left"
+          initial={{ width: '0%' }}
+          animate={{ width: `${progressPercent}%` }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        />
+
+        {VENDOR_STEPS.map((step, idx) => {
+          const isDone = idx < stepIndex;
+          const isActive = idx === stepIndex;
+
+          return (
+            <div key={step.status} className="flex flex-col items-center relative z-10">
+              <div
+                className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all ${
+                  isDone
+                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                    : isActive
+                    ? 'bg-[#e23744] border-[#e23744] ring-2 ring-rose-200'
+                    : 'bg-white border-neutral-300'
+                }`}
+              >
+                {isDone && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
+                {isActive && <div className="w-1 h-1 bg-white rounded-full animate-pulse" />}
+              </div>
+              <span className={`text-[8px] font-bold mt-1 text-center truncate max-w-[42px] ${
+                isDone ? 'text-emerald-700' : isActive ? 'text-[#e23744]' : 'text-neutral-400'
+              }`}>
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Order Card ──
+function OrderCard({ order, onStatusUpdate }: { order: Order; onStatusUpdate: (id: number, status: string) => void }) {
+  const elapsed = useElapsedTime(order.createdAt);
+
+  // Determine if all items in the order are vegetarian (for VEG ORDER badge)
+  const isAllVeg = (order.items || []).every(
+    item => item.menuItem?.isVeg === true
+  );
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'bg-amber-100 text-amber-700';
+      case 'CONFIRMED': return 'bg-blue-100 text-blue-700';
+      case 'PREPARING': return 'bg-blue-100 text-blue-700';
+      case 'READY': return 'bg-emerald-100 text-emerald-700';
+      case 'COMPLETED': return 'bg-emerald-100 text-emerald-700';
+      case 'CANCELLED': return 'bg-red-100 text-red-700';
+      default: return 'bg-neutral-100 text-neutral-700';
+    }
+  };
+
+  const getNextAction = (status: string) => {
+    switch (status) {
+      case 'PENDING': return { label: 'Accept Order', next: 'CONFIRMED', style: 'from-blue-500 to-blue-600' };
+      case 'CONFIRMED': return { label: 'Start Preparing', next: 'PREPARING', style: 'from-blue-500 to-blue-600' };
+      case 'PREPARING': return { label: 'Mark Ready', next: 'READY', style: 'from-emerald-500 to-emerald-600' };
+      case 'READY': return { label: 'Complete Order', next: 'COMPLETED', style: 'from-emerald-500 to-emerald-600' };
+      default: return null;
+    }
+  };
+
+  const action = getNextAction(order.status);
+
+  return (
+    <motion.div
+      layout
+      variants={cardVariants}
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.25 } }}
+      className="ag-card rounded-2xl overflow-hidden group"
+    >
+      {/* Payment type header */}
+      <div className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${
+        order.paymentMethod === 'upi' 
+          ? 'bg-gradient-to-r from-[#e23744] to-[#ff6b6b] text-white' 
+          : 'bg-neutral-100 text-neutral-500'
+      }`}>
+        {order.paymentMethod === 'upi' ? 'ONLINE PAYMENT' : 'SELF PICKUP'}
+      </div>
+
+      <div className="p-3 sm:p-4">
+        {/* Order Info */}
+        <div className="flex justify-between items-start mb-2">
+          <div className="min-w-0 flex-1 mr-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-extrabold text-neutral-900 text-sm sm:text-base truncate tracking-tight">#{order.orderNumber}</h3>
+              {/* VEG ORDER badge — shown when every item in order is vegetarian */}
+              {isAllVeg && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 border border-emerald-300 rounded text-[10px] font-bold text-emerald-700 flex-shrink-0">
+                  <Leaf className="w-2.5 h-2.5" />
+                  VEG
                 </span>
               )}
             </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-5 mt-4 sm:mt-6 max-w-7xl 2xl:max-w-[1920px] mx-auto">
-            <div className="flex flex-col sm:flex-row items-center sm:gap-4 bg-white p-2 sm:px-5 sm:py-4 rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600 mb-1 sm:mb-0">
-                <svg width="20" height="20" className="sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-              </div>
-              <div className="text-center sm:text-left">
-                <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Active</p>
-                <p className="text-sm sm:text-2xl font-bold text-gray-900">{stats.activeCount}</p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center sm:gap-4 bg-white p-2 sm:px-5 sm:py-4 rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg sm:rounded-xl flex items-center justify-center text-blue-600 mb-1 sm:mb-0">
-                <Icons.Clock className="w-4 h-4 sm:w-6 sm:h-6" />
-              </div>
-              <div className="text-center sm:text-left">
-                <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Avg Time</p>
-                <p className="text-sm sm:text-2xl font-bold text-gray-900">{stats.avgTime}m</p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center sm:gap-4 bg-white p-2 sm:px-5 sm:py-4 rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600 font-bold text-sm sm:text-lg mb-1 sm:mb-0">₹</div>
-              <div className="text-center sm:text-left">
-                <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Revenue</p>
-                <p className="text-sm sm:text-2xl font-bold text-gray-900">₹{stats.todayRevenue}</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* ============ LIVE ORDERS VIEW ============ */}
-        <div className={mobileView === 'live' ? 'block' : 'hidden min-[968px]:block'}>
-          {/* Tabs */}
-          <div className="px-4 lg:px-8 py-5 bg-white/50 backdrop-blur-sm border-b border-gray-100/50 overflow-x-auto no-scrollbar">
-            <div className="flex gap-2 max-w-7xl 2xl:max-w-[1920px] mx-auto min-w-max">
-              {ORDER_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${activeTab === tab
-                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-200'
-                      : 'text-gray-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200'
-                    }`}
-                >
-                  {tabLabels[tab]}
-                  {tabCounts[tab] > 0 && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                      {tabCounts[tab]}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Order Cards Grid */}
-          <div className="p-3 sm:p-8">
-            <div className="max-w-7xl 2xl:max-w-[1920px] mx-auto">
-              <AnimatedBorder rushHour={rushHour} radius="1.5rem">
-                <div className="bg-white rounded-3xl p-3 sm:p-6 min-h-[500px]">
-                  {filteredOrders.length === 0 ? (
-                    <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100 mx-auto max-w-lg">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 text-gray-400">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900">No {tabLabels[activeTab]} Orders</h3>
-                      <p className="text-gray-500 mt-2">New orders will appear here automatically</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-5">
-                      {filteredOrders.map((order) => (
-                        <OrderCard
-                          key={order.id}
-                          order={order}
-                          onAccept={() => handleAcceptOrder(order.id)}
-                          onDecline={() => handleDeclineOrder(order.id)}
-                          onMarkReady={() => handleMarkReady(order.id)}
-                          onMarkComplete={() => handleMarkComplete(order.id)}
-                          getTimeSince={getTimeSince}
-                          onShowDetails={() => setSelectedOrder(order)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </AnimatedBorder>
-            </div>
-          </div>
-        </div>
-
-        {/* ============ RECENT ORDERS MOBILE VIEW ============ */}
-        {mobileView === 'recent' && (
-          <div className="p-4 min-[968px]:hidden pb-20">
-            <div className="space-y-4">
-              <h3 className="font-bold text-gray-900 px-2">Recent Orders History</h3>
-              {recentOrders.map((order) => (
-                <RecentOrderCard
-                  key={order.id}
-                  order={order}
-                  getTimeSince={getTimeSince}
-                  onShowDetails={() => setSelectedOrder(order)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* RIGHT: RECENT 5 ORDERS - Desktop Sidebar */}
-      <aside
-        className="hidden min-[968px]:flex fixed top-0 right-0 z-30 h-full w-[300px] bg-white/95 backdrop-blur-xl flex-col shadow-2xl shadow-gray-200/60"
-        onWheel={(e) => e.stopPropagation()}
-      >
-        <div className="p-6 border-b border-gray-50">
-          <h2 className="font-bold text-lg text-gray-900">Recent Orders</h2>
-          <p className="text-sm text-gray-500 mt-1">Last 5 orders</p>
-        </div>
-
-        <div
-          className="flex-1 overflow-y-auto p-4 space-y-3 overscroll-contain"
-          onWheel={(e) => e.stopPropagation()}
-        >
-          {recentOrders.map((order) => (
-            <RecentOrderCard
-              key={order.id}
-              order={order}
-              getTimeSince={getTimeSince}
-              onShowDetails={() => setSelectedOrder(order)}
-            />
-          ))}
-        </div>
-
-        <div className="p-4 border-t border-gray-100/80">
-          <Link
-            to="/order-history"
-            className="block w-full text-center py-3 text-sm font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all border border-emerald-100"
-          >
-            View All History →
-          </Link>
-        </div>
-      </aside>
-
-      {/* Logout Modal */}
-      <LogoutConfirmModal
-        isOpen={showLogoutModal}
-        onConfirm={handleLogout}
-        onCancel={() => setShowLogoutModal(false)}
-      />
-
-      {/* Order Details Modal (Shared) */}
-      <OrderDetailsModal
-        order={selectedOrder}
-        onClose={() => setSelectedOrder(null)}
-      />
-    </div>
-  );
-}
-
-// ==================== ORDER CARD COMPONENT ====================
-interface OrderCardProps {
-  order: Order;
-  onAccept: () => void;
-  onDecline: () => void;
-  onMarkReady: () => void;
-  onMarkComplete: () => void;
-  getTimeSince: (date: string) => string;
-  onShowDetails: () => void;
-}
-
-function OrderCard({ order, onAccept, onDecline, onMarkReady, onMarkComplete, getTimeSince, onShowDetails }: OrderCardProps) {
-  return (
-    <div
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-emerald-200 transition-shadow duration-200 cursor-pointer group flex flex-col"
-      onClick={onShowDetails}
-      style={{
-        background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.04) 0%, #ffffff 30%)'
-      }}
-    >
-      {/* Header */}
-      <div className="p-3 sm:p-5 sm:pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-lg sm:text-xl font-bold text-gray-900">#{order.orderNumber}</span>
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{order.customerName}</p>
-          </div>
-          <div className="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-orange-100">
-            <Icons.Clock />
-            {getTimeSince(order.createdAt)}
-          </div>
-        </div>
-      </div>
-
-      {/* Items - Fixed height section */}
-      <div className="px-3 sm:px-5 flex-1">
-        <div className="space-y-2">
-          {order.items.slice(0, 2).map((item, i) => (
-            <div key={i} className="flex justify-between text-xs sm:text-sm">
-              <span className="text-gray-600">
-                <span className="font-bold text-emerald-600">{item.quantity}x</span> {item.name}
-              </span>
-              <span className="font-semibold text-gray-900">₹{item.price.toFixed(2)}</span>
-            </div>
-          ))}
-          {order.items.length > 2 && (
-            <p className="text-[10px] sm:text-xs text-emerald-600 font-semibold">+{order.items.length - 2} more items</p>
-          )}
-        </div>
-
-        {order.specialNotes && (
-          <div className="mt-3 p-2 sm:p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-100">
-            <p className="text-[10px] sm:text-xs text-amber-700">
-              <span className="font-bold">Note:</span> {order.specialNotes.length > 40 ? order.specialNotes.slice(0, 40) + '...' : order.specialNotes}
+            <p className="text-[10px] sm:text-xs text-neutral-500 flex items-center gap-1 mt-1 truncate">
+              <User className="w-3.5 h-3.5 flex-shrink-0 text-neutral-400" />
+              <span className="truncate font-medium">{order.customer?.fullName || 'Customer'}</span>
             </p>
+            {order.specialInstructions && (
+              <p className="text-[10px] sm:text-xs text-neutral-600 flex items-start gap-1 mt-1.5 truncate max-w-full" title={order.specialInstructions}>
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-[#e23744]" />
+                <span className="truncate font-medium">{order.specialInstructions}</span>
+              </p>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Footer - Always at bottom with consistent height */}
-      <div className="p-3 sm:p-5 mt-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-t border-gray-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-xs text-gray-500 font-medium">Total</span>
-            <p className="text-2xl font-bold text-gray-900">₹{order.total.toFixed(2)}</p>
-          </div>
-
-          {order.status === 'new' && (
-            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={onDecline}
-                className="px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
-              >
-                Decline
-              </button>
-              <ConfettiButton onClick={onAccept} variant="success" size="md">
-                <Icons.Check /> Accept
-              </ConfettiButton>
-            </div>
-          )}
-
-          {order.status === 'preparing' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onMarkReady(); }}
-              className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200 transition-all"
-            >
-              Mark Ready
-            </button>
-          )}
-
-          {order.status === 'ready' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onMarkComplete(); }}
-              className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200 transition-all"
-            >
-              Complete
-            </button>
-          )}
-
-          {order.status === 'completed' && (
-            <span className="px-4 py-2 text-xs font-bold text-emerald-700 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-full border border-emerald-200 flex items-center gap-1">
-              <Icons.Check className="w-3 h-3" /> Completed
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ==================== RECENT ORDER CARD ====================
-interface RecentOrderCardProps {
-  order: Order;
-  getTimeSince: (date: string) => string;
-  onShowDetails: () => void;
-}
-
-function RecentOrderCard({ order, getTimeSince, onShowDetails }: RecentOrderCardProps) {
-  const statusColors: Record<Order['status'], string> = {
-    new: 'bg-orange-100 text-orange-700 border-orange-200',
-    preparing: 'bg-blue-100 text-blue-700 border-blue-200',
-    ready: 'bg-purple-100 text-purple-700 border-purple-200',
-    completed: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    cancelled: 'bg-red-100 text-red-700 border-red-200',
-  };
-
-  return (
-    <div
-      className="bg-white rounded-xl p-3 sm:p-4 cursor-pointer hover:shadow-md hover:border-emerald-200 border border-gray-100 transition-shadow duration-200"
-      onClick={onShowDetails}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="font-bold text-gray-900">#{order.orderNumber}</span>
-          <p className="text-xs text-gray-500">{order.customerName}</p>
-        </div>
-        <div className="text-right">
-          <p className="font-bold text-gray-900">₹{order.total.toFixed(2)}</p>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColors[order.status]}`}>
-            {order.status.toUpperCase()}
+          <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap flex-shrink-0 shadow-sm ${getStatusColor(order.status)}`}>
+            {order.status}
           </span>
         </div>
+
+        {/* Vendor Order Progress Timeline */}
+        <VendorOrderTimeline currentStatus={order.status} />
+
+        {/* Items */}
+        <div className="space-y-2 mb-3 sm:mb-4 border border-neutral-100 bg-neutral-50/50 rounded-xl p-2 sm:p-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] max-h-36 overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-neutral-200/50 hover:[&::-webkit-scrollbar-thumb]:bg-neutral-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent pr-1.5 transition-colors duration-200">
+          {order.items?.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-center text-[10px] sm:text-xs gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-white shadow-sm border border-neutral-200 flex items-center justify-center text-[10px] sm:text-xs font-bold text-neutral-700">
+                  {item.quantity}
+                </span>
+                <span className="truncate font-semibold text-neutral-800">
+                  {item.menuItem?.name || item.name || 'Unknown Item'}
+                </span>
+              </div>
+              <span className="text-neutral-900 font-extrabold whitespace-nowrap flex-shrink-0">
+                ₹{item.totalPrice}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Total, Payment & Elapsed Timer */}
+        <div className="flex justify-between items-center mb-3 sm:mb-4 px-1">
+          <div className="flex items-center gap-1.5">
+            {/* Elapsed time — color-coded: green<10min, amber<20min, red>20min */}
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+              (() => {
+                const secs = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 1000);
+                if (secs < 600)  return 'bg-emerald-100 text-emerald-700';
+                if (secs < 1200) return 'bg-amber-100 text-amber-700';
+                return 'bg-red-100 text-red-700';
+              })()
+            }`}>
+              <Clock className="w-3.5 h-3.5" />
+              {elapsed}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-1 text-[9px] sm:text-[10px] font-extrabold rounded-lg ${order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+              {order.paymentStatus === 'PAID' ? 'PAID' : 'UNPAID'}
+            </span>
+            <span className="font-extrabold text-base sm:text-lg text-neutral-900">₹{order.totalAmount}</span>
+          </div>
+        </div>
+
+        {/* Actions — next-status button + KOT print + cancel */}
+        {action && (
+          <div className="flex gap-2">
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={() => onStatusUpdate(order.id, action.next)}
+              className={`flex-1 py-2 sm:py-2.5 rounded-xl text-white text-xs sm:text-sm font-bold bg-gradient-to-r ${action.style} shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5`}
+            >
+              {action.label}
+            </motion.button>
+            {/* KOT print button */}
+            <button
+              onClick={() => printKOT(order)}
+              title="Print KOT"
+              className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl bg-neutral-100 text-neutral-500 hover:bg-[#3D6EEE] hover:text-white transition-all"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+            {order.status === 'PENDING' && (
+              <button
+                onClick={() => onStatusUpdate(order.id, 'CANCELLED')}
+                className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl bg-neutral-100 text-neutral-500 hover:bg-red-50 hover:text-red-500 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {order.status === 'COMPLETED' && (
+          <div className="flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+            <Check className="w-4 h-4" />
+            <span className="font-semibold text-xs sm:text-sm">Completed</span>
+          </div>
+        )}
       </div>
-      <p className="text-xs text-gray-400 mt-2">{getTimeSince(order.createdAt)}</p>
-    </div>
+    </motion.div>
   );
 }

@@ -1,0 +1,266 @@
+================================================================================
+CHARUSAT NEEDS (CAMPUS CANTEEN AGGREGATOR)
+COMPREHENSIVE CHANGE REQUEST ANALYSIS & IMPLEMENTATION BACKLOG
+Date Logged: 19-07-2026 (Source notes dated 22/06/2026)
+================================================================================
+
+OVERVIEW & ARCHITECTURAL DIRECTIVES:
+This document outlines the detailed technical breakdown, impact analysis, database 
+schema changes, API requirements, and frontend/backend strategy for the 15 change 
+requests logged for the CHARUSAT Needs platform.
+
+Core Systems Involved:
+- Backend: Spring Boot 3.2.2 + PostgreSQL (3NF) + Spring Security (Stateless JWT + Refresh Token Rotation + AES-256-GCM Payload & Field Encryption + TOTP MFA) + STOMP WebSockets + Razorpay SDK
+- Frontend: React + TypeScript + Vite + TailwindCSS + Framer Motion + Lucide Icons + Lenis Smooth Scroll
+
+--------------------------------------------------------------------------------
+1. LANDING PAGE (MICRO-SITE)
+--------------------------------------------------------------------------------
+Goal:
+Build a standalone marketing landing page/micro-site showcasing platform features,
+team members, student testimonials, active campus canteens, and real-time statistics.
+
+Requirements & Dynamic Sync:
+- Must NOT use hardcoded or drifting static stats.
+- All dynamic metrics (e.g. Total Canteens Active, Orders Served, Total Dishes, Average Campus Rating) must be fetched directly from a public endpoint: `GET /api/public/landing-stats`.
+- Clean visual design with modern glassmorphism, responsive navigation, and direct CTA buttons to Login ("Student Portal", "Vendor Access").
+
+Implementation Checklist:
+[Backend] Create `PublicLandingController.java` with endpoint `/api/public/landing-stats` (PermitAll in `SecurityConfig`).
+[Backend] Aggregate real-time statistics from `canteen`, `orders`, and `reviews` tables.
+[Frontend] Create `LandingPage.tsx` route under `/landing` (or public root `/` when unauthenticated).
+[Frontend] Integrate dynamic API fetching with skeleton loading.
+
+--------------------------------------------------------------------------------
+2. VENDOR ONBOARDING FLOW
+--------------------------------------------------------------------------------
+Goal:
+Provide a end-to-end multi-step onboarding lifecycle for new campus canteen vendors.
+
+Requirements:
+- Workflow: Application Submission -> Admin Verification -> Bank & KYC Collection -> Admin Approval -> Account Activation & Credentials Provisioning.
+- Integration with `canteen_bank_details` table (FSSAI license number, GSTIN, Bank Name, IFSC, Account Number encrypted via `FieldEncryptor`, KYC document URL).
+
+Implementation Checklist:
+[Backend] Extend `Canteen` entity & `canteen_bank_details` with onboarding status fields (`PENDING_APPROVAL`, `APPROVED`, `REJECTED`).
+[Backend] Create onboarding endpoints in `CanteenController.java` (`POST /api/canteens/onboard`) and approval endpoints in `AdminController.java` (`PUT /api/admin/vendors/{id}/approve`, `reject`).
+[Frontend] Build multi-step `VendorOnboardingModal.tsx` / `VendorRegistrationPage.tsx`.
+[Frontend] Add Vendor Onboarding Approval Queue inside `AdminDashboard.tsx`.
+
+--------------------------------------------------------------------------------
+3. RELIABILITY & UX OF CORE MODULES (MENU, COUPONS, ANALYTICS)
+--------------------------------------------------------------------------------
+Goal:
+Harden core management modules against edge cases, network retries, state desynchronization, and ambiguous user feedback.
+
+Requirements:
+- Menu Management: Instant optimistic UI toggles with automatic rollback on network failure; validation for price (> 0), preparation time, and category assignment.
+- Coupon Engine: Validate rush hour flags, usage limits (total vs per-user), minimum order values, and real-time WebSocket event listeners (`/topic/coupons`).
+- Analytics: Graceful empty state illustrations when no sales data exists for selected date ranges.
+
+Implementation Checklist:
+[Backend] Add explicit transactional boundary `@Transactional` on all multi-table coupon/menu modifications.
+[Backend] Enhance `CouponValidationService` error messages to be user-friendly.
+[Frontend] Refactor `MenuManagement.tsx`, `CouponApp`, and `VendorReporting.tsx` with standardized Toast notifications and Error Boundaries.
+
+--------------------------------------------------------------------------------
+4. CHANGE PASSWORD OPTION FOR AUTHENTICATED USERS
+--------------------------------------------------------------------------------
+Goal:
+Allow logged-in users (Students, Vendors, Admins) to securely change their password from profile settings.
+
+Requirements:
+- Separate from the unauthenticated Forgot Password OTP flow.
+- Must verify the user's current password before allowing change.
+- Enforce NIST 800-63B policy: 8-128 chars, uppercase, lowercase, digit requirement.
+- Perform historical check against `password_history` (prevent re-using last 5 passwords).
+- Update `last_password_change` timestamp in `users` table.
+
+Implementation Checklist:
+[Backend] Create `POST /api/users/change-password` endpoint in `UserController.java`.
+[Backend] Verify current password with `BCryptPasswordEncoder`.
+[Backend] Store new hash in `password_history` and purge entries beyond 5.
+[Frontend] Add "Change Password" section in `CustomerProfile.tsx` and `VendorProfile.tsx` with PasswordStrength meter.
+
+--------------------------------------------------------------------------------
+5. FINANCIAL FEATURES FOR VENDORS (PAYOUTS, PAYROLL, ANALYTICS & EXPORTS)
+--------------------------------------------------------------------------------
+Goal:
+Provide comprehensive financial tracking for campus canteens, including payout management, estimated vendor payroll expenses, financial breakdown analytics, and data export options.
+
+Requirements:
+- Payout Request & History: Vendors can request payouts for completed orders; Admins approve/process payouts.
+- Financial Analytics: Net revenue after platform commission, daily cash flow breakdown, itemized earnings.
+- Data Export: Single-click export of sales reports, order history, and payout summaries in CSV, Excel, and PDF formats.
+
+Implementation Checklist:
+[Backend] Create `payout_requests` database table (`id`, `canteen_id`, `amount`, `status`, `requested_at`, `processed_at`, `reference_no`).
+[Backend] Implement `VendorPayoutService.java` & `VendorPayoutController.java`.
+[Backend] Add CSV & PDF export generators in `AnalyticsController.java` (`GET /api/analytics/export/csv`, `/pdf`).
+[Frontend] Upgrade `VendorPayout.tsx` and `VendorReporting.tsx` with date-range filters and instant Export actions.
+
+--------------------------------------------------------------------------------
+6. CART / CHECKOUT + LIVE ORDER TRACKING (GOOGLE MAPS INTEGRATION)
+--------------------------------------------------------------------------------
+Goal:
+Harden cart state persistence, discount calculations, checkout idempotency, and provide visual Google Maps order tracking for active campus orders.
+
+Requirements:
+- Cart: Atomic quantity updates, single-canteen cart restriction enforcement with clear user prompt to switch canteens.
+- Checkout: Prevent double-submission, bind Razorpay order creation to backend cart total validation.
+- Live Tracking: Google Maps component in `CustomerOrderHistory.tsx` showing:
+  - Canteen GPS Coordinates (Origin)
+  - Student Delivery Location / Hostel / Department (Destination)
+  - Real-time order progress status (PENDING -> ACCEPTED -> PREPARING -> READY -> COMPLETED).
+
+Implementation Checklist:
+[Backend] Store latitude & longitude in `canteens` table and `orders` table.
+[Backend] Expose `GET /api/orders/{id}/tracking` returning canteen location, delivery info, and estimated preparation time.
+[Frontend] Integrate `@react-google-maps/api` or Google Maps JS SDK in `LiveOrderTrackerModal.tsx`.
+[Frontend] Add fallback interactive map view if API key is not present.
+
+--------------------------------------------------------------------------------
+7. DATABASE SEEDING WITH REAL CHARUSAT CANTEEN DATA
+--------------------------------------------------------------------------------
+Goal:
+Replace placeholder data with authentic CHARUSAT campus canteens and real food menus.
+
+Canteen Entities to Seed:
+1. Foodie's Paradise (Central Campus Canteen)
+2. Yumtown Canteen (DEPSTAR / CSPIT Engineering Block)
+3. Charusat Central Canteen (Main Auditorium Complex)
+4. Havmor Express & Fast Food (Student Activity Center)
+
+Implementation Checklist:
+[Backend] Update `DataInitializer.java` and `sample_data.sql` with accurate menu items (Gujarati Thali, Kathiyawadi Combo, Puff, Cold Coffee, Frankie, Pizza, Dosa) with actual campus prices and veg flags.
+
+--------------------------------------------------------------------------------
+8. VENDOR ACCOUNT DELETION / EXIT OPTION
+--------------------------------------------------------------------------------
+Goal:
+Allow canteen owners to request canteen closure / account deactivation with safety checks.
+
+Requirements:
+- Safety Validation: Vendor cannot exit if there are active PENDING, ACCEPTED, or PREPARING orders.
+- Deactivation Flow: Marks `canteens.is_open = false`, sets `users.deletion_requested_at = NOW()`, notifies Admin.
+- Integrates with existing `AccountDeletionScheduler.java` (30-day grace period before permanent purge).
+
+Implementation Checklist:
+[Backend] Add `POST /api/canteens/request-exit` endpoint in `CanteenController.java`.
+[Backend] Add check `orderRepository.countActiveOrdersByCanteenId(canteenId) > 0`.
+[Frontend] Add "Canteen Exit & Account Deletion" danger card in `VendorProfile.tsx` with password verification modal.
+
+--------------------------------------------------------------------------------
+9. RESTAURANT STATUS TOGGLE & ADVANCED SCHEDULING
+--------------------------------------------------------------------------------
+Goal:
+Provide instant manual open/closed status toggle + automated schedule-based operating hours for canteens.
+
+Requirements:
+- Manual Toggle: Instant ON/OFF switch in Vendor Dashboard with STOMP broadcast to all connected students (`/topic/canteens`).
+- Schedule Configuration: Opening time (e.g. 08:30 AM) and Closing time (e.g. 07:00 PM).
+- Auto Scheduler: Cron task runs every minute checking current time against canteen schedules and updating `is_open` automatically.
+
+Implementation Checklist:
+[Backend] Add `opening_time` and `closing_time` fields in `canteens` table.
+[Backend] Create `CanteenScheduleScheduler.java` running `@Scheduled(cron = "0 * * * * *")`.
+[Backend] Broadcast `notifyCanteenStatusChange` on schedule state changes.
+[Frontend] Add Schedule Time Picker in `VendorProfile.tsx` and operating hours badge on `CustomerMenu.tsx`.
+
+--------------------------------------------------------------------------------
+10. MENU ITEM "HIDDEN" TAG FIX & BEHAVIOR
+--------------------------------------------------------------------------------
+Goal:
+Ensure menu items tagged with `#hidden` or `is_hidden = true` are completely excluded from customer menu browsing while remaining fully editable in vendor inventory.
+
+Requirements:
+- Customer view (`GET /api/menu/canteen/{id}`): Excludes hidden items automatically.
+- Vendor view (`GET /api/canteen/menu`): Includes all items, rendering a distinct "Hidden from Students" badge for hidden items.
+
+Implementation Checklist:
+[Backend] Update `MenuItemRepository.java` queries: `findByCanteenIdAndIsAvailableTrueAndIsHiddenFalse`.
+[Backend] Update `MenuItemController.java` to filter customer endpoints.
+[Frontend] Add eye-slash "Hide Item" toggle in `MenuManagement.tsx`.
+
+--------------------------------------------------------------------------------
+11. ONE-CLICK "OUT OF STOCK" TOGGLE
+--------------------------------------------------------------------------------
+Goal:
+Allow vendors to mark any menu item as Out of Stock (or Back in Stock) with a single click without opening edit modals.
+
+Requirements:
+- Instant single-click operation.
+- Immediate UI state change with optimistic updates.
+- Real-time STOMP notification to customer menu pages viewing that canteen.
+
+Implementation Checklist:
+[Backend] Add `PATCH /api/menu/items/{id}/availability` endpoint in `MenuItemController.java`.
+[Frontend] Add inline status switch in `MenuManagement.tsx` table.
+
+--------------------------------------------------------------------------------
+12. BACKEND HARDENING & EDGE CASE AUDIT
+--------------------------------------------------------------------------------
+Goal:
+Perform thorough security and stability hardening across all 18 controllers and 25 services.
+
+Audit Criteria:
+- Enforce `@PreAuthorize("hasRole('CANTEEN_OWNER')")` or ownership check (`canteen.getOwnerId().equals(currentUser.getId())`) on all vendor endpoints.
+- Null pointer prevention on optional fields (special instructions, coupons, addresses).
+- Strict validation on request bodies (`@Valid`, `@NotNull`, `@Min(1)`).
+- Path variable injection checks and URL sanitization verification.
+
+Implementation Checklist:
+[Backend] Review and harden all endpoint permission checks.
+[Backend] Standardize error responses via `GlobalExceptionHandler.java`.
+
+--------------------------------------------------------------------------------
+13. UI POLISH — ANIMATIONS, PRELOADER & SKELETON STATES
+--------------------------------------------------------------------------------
+Goal:
+Create a seamless, high-end visual experience with zero layout shift during data loading.
+
+Requirements:
+- Redesign `Preloader.tsx` with glassmorphic visuals, branded progress bar, and smooth entrance/exit transitions.
+- Standardize Skeleton components: `TableSkeleton`, `CardGridSkeleton`, `AnalyticsSkeleton`, `MenuSkeleton`.
+- Ensure skeleton structures match exact dimensions of loaded content to eliminate CLS (Cumulative Layout Shift).
+
+Implementation Checklist:
+[Frontend] Enhance `Preloader.tsx` and `MagicLoader.tsx`.
+[Frontend] Create dedicated skeleton components in `src/components/skeletons/`.
+
+--------------------------------------------------------------------------------
+14. DATABASE PERFORMANCE PATTERNS
+--------------------------------------------------------------------------------
+Goal:
+Optimize database queries to support high-concurrency campus traffic.
+
+Requirements:
+- Indexing: Ensure indexes exist on `orders(canteen_id, status)`, `orders(customer_id)`, `menu_items(canteen_id, is_available)`, `coupons(canteen_id, is_active)`.
+- Pagination: Add `Pageable` parameters to `/api/orders`, `/api/reviews`, and `/api/complaints`.
+- Avoid N+1 queries by using JOIN FETCH or custom DTO projections.
+
+Implementation Checklist:
+[Backend] Add missing SQL indexes in `schema.sql`.
+[Backend] Update repository methods to return `Page<T>` with `Pageable`.
+
+--------------------------------------------------------------------------------
+15. ARCHITECTURAL OVERHAUL — ON-DEMAND / LAZY LOAD STRATEGY (HIGH PRIORITY)
+--------------------------------------------------------------------------------
+Goal:
+Eliminate initial upfront loading of all application tabs and data. Achieve instant app startup.
+
+Strategy & Rules:
+1. Initial Load: Load ONLY the Login screen (`/login`) or Landing Page (`/`).
+2. Post-Authentication: Load ONLY the primary dashboard shell for the logged-in role (`/customer/dashboard` or `/dashboard`).
+3. Zero Eager Tab Pre-fetching: Tabs (Menu, Reviews, Complaints, Analytics, Coupons, Payouts) must NOT be loaded into memory or state until the user actively clicks into them.
+4. Route Code-Splitting: Enforce `React.lazy()` with route-level `Suspense` fallback for every tab.
+5. On-Demand Data Fetching: Each page component triggers its own API call inside `useEffect` upon mounting, displaying accurate skeletons during fetch.
+
+Implementation Checklist:
+[Frontend] Refactor `App.tsx` routing to verify strict code-splitting per tab.
+[Frontend] Audit `Dashboard.tsx`, `StudentDashboard.tsx`, and `VendorLayout.tsx` to remove eager state pre-fetching.
+[Frontend] Enforce component-level fetch on tab mount.
+
+================================================================================
+END OF MASTER PROMPT ANALYSIS
+================================================================================

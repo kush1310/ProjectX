@@ -5,7 +5,7 @@
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:5173/auth/callback'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 /**
  * Initiates Google OAuth flow with CHARUSAT domain restriction
@@ -29,7 +29,6 @@ export const initiateGoogleLogin = (): void => {
     `hd=charusat.edu.in&` + // CRITICAL: Restricts to CHARUSAT domain
     `prompt=select_account`
   
-  console.log('Initiating Google OAuth with domain restriction: charusat.edu.in')
   window.location.href = authUrl
 }
 
@@ -72,8 +71,6 @@ export const handleGoogleCallback = async (code: string): Promise<{
     localStorage.setItem('charusatneeds_user', JSON.stringify(data.user))
     localStorage.setItem('charusatneeds_auth_method', 'google')
 
-    console.log('Google authentication successful:', data.user.email)
-    
     return data
   } catch (error) {
     console.error('Google authentication error:', error)

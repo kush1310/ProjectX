@@ -13,6 +13,7 @@
 import { useState, ChangeEvent, FormEvent, useEffect, ClipboardEvent } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import CharusatNeedsLogo from '@/components/Logo'
 import LightweightBorder from '@/components/LightweightBorder'
 import PasswordStrength from '@/components/PasswordStrength'
@@ -229,10 +230,17 @@ export default function Signup() {
       mobile: formData.mobile
     })
 
-    if (registerResult.success && registerResult.user && registerResult.token) {
-      createSession(registerResult.user, registerResult.token, true)
-      toast.success("Account created successfully!")
-      setTimeout(() => navigate('/dashboard', { replace: true }), 600)
+    if (registerResult.success) {
+      if (registerResult.token) {
+        // Auto-login (Legacy/Dev)
+        createSession(registerResult.user!, registerResult.token, true)
+        toast.success("Account created successfully!")
+        setTimeout(() => navigate('/dashboard', { replace: true }), 600)
+      } else {
+        // Verification Required Flow
+        toast.success(registerResult.message || "Registration successful! Please check your email.")
+        setTimeout(() => navigate('/login'), 2000)
+      }
     } else {
       setErrors({ general: registerResult.message })
     }
@@ -245,17 +253,27 @@ export default function Signup() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}
-      className="min-h-screen min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-cream-50 via-white to-cream-100 overflow-x-hidden relative p-4 py-8"
+      className="min-h-screen min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-cream-50 via-white to-cream-100 overflow-x-hidden overflow-y-auto scroll-smooth relative p-4 py-8 gpu-accelerate"
     >
+      {/* Top Left Floating Back to Home Button */}
+      <Link 
+        to="/" 
+        className="fixed top-5 left-5 z-30 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-md rounded-2xl text-dark-700 hover:text-brand-600 hover:bg-white shadow-md border border-gray-200/80 transition-all active:scale-95 text-sm font-bold group"
+        title="Back to Landing Page"
+      >
+        <ArrowLeft className="w-4 h-4 text-brand-600 transition-transform group-hover:-translate-x-1" />
+        <span>Back to Home</span>
+      </Link>
+
       {/* Background */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50vw] max-w-[400px] h-[40vh] max-h-[300px] rounded-full bg-brand-100/30 blur-[80px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50vw] max-w-[400px] h-[40vh] max-h-[300px] rounded-full bg-brand-200/30 blur-[80px] pointer-events-none" />
+      <div className="absolute top-[-10%] right-[-10%] w-[50vw] max-w-[400px] h-[40vh] max-h-[300px] rounded-full bg-brand-100/20 blur-[50px] pointer-events-none transform-gpu" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50vw] max-w-[400px] h-[40vh] max-h-[300px] rounded-full bg-brand-200/20 blur-[50px] pointer-events-none transform-gpu" />
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05, duration: 0.3 }}
-        className="w-full max-w-md relative z-10"
+        transition={{ delay: 0.05, duration: 0.25 }}
+        className="w-full max-w-md relative z-10 transform-gpu"
       >
         {/* Logo */}
         <div className="flex justify-center mb-6">

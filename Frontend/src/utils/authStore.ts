@@ -7,13 +7,19 @@ export interface User {
   fullName: string;
   mobile?: string;
   role?: string;
+  mfaEnabled?: boolean;
 }
 
 export interface AuthResponse {
   success: boolean;
   message: string;
   token?: string;
+  refreshToken?: string;  // Stored in session for silent token refresh via /auth/refresh-token
   user?: User;
+  lockedMinutes?: number;
+  requireCaptcha?: boolean;
+  mfaRequired?: boolean;
+  email?: string;
 }
 
 // Storage keys
@@ -62,27 +68,43 @@ export const registerUser = async (userData: any): Promise<AuthResponse> => {
 };
 
 /**
- * Authenticate user
+ * Authenticate user — forwards lockout data from 429 responses
  */
-export const authenticateUser = async (email: string, password: string): Promise<AuthResponse> => {
+export const authenticateUser = async (email: string, password: string, captchaId?: string, captchaAnswer?: string, mfaCode?: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/auth/login', { email, password, captchaId, captchaAnswer, mfaCode });
     return response.data;
   } catch (error: any) {
+    const data = error.response?.data;
     return {
       success: false,
-      message: error.response?.data?.message || 'Login failed'
+      message: data?.message || data?.error || 'Login failed',
+      lockedMinutes: data?.lockedMinutes,
+      requireCaptcha: data?.requireCaptcha,
     };
   }
 };
 
 /**
- * Create session
+ * createSession
+ *
+ * Persists the authenticated user's access token and refresh token into
+ * localStorage (and optionally a cookie for Remember Me). Both tokens are
+ * stored so the api.ts interceptor can silently refresh a 401/403 before
+ * forcing a redirect to /login.
+ *
+ * @param user        {User}    - Authenticated user object from backend.
+ * @param token       {string}  - Short-lived JWT access token (15 min).
+ * @param rememberMe  {boolean} - If true, also persists to cookie (30 days).
+ * @param refreshToken {string} - Long-lived refresh token (30 days). Optional
+ *                                for backward compatibility but should always
+ *                                be passed on fresh login/register flows.
  */
-export const createSession = (user: User, token: string, rememberMe: boolean = false): void => {
+export const createSession = (user: User, token: string, rememberMe: boolean = false, refreshToken?: string): void => {
   const session = {
     ...user,
     token,
+    refreshToken: refreshToken || null,
     loggedInAt: new Date().toISOString()
   };
   

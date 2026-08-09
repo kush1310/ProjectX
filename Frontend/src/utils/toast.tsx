@@ -1,16 +1,18 @@
 /**
- * Toast Notification System
+ * Toast Notification System — Premium Glassmorphic Design
  * 
  * Features:
- * - Specific error messages (not generic)
- * - Success, error, warning, info variants
- * - Smooth animations
- * - Auto-dismiss
+ * - Glassmorphic backdrop-blur cards with gradient accents
+ * - Auto-dismiss progress bar animation
+ * - Lucide icons for consistency
+ * - Swipe-to-dismiss on mobile
+ * - Stacked with smooth entrance/exit
  */
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 // Types
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -25,57 +27,55 @@ interface ToastContextType {
   showToast: (type: ToastType, message: string) => void;
 }
 
-// Toast icons
-const ToastIcons = {
-  success: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-    </svg>
-  ),
-  error: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-    </svg>
-  ),
-  warning: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-    </svg>
-  ),
-  info: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-    </svg>
-  ),
-};
-
-// Styles per type
-const toastStyles: Record<ToastType, { bg: string; border: string; text: string; icon: string }> = {
+// Config per type
+const toastConfig: Record<ToastType, {
+  icon: typeof CheckCircle2;
+  gradient: string;
+  accent: string;
+  bg: string;
+  border: string;
+  text: string;
+  progressColor: string;
+}> = {
   success: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    text: 'text-green-700',
-    icon: 'text-green-600'
+    icon: CheckCircle2,
+    gradient: 'from-emerald-500/10 to-emerald-500/5',
+    accent: 'bg-emerald-500',
+    bg: 'bg-white/80',
+    border: 'border-emerald-200/60',
+    text: 'text-emerald-800',
+    progressColor: '#10b981',
   },
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    text: 'text-red-700',
-    icon: 'text-red-600'
+    icon: AlertCircle,
+    gradient: 'from-red-500/10 to-red-500/5',
+    accent: 'bg-red-500',
+    bg: 'bg-white/80',
+    border: 'border-red-200/60',
+    text: 'text-red-800',
+    progressColor: '#ef4444',
   },
   warning: {
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
-    text: 'text-yellow-700',
-    icon: 'text-yellow-600'
+    icon: AlertTriangle,
+    gradient: 'from-amber-500/10 to-amber-500/5',
+    accent: 'bg-amber-500',
+    bg: 'bg-white/80',
+    border: 'border-amber-200/60',
+    text: 'text-amber-800',
+    progressColor: '#f59e0b',
   },
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    text: 'text-blue-700',
-    icon: 'text-blue-600'
-  }
+    icon: Info,
+    gradient: 'from-blue-500/10 to-blue-500/5',
+    accent: 'bg-blue-500',
+    bg: 'bg-white/80',
+    border: 'border-blue-200/60',
+    text: 'text-blue-800',
+    progressColor: '#3b82f6',
+  },
 };
+
+const TOAST_DURATION = 4000;
 
 // Context
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -87,11 +87,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((type: ToastType, message: string) => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts(prev => [...prev, { id, type, message }]);
-
-    // Auto remove after 4 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
+    }, TOAST_DURATION);
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -102,33 +100,58 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {typeof document !== 'undefined' && createPortal(
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2 w-full max-w-sm px-4">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2.5 w-full max-w-md px-4">
           <AnimatePresence mode="sync">
             {toasts.map(toast => {
-              const style = toastStyles[toast.type];
-              const Icon = ToastIcons[toast.type];
-              
+              const config = toastConfig[toast.type];
+              const Icon = config.icon;
+
               return (
                 <motion.div
                   key={toast.id}
-                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                  initial={{ opacity: 0, y: -24, scale: 0.92 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className={`flex items-center ${style.bg}/80 backdrop-blur-md ${style.text} border ${style.border} p-3 sm:p-4 rounded-xl shadow-lg`}
+                  exit={{ opacity: 0, y: -12, scale: 0.92, transition: { duration: 0.2 } }}
+                  transition={{ type: 'spring', damping: 26, stiffness: 350 }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  onDragEnd={(_, info) => {
+                    if (Math.abs(info.offset.x) > 80) removeToast(toast.id);
+                  }}
+                  className={`relative overflow-hidden ${config.bg} backdrop-blur-xl border ${config.border} rounded-2xl shadow-lg shadow-black/5 cursor-grab active:cursor-grabbing`}
+                  style={{
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)',
+                  }}
                 >
-                  <div className={`mr-3 ${style.icon}`}>
-                    <Icon />
+                  {/* Left accent bar */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${config.accent} rounded-l-2xl`} />
+
+                  {/* Content */}
+                  <div className={`flex items-center gap-3 px-4 pl-5 py-3.5 bg-gradient-to-r ${config.gradient}`}>
+                    <div className={`flex-shrink-0 ${config.text}`}>
+                      <Icon className="w-5 h-5" strokeWidth={2.2} />
+                    </div>
+                    <p className={`flex-1 text-sm font-semibold ${config.text} leading-snug`}>
+                      {toast.message}
+                    </p>
+                    <button
+                      className={`flex-shrink-0 ${config.text} opacity-40 hover:opacity-80 transition-opacity p-0.5 rounded-lg hover:bg-black/5`}
+                      onClick={() => removeToast(toast.id)}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{toast.message}</p>
+
+                  {/* Auto-dismiss progress bar */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/5">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: config.progressColor }}
+                      initial={{ width: '100%' }}
+                      animate={{ width: '0%' }}
+                      transition={{ duration: TOAST_DURATION / 1000, ease: 'linear' }}
+                    />
                   </div>
-                  <button 
-                    className="ml-3 text-current opacity-60 hover:opacity-100 transition-opacity"
-                    onClick={() => removeToast(toast.id)}
-                  >
-                    &times;
-                  </button>
                 </motion.div>
               );
             })}

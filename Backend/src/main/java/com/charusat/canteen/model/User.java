@@ -1,6 +1,6 @@
 package com.charusat.canteen.model;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,52 +11,76 @@ import java.time.LocalDateTime;
 /**
  * User Entity - Represents canteen users and admins
  */
-@Entity
-@Table(name = "users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "profileImageData" })
 public class User {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Long id;
-    
-    @Column(nullable = false, unique = true)
     private String email;
-    
-    @Column(nullable = false)
     private String password;
-    
-    @Column(nullable = false)
     private String fullName;
-    
-    @Column(length = 15)
     private String mobile;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+
     @Builder.Default
     private UserRole role = UserRole.USER;
-    
-    @Column(name = "created_at")
+
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
-    
-    @Column(name = "last_login")
+
     private LocalDateTime lastLogin;
-    
-    @Column(name = "is_active")
+
     @Builder.Default
     private Boolean isActive = true;
 
-    @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
-    
+    private String profileImage;
+
+    @Builder.Default
+    private Boolean isEmailVerified = false;
+
+    private String emailVerificationToken;
+    private LocalDateTime emailVerificationExpiry;
+    private LocalDateTime lastPasswordChange;
+
+    @Builder.Default
+    private Boolean mfaEnabled = false;
+
+    private String mfaSecret;
+    private String dateOfBirth;
+    private String anniversary;
+    private String gender;
+    private String userType;
+    private String hostelName;
+    private String roomNumber;
+    private String buildingNumber;
+    private String department;
+    private String staffRoomNumber;
+    private byte[] profileImageData;
+    private String profileImageType;
+    private LocalDateTime deletionRequestedAt;
+
     public enum UserRole {
         USER,
         ADMIN,
         CANTEEN_OWNER
+    }
+
+    public enum AuthProvider {
+        LOCAL,
+        GOOGLE
+    }
+
+    public boolean canLoginWithPassword() {
+        return authProvider == AuthProvider.LOCAL && password != null;
+    }
+
+    public boolean isLocked() {
+        return lockedUntil != null && LocalDateTime.now().isBefore(lockedUntil);
     }
 }

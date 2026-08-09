@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -43,8 +44,7 @@ public class AuthService {
         
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            // Fallback for debugging: Allow plain text or encoded match
-            if (password.equals("kush") || passwordEncoder.matches(password, user.getPassword())) {
+            if (passwordEncoder.matches(password, user.getPassword())) {
                 // Update last login
                 user.setLastLogin(LocalDateTime.now());
                 userRepository.save(user);
@@ -97,5 +97,45 @@ public class AuthService {
     
     public Long getUserIdFromToken(String token) {
         return getClaimsFromToken(token).get("userId", Long.class);
+    }
+    
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long (NIST SP 800-63B)");
+        }
+        String lower = newPassword.toLowerCase();
+        if (lower.contains("123456") || lower.contains("abcdef") || lower.contains("password") || lower.contains("qwerty")) {
+            throw new IllegalArgumentException("Password contains common sequential or weak patterns");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Incorrect current password");
+        }
+
+        // NIST SP 800-63B History check — last 3 passwords
+        List<String> recentHashes = jdbc.queryForList(
+                "SELECT password_hash FROM password_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 3",
+                String.class, userId);
+
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("New password cannot be the same as your current password");
+        }
+
+        for (String oldHash : recentHashes) {
+            if (passwordEncoder.matches(newPassword, oldHash)) {
+                throw new IllegalArgumentException("Password was recently used. Please choose a different password.");
+            }
+        }
+
+        // Save current password to history before updating
+        jdbc.update("INSERT INTO password_history (user_id, password_hash) VALUES (?, ?)", userId, user.getPassword());
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

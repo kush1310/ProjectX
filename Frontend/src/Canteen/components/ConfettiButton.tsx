@@ -70,7 +70,7 @@ export default function ConfettiButton({
 
   // Load confetti script dynamically
   useEffect(() => {
-    if (window.confetti) {
+    if (typeof window.confetti === 'function') {
       setScriptLoaded(true);
       return;
     }
