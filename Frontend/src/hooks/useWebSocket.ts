@@ -41,6 +41,10 @@ export const useWebSocket = (url?: string) => {
       brokerURL = brokerURL.replace("https://", "wss://") + "/websocket";
     }
 
+    if (brokerURL && brokerURL.includes('charusatneeds-backend.onrender.com')) {
+      brokerURL = brokerURL.replace('charusatneeds-backend.onrender.com', 'projectx-s0sw.onrender.com');
+    }
+
     const client = new Client({
       brokerURL,
 

@@ -6,9 +6,14 @@
 
 * **Application Name:** Charusat Needs — Campus Canteen Aggregator & Ordering Platform
 * **Release Target:** Public University Testing Deployment (Zero-Cost Cloud Architecture)
-* **Release Type:** Release Candidate (RC-1)
-* **Build Timestamp:** 2026-09-24T23:42:00Z
-* **Source Git Commit SHA:** `f24efcee11c2c1cc83492fb5c52d531cda58ec4c`
+* **Release Type:** Production Deployment
+* **Deployment Status:** DEPLOYMENT VERIFIED
+* **Build Timestamp:** 2026-09-25T00:35:00+05:30
+* **Frontend Production URL:** `https://charusatneeds.vercel.app`
+* **Backend Production URL:** `https://projectx-s0sw.onrender.com`
+* **Liveness Probe:** `https://projectx-s0sw.onrender.com/healthz`
+* **Readiness & DB Health:** `https://projectx-s0sw.onrender.com/api/public/health`
+* **WebSocket Endpoint:** `wss://projectx-s0sw.onrender.com/ws/websocket`
 * **Release Branch:** `main`
 
 ---

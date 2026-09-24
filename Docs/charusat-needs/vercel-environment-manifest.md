@@ -44,10 +44,10 @@ This document provides the authoritative forensic manifest of all environment va
 
 | Variable | Required? | Public? | Used By | Production Value | Preview Value | Source | Status |
 |---|---|---|---|---|---|---|---|
-| **VITE_API_URL** | Yes | Yes | `api.ts:5`, `useWebSocket.ts:27` | `https://charusatneeds-backend.onrender.com/api` | `https://charusatneeds-backend.onrender.com/api` | Render Web Service URL | VERIFIED BY EXECUTION |
-| **VITE_WS_URL** | Optional (Rec.) | Yes | `useWebSocket.ts:24-25` | `wss://charusatneeds-backend.onrender.com/ws/websocket` | `wss://charusatneeds-backend.onrender.com/ws/websocket` | Render WSS broker endpoint | VERIFIED BY EXECUTION |
-| **VITE_GOOGLE_CLIENT_ID** | Yes (for SSO) | Yes | `googleAuth.ts:8, 16` | `<GOOGLE_CLIENT_ID>.apps.googleusercontent.com` | `<GOOGLE_CLIENT_ID>.apps.googleusercontent.com` | Google Cloud Console OAuth 2.0 Credentials | VERIFIED BY STATIC INSPECTION |
-| **VITE_GOOGLE_REDIRECT_URI** | Optional (Rec.) | Yes | `googleAuth.ts:9` | `https://<actual-vercel-domain>.vercel.app/auth/callback` | `https://<actual-preview-domain>.vercel.app/auth/callback` | Vercel Deployment Domain | VERIFIED BY STATIC INSPECTION |
+| **VITE_API_URL** | Yes | Yes | `api.ts:5`, `useWebSocket.ts:27` | `https://projectx-s0sw.onrender.com/api` | `https://projectx-s0sw.onrender.com/api` | Render Web Service URL | VERIFIED BY EXECUTION |
+| **VITE_WS_URL** | Optional (Rec.) | Yes | `useWebSocket.ts:24-25` | `wss://projectx-s0sw.onrender.com/ws/websocket` | `wss://projectx-s0sw.onrender.com/ws/websocket` | Render WSS broker endpoint | VERIFIED BY EXECUTION |
+| **VITE_GOOGLE_CLIENT_ID** | Yes (for SSO) | Yes | `googleAuth.ts:8, 16` | `412237294748-rtk111689l4fkskieu9icvhkmampdvv5.apps.googleusercontent.com` | `412237294748-rtk111689l4fkskieu9icvhkmampdvv5.apps.googleusercontent.com` | Google Cloud Console OAuth 2.0 Credentials | VERIFIED BY STATIC INSPECTION |
+| **VITE_GOOGLE_REDIRECT_URI** | Optional (Rec.) | Yes | `googleAuth.ts:9` | `https://charusatneeds.vercel.app/auth/callback` | `https://charusatneeds.vercel.app/auth/callback` | Vercel Deployment Domain | VERIFIED BY STATIC INSPECTION |
 | **VITE_IMAGEKIT_URL_ENDPOINT** | Optional | Yes | `imagekit.ts:28` | `https://ik.imagekit.io/cyseckush/` | `https://ik.imagekit.io/cyseckush/` | ImageKit Dashboard / Hardcoded default | VERIFIED BY EXECUTION |
 
 ---
@@ -56,16 +56,19 @@ This document provides the authoritative forensic manifest of all environment va
 
 Inspecting `Frontend/src/utils/api.ts` (lines 5-8):
 ```typescript
-const rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+let rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://projectx-s0sw.onrender.com/api' : 'http://localhost:8000/api');
+if (rawApiUrl.includes('charusatneeds-backend.onrender.com')) {
+  rawApiUrl = rawApiUrl.replace('charusatneeds-backend.onrender.com', 'projectx-s0sw.onrender.com');
+}
 export const BACKEND_URL = rawApiUrl.replace(/\/api\/?$/, '');
 export const API_URL = `${BACKEND_URL}/api`;
 ```
 
 ### Key Technical Findings:
 1. **Normalization Behavior:** The utility sanitizes the input by stripping any trailing `/api` or `/api/` using `.replace(/\/api\/?$/, '')` into `BACKEND_URL`, and then constructs `API_URL` by appending `/api`.
-2. **Double `/api/api` Prevention:** Even if a user provides `https://charusatneeds-backend.onrender.com/api`, the regex removes `/api`, resulting in `https://charusatneeds-backend.onrender.com/api`.
-3. **Canonical Production Standard:** `VITE_API_URL=https://charusatneeds-backend.onrender.com/api` is the established standard across all configuration documentation.
-4. **Fallback:** If omitted, defaults to `'http://localhost:8000/api'`.
+2. **Double `/api/api` Prevention:** Even if a user provides `https://projectx-s0sw.onrender.com/api`, the regex removes `/api`, resulting in `https://projectx-s0sw.onrender.com/api`.
+3. **Canonical Production Standard:** `VITE_API_URL=https://projectx-s0sw.onrender.com/api` is the verified production endpoint.
+4. **Fallback:** If omitted, defaults to `'https://projectx-s0sw.onrender.com/api'` in production and `'http://localhost:8000/api'` in local development.
 
 ---
 

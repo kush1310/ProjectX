@@ -2,7 +2,10 @@ import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'ax
 import { getSession, logout } from './authStore';
 import { encryptPayload, decryptPayload } from './payloadCrypto';
 
-const rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+let rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://projectx-s0sw.onrender.com/api' : 'http://localhost:8000/api');
+if (rawApiUrl.includes('charusatneeds-backend.onrender.com')) {
+  rawApiUrl = rawApiUrl.replace('charusatneeds-backend.onrender.com', 'projectx-s0sw.onrender.com');
+}
 export const BACKEND_URL = rawApiUrl.replace(/\/api\/?$/, '');
 export const API_URL = `${BACKEND_URL}/api`;
 
