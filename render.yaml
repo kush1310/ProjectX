@@ -97,3 +97,18 @@ services:
         sync: false # e.g. https://charusatneeds.vercel.app
       - key: CORS_ALLOWED_ORIGINS
         sync: false # e.g. https://charusatneeds.vercel.app
+
+      # Observability (Grafana Cloud Java OpenTelemetry)
+      - key: OTEL_SERVICE_NAME
+        value: "charusatneeds-backend"
+      - key: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.name=charusatneeds-backend,service.version=1.0.0,deployment.environment=production"
+      - key: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: "http/protobuf"
+      - key: OTEL_JAVAAGENT_ENABLED
+        value: "true"
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        sync: false # Set via Render Dashboard: https://otlp-gateway-...grafana.net/otlp
+      - key: OTEL_EXPORTER_OTLP_HEADERS
+        sync: false # Set via Render Dashboard: Authorization=Basic <base64-credentials>
+

@@ -1,4 +1,4 @@
-﻿# CHARUSAT NEEDS - Render Environment Variable Manifest
+# CHARUSAT NEEDS - Render Environment Variable Manifest
 
 **Audit Date:** 2026-09-24
 **Branch:** main
@@ -58,19 +58,26 @@ Configuration files analysed in full:
 | IMAGEKIT_PRIVATE_KEY | Required | SECRET | ImageKitConfig.java, ImageKitFolderService.java | imagekit.private-key | <IMAGEKIT_PRIVATE_KEY> | Human copies from ImageKit dashboard |
 | IMAGEKIT_URL_ENDPOINT | Optional | No | ImageKitConfig.java | imagekit.url-endpoint | https://ik.imagekit.io/cyseckush/ | Safe default in application.properties |
 | MEDIA_STORAGE_PROVIDER | Optional | No | ImageKitConfig.java | media.storage.provider | imagekit | Default imagekit |
-| B2_ENDPOINT | Optional | No | application-prod.properties | b2.endpoint | https://s3.us-west-004.backblazeb2.com | Empty default; no active runtime code consumes this |
+| B2_ENDPOINT | Optional | No | application-prod.properties | b2.endpoint | s3.us-east-005.backblazeb2.com | Confirmed endpoint; not consumed by active runtime code unless B2 activated |
 | B2_BUCKET | Optional | No | application-prod.properties | b2.bucket | charusatneeds-media-prod | Empty default |
 | B2_KEY_ID | Optional | No | application-prod.properties | b2.key-id | <B2_KEY_ID> | Empty default |
 | B2_APPLICATION_KEY | Optional | SECRET | application-prod.properties | b2.application-key | <B2_APPLICATION_KEY> | Empty default; only required if B2 activated |
+| OTEL_SERVICE_NAME | Required | No | Backend/Dockerfile, render.yaml | otel.service.name | charusatneeds-backend | Fixed in Dockerfile and render.yaml |
+| OTEL_RESOURCE_ATTRIBUTES | Required | No | Backend/Dockerfile, render.yaml | otel.resource.attributes | service.name=charusatneeds-backend,service.version=1.0.0,deployment.environment=production | Fixed in Dockerfile and render.yaml |
+| OTEL_EXPORTER_OTLP_PROTOCOL | Required | No | Backend/Dockerfile, render.yaml | otel.exporter.otlp.protocol | http/protobuf | Fixed in Dockerfile and render.yaml |
+| OTEL_JAVAAGENT_ENABLED | Optional | No | Backend/Dockerfile, render.yaml | otel.javaagent.enabled | true | Default true; toggle for agent |
+| OTEL_EXPORTER_OTLP_ENDPOINT | Optional (Rec.) | No | Backend/Dockerfile, render.yaml | otel.exporter.otlp.endpoint | https://otlp-gateway-prod-us-east-0.grafana.net/otlp | Regional Grafana Cloud OTLP URL |
+| OTEL_EXPORTER_OTLP_HEADERS | Optional (Rec.) | SECRET | Backend/Dockerfile, render.yaml | otel.exporter.otlp.headers | Authorization=Basic <BASE64_CREDENTIALS> | Base64-encoded instanceId:token for Grafana Cloud |
 
 **TOTALS:**
-- Total Render variables: 33
-- Required (mandatory at startup): 22
-- Optional (safe defaults exist): 11
-- Secrets (must not be in Git or Vercel): 12
-- Non-secret: 21
+- Total Render variables: 39
+- Required (mandatory at startup or build): 25
+- Optional (safe defaults or bypassable): 14
+- Secrets (must not be in Git or Vercel): 13
+- Non-secret: 26
 
 ---
+
 
 ## SECTION 2 - OBSOLETE / DO NOT ADD TO RENDER
 

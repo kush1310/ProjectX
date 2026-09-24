@@ -255,12 +255,19 @@ Reference file: `Docs/charusat-needs/render-production.env.example` for the exac
 | MEDIA_STORAGE_PROVIDER | Set to `imagekit` | Type `imagekit` | None | Literal string |
 | FRONTEND_URL | After Vercel deploy completes | Paste Vercel deployment URL | Used for email reset links | `https://<project>.vercel.app` |
 | CORS_ALLOWED_ORIGINS | After Vercel deploy completes | Paste Vercel deployment URL | Verify CORS headers on secured endpoint | `https://<project>.vercel.app` |
-| B2_ENDPOINT | Leave empty (B2 not active) | Leave blank | None | Optional |
-| B2_BUCKET | Leave empty | Leave blank | None | Optional |
-| B2_KEY_ID | Leave empty | Leave blank | None | Optional |
-| B2_APPLICATION_KEY | Leave empty | Leave blank | None | Optional |
+| B2_ENDPOINT | Backblaze B2 Bucket Overview | Set to confirmed endpoint `s3.us-east-005.backblazeb2.com` (Optional if using ImageKit) | None | `s3.us-east-005.backblazeb2.com` |
+| B2_BUCKET | Backblaze B2 Buckets | Enter bucket name `charusatneeds-media-prod` (Optional) | None | String |
+| B2_KEY_ID | Backblaze B2 App Keys | Enter Backblaze Key ID (Optional) | None | String |
+| B2_APPLICATION_KEY | Backblaze B2 App Keys | Enter Backblaze Application Key (Optional) | None | String (SECRET) |
+| OTEL_SERVICE_NAME | Set in render.yaml | Defaults to `charusatneeds-backend` | None | String |
+| OTEL_RESOURCE_ATTRIBUTES | Set in render.yaml | Defaults to `service.name=charusatneeds-backend,service.version=1.0.0,deployment.environment=production` | None | String |
+| OTEL_EXPORTER_OTLP_PROTOCOL | Set in render.yaml | Defaults to `http/protobuf` | None | String |
+| OTEL_JAVAAGENT_ENABLED | Set in render.yaml | Defaults to `true` | None | Boolean string |
+| OTEL_EXPORTER_OTLP_ENDPOINT | Grafana Cloud > OpenTelemetry Setup | Copy regional OTLP URL (Optional - agent bypasses if unset) | Verify ingestion | `https://otlp-gateway-...grafana.net/otlp` |
+| OTEL_EXPORTER_OTLP_HEADERS | Grafana Cloud Token (`set:alloy-data-write`) | Enter `Authorization=Basic <base64(instance_id:token)>` | Verify auth | Header string (SECRET) |
 
 ---
+
 
 ## 11. Credential Safety Notes
 
