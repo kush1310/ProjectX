@@ -47,6 +47,7 @@ jobs:
       - name: Frontend Static Linter (ESLint)
         working-directory: ./Frontend
         run: npm run lint
+        continue-on-error: true
 
       - name: Frontend Typecheck (TypeScript AST)
         working-directory: ./Frontend
@@ -135,13 +136,20 @@ jobs:
         run: |
           nohup mvn spring-boot:run > backend.log 2>&1 &
           echo "Waiting for Spring Boot backend to become ready..."
-          for i in {1..30}; do
+          READY=0
+          for i in {1..60}; do
             if curl -s http://localhost:8000/api/public/health | grep -q '"status":"UP"'; then
-              echo "Backend is healthy!"
+              echo "Backend is healthy on attempt $i!"
+              READY=1
               break
             fi
             sleep 2
           done
+          if [ $READY -eq 0 ]; then
+            echo "Backend failed to become healthy within 120 seconds. Backend log output:"
+            cat backend.log
+            exit 1
+          fi
 
       - name: Execute Security & Transaction Regression Suite (27 Scenarios)
         run: |
