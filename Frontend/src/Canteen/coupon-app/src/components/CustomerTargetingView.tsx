@@ -15,7 +15,7 @@ const SEGMENTS: {
     key: SegmentType;
     label: string;
     subtitle: string;
-    icon: React.ComponentType<{ size?: number; className?: string }>;
+    icon: React.ComponentType<any>;
 }[] = [
         { key: 'new', label: 'New Customers', subtitle: 'First order conversion', icon: UserPlus },
         { key: 'loyal', label: 'Loyal Customers', subtitle: 'Increase repeat frequency', icon: Repeat },
