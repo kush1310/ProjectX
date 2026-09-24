@@ -1,0 +1,55 @@
+.animated-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    background: var(--bg-dark);
+    perspective: 1000px;
+    /* Essential for 3D tilt */
+}
+
+.grid-overlay {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+
+    /* 3D Tilt Plane */
+    transform: rotateX(60deg) scale(2);
+
+    /* Dot Pattern - Light Green Theme */
+    background-image: radial-gradient(circle, rgba(7, 9, 7, 0.4) 1px, transparent 1px);
+    background-size: 60px 60px;
+
+    /* Infinite Movement */
+    animation: moveGrid 15s linear infinite;
+
+    /* Fade out at the horizon */
+    mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+}
+
+/* Dark Mode Dots (if triggered) */
+:global(.dark-mode) .grid-overlay {
+    background-image: radial-gradient(circle, #ffffff 1px, transparent 1px);
+}
+
+@keyframes moveGrid {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 0 60px;
+        /* Must match background-size */
+    }
+}
+
+/* Remove old orbs */
+.orb {
+    display: none;
+}

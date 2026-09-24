@@ -439,7 +439,7 @@ export default function MenuManagement() {
       {isCouponModalOpen && (
         <CreateCouponForm
           onCancel={() => setIsCouponModalOpen(false)}
-          onSubmit={async (coupon) => {
+          onSubmit={async (coupon: any) => {
             const created = await createCoupon(coupon);
             if (!created) {
               toast.error("Failed to create deal. Please check inputs.");
