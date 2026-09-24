@@ -108,6 +108,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout Source Code
@@ -133,6 +142,8 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: postgrespassword
           SECURITY_PAYLOAD_ENCRYPTION_KEY: CharusatNeedsPayloadKey2026!!
           JWT_SECRET: Cx7MsVDe15ZBjcMeQUzfK3clgDxqN6RfUE9045yLdtE=
+          REDIS_URL: redis://localhost:6379
+          REDIS_ENABLED: "true"
         run: |
           nohup mvn spring-boot:run > backend.log 2>&1 &
           echo "Waiting for Spring Boot backend to become ready..."
