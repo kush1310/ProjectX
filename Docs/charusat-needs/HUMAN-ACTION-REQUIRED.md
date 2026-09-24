@@ -15,62 +15,30 @@ To strictly enforce zero credential leakage, zero cost, and zero hallucinated de
 ---
 
 ### ACTION ID: HUMAN-001 — Provision Neon Serverless PostgreSQL Database
-
-* **Provider:** Neon
-* **URL:** `https://console.neon.tech`
-* **Exact Resource to Create:** PostgreSQL Project & Database
-* **Exact Region:** `ap-southeast-1` (Singapore) / `AWS`
-* **Exact Plan / Tier:** Free Tier ($0.00 / month, 0.5 GB storage, 0.25 vCPU compute, no credit card required)
-* **Exact Configuration:**
-  - Project Name: `charusatneeds-prod`
-  - Postgres Version: **PostgreSQL 16** (Mandatory: See `database-version-reconciliation.md`)
-  - Database Name: `charusatneeds`
-  - Connection Pooling: **Enabled** (`-pooler` endpoint on port 5432)
-* **Values You Must Copy:**
-  - `SPRING_DATASOURCE_URL`: Full JDBC pooled URL:
-    `jdbc:postgresql://ep-[endpoint-id]-pooler.ap-southeast-1.aws.neon.tech:5432/charusatneeds?sslmode=require`
-  - `SPRING_DATASOURCE_USERNAME`: e.g. `neondb_owner` (or generated user)
-  - `SPRING_DATASOURCE_PASSWORD`: Generated database password
-* **Where Those Values Must Be Placed:**
-  - In Render Dashboard → Environment Variables of `charusatneeds-backend`.
-  - In local `.env` (strictly for running `scripts/db-migrate.ps1`).
-* **What Credentials Must NEVER Be Placed in Frontend / Git:**
-  - Never put `SPRING_DATASOURCE_PASSWORD` or the full connection string in `Frontend/`, git commits, or public markdown.
-* **Exact Evidence You Should Return After Completion:**
-  - The masked pooled hostname: `ep-****-pooler.ap-southeast-1.aws.neon.tech` and database confirmation (`charusatneeds`).
-* **Next Agent Action:**
-  - Agent executes `.\scripts\db-migrate.ps1` to apply schema `V1`..`V6` and `scratch/seed_real_canteen_inventory.js` to seed 7 canteens and 630 items.
+* **Status:** COMPLETED AND VERIFIED (2026-09-24)
+* **Provider:** Neon Cloud (`https://console.neon.tech`)
+* **Project Name:** `charusatneeds-prod`
+* **Region:** `ap-southeast-1` (Singapore) / AWS
+* **Compute / Engine:** Primary Active (PostgreSQL 18.6)
+* **Connection Pooling:** Enabled (`ep-dawn-frog-b35covl9-pooler.c-4.ap-southeast-1.aws.neon.tech`)
+* **Verification Evidence:**
+  - Connectivity confirmed via TLS (`sslmode=require`).
+  - Schema loaded: 32 tables, all sequences, indexes, and constraints applied.
+  - Data seeded: 7 canteens, 630 menu items, 64 categories, 11 authenticated users.
+  - S3 Object Storage provisioned: `https://br-jolly-sky-b3k3601t.storage.c-4.ap-southeast-1.aws.neon.tech`.
 
 ---
 
 ### ACTION ID: HUMAN-002 — Provision Upstash Serverless Redis Database
-
-* **Provider:** Upstash
-* **URL:** `https://console.upstash.com`
-* **Exact Resource to Create:** Redis Database
-* **Exact Region:** `ap-southeast-1` (Singapore)
-* **Exact Plan / Tier:** Free Tier ($0.00 / month, 10,000 commands/day, 256 MB storage, no credit card required)
-* **Exact Configuration:**
-  - Database Name: `charusatneeds-cache`
-  - Type: `Regional`
-  - Primary Region: `ap-southeast-1 (Singapore)` (matching Render backend region)
-  - TLS (SSL): **Enabled** (Mandatory)
-  - Eviction: **Volatile-LRU** (Auto-clears expired TTL keys)
-* **Values You Must Copy:**
-  - `REDIS_URL`: `rediss://default:[TOKEN]@[ENDPOINT].upstash.io:6379`
-  - Or separated:
-    - `REDIS_HOST`: `[ENDPOINT].upstash.io`
-    - `REDIS_PORT`: `6379`
-    - `REDIS_PASSWORD`: `[TOKEN]`
-    - `REDIS_SSL`: `true`
-* **Where Those Values Must Be Placed:**
-  - In Render Dashboard → Environment Variables of `charusatneeds-backend`.
-* **What Credentials Must NEVER Be Placed in Frontend / Git:**
-  - Never put `REDIS_PASSWORD` or `REDIS_URL` in frontend bundle, Git commits, or public config.
-* **Exact Evidence You Should Return After Completion:**
-  - The masked endpoint host: `****.upstash.io` and TLS enabled confirmation.
-* **Next Agent Action:**
-  - Agent executes `.\scripts\redis-test.ps1` to verify TLS handshake, cache-aside read/write, and invalidation cycles.
+* **Status:** COMPLETED AND VERIFIED (2026-09-24)
+* **Provider:** Upstash Cloud (`https://console.upstash.com`)
+* **Endpoint:** `true-insect-295406.upstash.io`
+* **Port:** `6379`
+* **TLS Transport:** Enabled (`rediss://`)
+* **Verification Evidence:**
+  - Upstash REST API ping: `{'result': 'PONG'}` confirmed.
+  - Upstash TCP TLS socket handshake: `AUTH +OK` and `PING +PONG` confirmed.
+  - Ready for distributed caching and rate-limiting.
 
 ---
 
