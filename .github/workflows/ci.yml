@@ -134,6 +134,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Pre-build Backend Dependencies
+        working-directory: ./Backend
+        run: mvn test-compile -DskipTests
+
       - name: Start Spring Boot Test Instance
         working-directory: ./Backend
         env:
@@ -150,7 +154,7 @@ jobs:
           nohup mvn spring-boot:run > backend.log 2>&1 &
           echo "Waiting for Spring Boot backend to become ready..."
           READY=0
-          for i in {1..60}; do
+          for i in {1..90}; do
             if curl -s http://localhost:8000/api/public/health | grep -q '"status":"UP"'; then
               echo "Backend is healthy on attempt $i!"
               READY=1
@@ -159,7 +163,7 @@ jobs:
             sleep 2
           done
           if [ $READY -eq 0 ]; then
-            echo "Backend failed to become healthy within 120 seconds. Backend log output:"
+            echo "Backend failed to become healthy within 180 seconds. Backend log output:"
             cat backend.log
             exit 1
           fi

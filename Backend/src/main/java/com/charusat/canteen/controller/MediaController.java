@@ -1,24 +1,23 @@
 package com.charusat.canteen.controller;
 
 import com.charusat.canteen.config.ImageKitConfig;
+import com.charusat.canteen.service.ImageKitFolderService;
 import com.charusat.canteen.service.ImageKitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 /**
  * MediaController
  *
- * Exposes public endpoints for media storage configuration and direct client
- * upload authorization parameters for ImageKit CDN integration.
+ * Exposes endpoints for media storage configuration, client upload authorization
+ * parameters, and automated ImageKit directory management.
  *
  * @validates  Public access allowed under /api/public/** security rule.
- * @edge-cases Returns minimal parameters if private key is not configured.
+ * @edge-cases Fails gracefully if ImageKit private key is unconfigured.
  */
 @RestController
 @RequestMapping("/api/public/media")
@@ -28,6 +27,7 @@ public class MediaController {
 
     private final ImageKitConfig imageKitConfig;
     private final ImageKitService imageKitService;
+    private final ImageKitFolderService imageKitFolderService;
 
     /**
      * Retrieves public CDN configuration details for client-side rendering.
@@ -51,5 +51,42 @@ public class MediaController {
     @GetMapping("/auth")
     public ResponseEntity<Map<String, Object>> getUploadAuth() {
         return ResponseEntity.ok(imageKitService.generateUploadAuth());
+    }
+
+    /**
+     * Queries ImageKit Media API to verify the status of the CharusatNeeds folder tree.
+     *
+     * @return 200 OK with folder verification details.
+     */
+    @GetMapping("/folders/verify")
+    public ResponseEntity<Map<String, Object>> verifyFolders() {
+        return ResponseEntity.ok(imageKitFolderService.verifyFolderHierarchy());
+    }
+
+    /**
+     * Idempotently initializes the base folder hierarchy in ImageKit CDN.
+     *
+     * @return 200 OK with created/verified folder statuses.
+     */
+    @PostMapping("/folders/init")
+    public ResponseEntity<Map<String, Boolean>> initFolders() {
+        return ResponseEntity.ok(imageKitFolderService.initBaseFolderHierarchy());
+    }
+
+    /**
+     * Dynamically provisions a vendor-specific media folder.
+     *
+     * @param payload Request body containing category and canteenSlug.
+     * @return 200 OK with the generated folder path.
+     */
+    @PostMapping("/folders/vendor")
+    public ResponseEntity<Map<String, String>> createVendorFolder(@RequestBody Map<String, String> payload) {
+        String category = payload.getOrDefault("category", "menu-items");
+        String canteenSlug = payload.getOrDefault("canteenSlug", "general");
+        String path = imageKitFolderService.ensureVendorFolder(category, canteenSlug);
+        return ResponseEntity.ok(Map.of(
+                "path", path,
+                "status", "READY"
+        ));
     }
 }
