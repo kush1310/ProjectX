@@ -1,6 +1,7 @@
 package com.charusat.canteen.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,6 +30,21 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    /**
+     * Comma-separated list of allowed CORS origins injected from environment.
+     * - Default profile:  http://localhost:5173,http://localhost:3000,http://localhost:5174
+     * - Docker profile:   http://localhost:5173,http://localhost:3000,http://localhost:80
+     * - Prod profile:     ${CORS_ALLOWED_ORIGINS} set in Render Dashboard.
+     *
+     * This field feeds the Spring Security CORS filter (higher priority than
+     * WebMvcConfigurer) and ensures cross-origin requests from the production
+     * Vercel frontend are accepted on all secured endpoints.
+     *
+     * @see SecurityHeadersConfig#corsConfigurer() for the WebMvcConfigurer binding
+     */
+    @Value("${spring.web.cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://localhost:5174}")
+    private String corsAllowedOrigins;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -93,12 +109,19 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        /*
+         * Reads the comma-separated CORS origins list from spring.web.cors.allowed-origins,
+         * which maps to the CORS_ALLOWED_ORIGINS environment variable in production.
+         *
+         * This is the authoritative CORS configuration. It applies to ALL routes via the
+         * Spring Security filter chain, including secured endpoints where WebMvcConfigurer
+         * CORS mappings (SecurityHeadersConfig) are not evaluated.
+         *
+         * @returns CorsConfigurationSource applied to every HTTP request path
+         */
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://localhost:5174",
-                "http://127.0.0.1:5173"));
+        List<String> originList = Arrays.asList(corsAllowedOrigins.split(","));
+        configuration.setAllowedOrigins(originList);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

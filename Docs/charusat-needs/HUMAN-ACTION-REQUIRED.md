@@ -216,3 +216,56 @@ To strictly enforce zero credential leakage, zero cost, and zero hallucinated de
   - Confirmation that all 3 monitors are created and show status `Up` (green).
 * **Next Agent Action:**
   - Final operational sign-off.
+
+---
+
+## 10. Render Dashboard Credential Entry Matrix
+
+Enter the following variables in the Render Dashboard under: Service > Environment > Add Environment Variable.
+Reference file: `Docs/charusat-needs/render-production.env.example` for the exact template.
+
+| Variable | Where You Obtain It | Human Action | Agent Action | Format |
+|---|---|---|---|---|
+| SPRING_PROFILES_ACTIVE | Set to literal `prod` | Type `prod` | None | Literal string |
+| PORT | Set to literal `8000` | Type `8000` | None | Integer |
+| SPRING_DATASOURCE_URL | Neon Dashboard > Connection Details > Connection String (Pooled) | Convert to JDBC: replace `postgresql://` with `jdbc:postgresql://`, append `?sslmode=require` | Verify connectivity | JDBC URL |
+| SPRING_DATASOURCE_USERNAME | Neon Dashboard > Connection Details | Copy username field | None | String |
+| SPRING_DATASOURCE_PASSWORD | Neon Dashboard > Connection Details > Password | Copy password | None | String (SECRET) |
+| DB_POOL_MAX | Set to `10` | Type `10` | None | Integer |
+| DB_POOL_MIN_IDLE | Set to `2` | Type `2` | None | Integer |
+| REDIS_ENABLED | Set to `true` | Type `true` | None | Boolean string |
+| REDIS_URL | Upstash Dashboard > Database Details > REDIS_URL | Copy the `rediss://` URL exactly | Verify PING/PONG | `rediss://default:<token>@<host>:6379` |
+| REDIS_TTL_SECONDS | Set to `300` | Type `300` | None | Integer |
+| JWT_SECRET | Generate locally | Run: `python3 -c "import base64,os; print(base64.b64encode(os.urandom(32)).decode())"` | None | Base64 string (44 chars) |
+| JWT_EXPIRATION | Set to `900000` | Type `900000` | None | Integer (milliseconds) |
+| FIELD_ENCRYPTION_KEY | Generate locally | Generate a random 32-character alphanumeric key | None | Exactly 32 characters |
+| PAYLOAD_ENCRYPTION_KEY | Generate locally | Generate a random 32-character alphanumeric key | None | Exactly 32 characters |
+| BREVO_API_KEY | Brevo Dashboard > Settings > API Keys | Generate v3 key named `charusatneeds-render-prod`, copy value | Verify email dispatch | Starts with `xkeysib-` |
+| BREVO_SENDER_EMAIL | Brevo Dashboard > Senders > Verified Senders | Use verified sender email address | None | Email address |
+| BREVO_SENDER_NAME | Set to `Charusat Needs` | Type `Charusat Needs` | None | String |
+| GOOGLE_CLIENT_ID | Google Cloud Console > APIs > Credentials > Web Client | Copy Client ID | None | Ends with `.apps.googleusercontent.com` |
+| GOOGLE_CLIENT_SECRET | Google Cloud Console > APIs > Credentials > Web Client | Copy Client Secret | None | String (SECRET) |
+| GOOGLE_REDIRECT_URI | After Vercel deploy completes | Paste Vercel URL with `/auth/callback` suffix; also add to Google Console Authorized Redirect URIs | Verify OAuth round-trip | `https://<project>.vercel.app/auth/callback` |
+| RAZORPAY_KEY_ID | Razorpay Test Dashboard > Settings > API Keys (ROTATE first) | After rotating, copy new Test Key ID | None | Starts with `rzp_test_` |
+| RAZORPAY_KEY_SECRET | Razorpay Test Dashboard > Settings > API Keys (ROTATE first) | After rotating, copy new secret | None | String (SECRET) |
+| RAZORPAY_WEBHOOK_SECRET | Razorpay Test Dashboard > Webhooks > Create Webhook | Set webhook URL, copy generated secret | None | String (SECRET) |
+| IMAGEKIT_PUBLIC_KEY | ImageKit Dashboard > Developer Options | Copy Public Key OR leave default in application.properties | None | Starts with `public_` |
+| IMAGEKIT_PRIVATE_KEY | ImageKit Dashboard > Developer Options | Copy Private Key | None | Starts with `private_` (SECRET) |
+| IMAGEKIT_URL_ENDPOINT | ImageKit Dashboard | Copy URL Endpoint OR leave default in application.properties | None | `https://ik.imagekit.io/<id>/` |
+| MEDIA_STORAGE_PROVIDER | Set to `imagekit` | Type `imagekit` | None | Literal string |
+| FRONTEND_URL | After Vercel deploy completes | Paste Vercel deployment URL | Used for email reset links | `https://<project>.vercel.app` |
+| CORS_ALLOWED_ORIGINS | After Vercel deploy completes | Paste Vercel deployment URL | Verify CORS headers on secured endpoint | `https://<project>.vercel.app` |
+| B2_ENDPOINT | Leave empty (B2 not active) | Leave blank | None | Optional |
+| B2_BUCKET | Leave empty | Leave blank | None | Optional |
+| B2_KEY_ID | Leave empty | Leave blank | None | Optional |
+| B2_APPLICATION_KEY | Leave empty | Leave blank | None | Optional |
+
+---
+
+## 11. Credential Safety Notes
+
+* Variables marked `SECRET` must NEVER appear in: Git commits, render.yaml sync:true entries, Vercel environment, or frontend JavaScript bundles.
+* Razorpay test credentials exposed in `cloud-environment-matrix.md` (now redacted) must be rotated via the Razorpay Test Dashboard before deployment.
+* The `render-production.env.example` file in this directory contains ONLY placeholder values. It is safe to commit.
+* The `render-environment-manifest.md` in this directory contains a complete forensic audit with no plaintext secrets.
+
