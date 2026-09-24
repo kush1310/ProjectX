@@ -27,3 +27,11 @@ Frontend/tsc-errors2.txt
 Frontend/tsc_log.txt
 .vite/
 Frontend/node_modules/.vite/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+backups/
+scratch/*.sql
+scratch/*.dump

@@ -1,0 +1,187 @@
+version: '3.8'
+
+# ===================================================================
+# CHARUSAT NEEDS — LOCAL DOCKER FULL-STACK ENVIRONMENT
+# Provides 100% offline, zero-cost developer parity:
+# - PostgreSQL 16/18
+# - Redis (Cache & Rate Limiting)
+# - Spring Boot 3.2.2 Backend
+# - React + Vite Frontend (Nginx container)
+# - pgAdmin 4 (Database GUI)
+# - MinIO (S3 Object Storage Sandbox)
+# - Mailpit (Zero-external email capture & Web GUI)
+# ===================================================================
+
+services:
+  # -----------------------------------------------------------------
+  # 1. Authoritative Database: PostgreSQL
+  # -----------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: charusat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-charusatneeds}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - charusat-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-charusatneeds}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # -----------------------------------------------------------------
+  # 2. Cache & Idempotency: Redis
+  # -----------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: charusat-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-}"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - charusat-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -----------------------------------------------------------------
+  # 3. Application Backend: Spring Boot (Java 17)
+  # -----------------------------------------------------------------
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: charusat-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-charusatneeds}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET:-Cx7MsVDe15ZBjcMeQUzfK3clgDxqN6RfUE9045yLdtE=}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-CharusatNeeds2026!AES256FieldKey}
+      PAYLOAD_ENCRYPTION_KEY: ${PAYLOAD_ENCRYPTION_KEY:-CharusatNeedsPayloadKey2026!!}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_SYHZJ2Kt3SMiX5}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-kY7BJalMjkmuuP6msNNduBRs}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-Ishan@1234}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-canteen-alerts@charusat.edu.in}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/auth/callback}
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:80"
+    networks:
+      - charusat-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8000/api/public/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # -----------------------------------------------------------------
+  # 4. Application Frontend: React + Vite + Nginx
+  # -----------------------------------------------------------------
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: charusat-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - charusat-network
+
+  # -----------------------------------------------------------------
+  # 5. Database Administration: pgAdmin 4
+  # -----------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: charusat-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@charusatneeds.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-Admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmindata:/var/lib/pgadmin
+    networks:
+      - charusat-network
+
+  # -----------------------------------------------------------------
+  # 6. Object Storage Sandbox: MinIO (S3 Compatible)
+  # -----------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: charusat-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-charusat_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-CharusatMinioPass2026!}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    networks:
+      - charusat-network
+
+  # -----------------------------------------------------------------
+  # 7. Email Testing Sandbox: Mailpit
+  # -----------------------------------------------------------------
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: charusat-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+    networks:
+      - charusat-network
+
+networks:
+  charusat-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+  pgadmindata:
+    driver: local
+  miniodata:
+    driver: local

@@ -3,9 +3,11 @@
  * Domain: charusat.edu.in ONLY
  */
 
+import { API_URL } from './api'
+ 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:5173/auth/callback'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || 
+  (typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : 'http://localhost:5173/auth/callback')
 
 /**
  * Initiates Google OAuth flow with CHARUSAT domain restriction

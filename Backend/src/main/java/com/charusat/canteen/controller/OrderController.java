@@ -79,6 +79,11 @@ public class OrderController {
         return ResponseEntity.ok(orderService.findActiveOrders(canteenId));
     }
 
+    @GetMapping("/canteen/{canteenId}/scheduled")
+    public ResponseEntity<List<Order>> getScheduledOrders(@PathVariable Long canteenId) {
+        return ResponseEntity.ok(orderService.findScheduledOrders(canteenId));
+    }
+
     @GetMapping("/canteen/{canteenId}/recent")
     public ResponseEntity<List<Order>> getRecentOrders(
             @PathVariable Long canteenId,
@@ -199,6 +204,24 @@ public class OrderController {
             String paymentMethod = payload.containsKey("paymentMethod") ? payload.get("paymentMethod").toString() : "cash";
             String couponCode = payload.containsKey("couponCode") && payload.get("couponCode") != null ? payload.get("couponCode").toString() : null;
 
+            String orderType = payload.containsKey("orderType") && payload.get("orderType") != null 
+                    ? payload.get("orderType").toString() : "INSTANT";
+            java.time.LocalDateTime scheduledFor = null;
+            if (payload.containsKey("scheduledFor") && payload.get("scheduledFor") != null) {
+                String schedStr = payload.get("scheduledFor").toString().trim();
+                try {
+                    if (schedStr.contains("Z")) {
+                        scheduledFor = java.time.Instant.parse(schedStr).atZone(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime();
+                    } else if (schedStr.contains("+") || (schedStr.length() > 19 && (schedStr.charAt(19) == '-' || schedStr.charAt(19) == '+'))) {
+                        scheduledFor = java.time.OffsetDateTime.parse(schedStr).atZoneSameInstant(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime();
+                    } else {
+                        scheduledFor = java.time.LocalDateTime.parse(schedStr.substring(0, Math.min(schedStr.length(), 19)));
+                    }
+                } catch (Exception ex) {
+                    log.warn("Could not parse scheduledFor: {}, error: {}", schedStr, ex.getMessage());
+                }
+            }
+
             Order order = orderService.createOrder(
                     customer,
                     canteen,
@@ -206,7 +229,9 @@ public class OrderController {
                     quantities,
                     paymentMethod,
                     instructions,
-                    couponCode);
+                    couponCode,
+                    orderType,
+                    scheduledFor);
 
             // Frontend expects order inside data if using res.data.order, 
             // but CheckoutPage expects res.data.id specifically!
@@ -220,7 +245,7 @@ public class OrderController {
 
     /**
      * Place Order — Spec-compatible alias for POST /api/orders
-     * Accepts: { customerId, restaurantId, items: [{foodItemId, quantity}] }
+     * Accepts: { customerId, restaurantId, items: [{foodItemId, quantity}], orderType, scheduledFor }
      */
     @PostMapping("/place")
     public ResponseEntity<?> placeOrder(@RequestBody PlaceOrderRequest request, Principal principal) {
@@ -257,9 +282,28 @@ public class OrderController {
                     .map(PlaceOrderItem::quantity)
                     .collect(Collectors.toList());
 
+            java.time.LocalDateTime scheduledFor = null;
+            if (request.scheduledFor() != null && !request.scheduledFor().isBlank()) {
+                String schedStr = request.scheduledFor().trim();
+                try {
+                    if (schedStr.contains("Z")) {
+                        scheduledFor = java.time.Instant.parse(schedStr).atZone(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime();
+                    } else if (schedStr.contains("+") || (schedStr.length() > 19 && (schedStr.charAt(19) == '-' || schedStr.charAt(19) == '+'))) {
+                        scheduledFor = java.time.OffsetDateTime.parse(schedStr).atZoneSameInstant(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime();
+                    } else {
+                        scheduledFor = java.time.LocalDateTime.parse(schedStr.substring(0, Math.min(schedStr.length(), 19)));
+                    }
+                } catch (Exception ex) {
+                    log.warn("Could not parse scheduledFor: {}, error: {}", schedStr, ex.getMessage());
+                }
+            }
+
+            String orderType = request.orderType() != null && !request.orderType().isBlank() ? request.orderType() : "INSTANT";
+
             Order order = orderService.createOrder(
                     customer, canteen, menuItemIds, quantities,
-                    request.paymentMethod(), request.instructions(), request.couponCode());
+                    request.paymentMethod(), request.instructions(), request.couponCode(),
+                    orderType, scheduledFor);
 
             return ResponseEntity.ok(Map.of(
                     "orderId", order.getId(),
@@ -281,6 +325,7 @@ public class OrderController {
     }
 
     @PutMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CANTEEN_OWNER', 'ADMIN')")
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         try {
             String statusStr = body.get("status");
@@ -417,7 +462,9 @@ public class OrderController {
             List<Integer> quantities,
             String paymentMethod,
             String instructions,
-            String couponCode) {
+            String couponCode,
+            String orderType,
+            String scheduledFor) {
     }
 
     // Request DTO — spec-compatible /place format
@@ -428,7 +475,9 @@ public class OrderController {
             List<PlaceOrderItem> items,
             String paymentMethod,
             String instructions,
-            String couponCode) {
+            String couponCode,
+            String orderType,
+            String scheduledFor) {
     }
 
     public record PlaceOrderItem(

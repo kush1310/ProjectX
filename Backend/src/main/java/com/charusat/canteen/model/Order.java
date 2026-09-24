@@ -66,7 +66,16 @@ public class Order {
     private LocalDateTime updatedAt;
     private LocalDateTime completedAt;
 
+    @Builder.Default
+    private String orderType = "INSTANT"; // INSTANT or SCHEDULED
+
+    private LocalDateTime scheduledFor;
+    private LocalDateTime releaseAt;
+    private LocalDateTime releasedAt;
+
     public enum OrderStatus {
+        SCHEDULED,   // Order placed for future time; vendor cannot see/process yet
+        RELEASED,    // Release time arrived; order is now visible and active for vendor
         PENDING,
         PLACED,      // Alias for PENDING (spec compatibility)
         CONFIRMED,

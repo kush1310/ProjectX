@@ -49,6 +49,10 @@ public class OrderRepository {
         o.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
         o.setCompletedAt(
                 rs.getTimestamp("completed_at") != null ? rs.getTimestamp("completed_at").toLocalDateTime() : null);
+        o.setOrderType(rs.getString("order_type") != null ? rs.getString("order_type") : "INSTANT");
+        o.setScheduledFor(rs.getTimestamp("scheduled_for") != null ? rs.getTimestamp("scheduled_for").toLocalDateTime() : null);
+        o.setReleaseAt(rs.getTimestamp("release_at") != null ? rs.getTimestamp("release_at").toLocalDateTime() : null);
+        o.setReleasedAt(rs.getTimestamp("released_at") != null ? rs.getTimestamp("released_at").toLocalDateTime() : null);
         o.setItems(new ArrayList<>());
         return o;
     };
@@ -101,6 +105,16 @@ public class OrderRepository {
         return jdbc.query("SELECT * FROM orders WHERE canteen_id = ? ORDER BY created_at DESC", ROW_MAPPER, canteenId);
     }
 
+    public List<Order> findPendingReleaseOrders(LocalDateTime now) {
+        return jdbc.query("SELECT * FROM orders WHERE status = 'SCHEDULED' AND release_at <= ? ORDER BY release_at ASC",
+                ROW_MAPPER, Timestamp.valueOf(now));
+    }
+
+    public List<Order> findScheduledOrdersByCanteen(Long canteenId) {
+        return jdbc.query("SELECT * FROM orders WHERE canteen_id = ? AND status = 'SCHEDULED' ORDER BY scheduled_for ASC",
+                ROW_MAPPER, canteenId);
+    }
+
     public List<Order> findRecentOrdersByCanteen(Long canteenId, LocalDateTime since) {
         return jdbc.query("SELECT * FROM orders WHERE canteen_id = ? AND created_at >= ? ORDER BY created_at DESC",
                 ROW_MAPPER, canteenId, Timestamp.valueOf(since));
@@ -125,7 +139,7 @@ public class OrderRepository {
             KeyHolder kh = new GeneratedKeyHolder();
             jdbc.update(con -> {
                 PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO orders (order_number, customer_id, canteen_id, status, total_amount, sub_total, discount_amount, delivery_fee, applied_coupon_id, payment_method, payment_status, special_instructions, rejection_reason, created_at, updated_at, completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        "INSERT INTO orders (order_number, customer_id, canteen_id, status, total_amount, sub_total, discount_amount, delivery_fee, applied_coupon_id, payment_method, payment_status, special_instructions, rejection_reason, created_at, updated_at, completed_at, order_type, scheduled_for, release_at, released_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         Statement.RETURN_GENERATED_KEYS);
                 ps.setString(1, o.getOrderNumber());
                 ps.setObject(2, o.getCustomerId());
@@ -143,12 +157,16 @@ public class OrderRepository {
                 ps.setTimestamp(14, o.getCreatedAt() != null ? Timestamp.valueOf(o.getCreatedAt()) : null);
                 ps.setTimestamp(15, o.getUpdatedAt() != null ? Timestamp.valueOf(o.getUpdatedAt()) : null);
                 ps.setTimestamp(16, o.getCompletedAt() != null ? Timestamp.valueOf(o.getCompletedAt()) : null);
+                ps.setString(17, o.getOrderType() != null ? o.getOrderType() : "INSTANT");
+                ps.setTimestamp(18, o.getScheduledFor() != null ? Timestamp.valueOf(o.getScheduledFor()) : null);
+                ps.setTimestamp(19, o.getReleaseAt() != null ? Timestamp.valueOf(o.getReleaseAt()) : null);
+                ps.setTimestamp(20, o.getReleasedAt() != null ? Timestamp.valueOf(o.getReleasedAt()) : null);
                 return ps;
             }, kh);
             o.setId(((Number) kh.getKeys().get("id")).longValue());
         } else {
             jdbc.update(
-                    "UPDATE orders SET order_number=?, customer_id=?, canteen_id=?, status=?, total_amount=?, sub_total=?, discount_amount=?, delivery_fee=?, applied_coupon_id=?, payment_method=?, payment_status=?, special_instructions=?, rejection_reason=?, created_at=?, updated_at=?, completed_at=? WHERE id=?",
+                    "UPDATE orders SET order_number=?, customer_id=?, canteen_id=?, status=?, total_amount=?, sub_total=?, discount_amount=?, delivery_fee=?, applied_coupon_id=?, payment_method=?, payment_status=?, special_instructions=?, rejection_reason=?, created_at=?, updated_at=?, completed_at=?, order_type=?, scheduled_for=?, release_at=?, released_at=? WHERE id=?",
                     o.getOrderNumber(), o.getCustomerId(), o.getCanteenId(),
                     o.getStatus() != null ? o.getStatus().name() : "PENDING",
                     o.getTotalAmount(), o.getSubTotal(), o.getDiscountAmount(), o.getDeliveryFee(),
@@ -158,6 +176,10 @@ public class OrderRepository {
                     o.getCreatedAt() != null ? Timestamp.valueOf(o.getCreatedAt()) : null,
                     o.getUpdatedAt() != null ? Timestamp.valueOf(o.getUpdatedAt()) : null,
                     o.getCompletedAt() != null ? Timestamp.valueOf(o.getCompletedAt()) : null,
+                    o.getOrderType() != null ? o.getOrderType() : "INSTANT",
+                    o.getScheduledFor() != null ? Timestamp.valueOf(o.getScheduledFor()) : null,
+                    o.getReleaseAt() != null ? Timestamp.valueOf(o.getReleaseAt()) : null,
+                    o.getReleasedAt() != null ? Timestamp.valueOf(o.getReleasedAt()) : null,
                     o.getId());
         }
         return o;

@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-24T04:22:40.753Z",
+  "drillType": "CANARY_FAILURE_FAST_ROLLBACK",
+  "releaseA": {
+    "version": "v1.0.0",
+    "gitSha": "849d33949254e1b5cbee529b67fff7531592d229",
+    "status": "VERIFIED"
+  },
+  "releaseB": {
+    "version": "charusat-v1.0.1-rc1",
+    "canaryStatus": "FAILED (Synthetic Trigger)",
+    "failureReason": "HTTP 500 error rate exceeded 5% during canary warm-up"
+  },
+  "rollbackMetrics": {
+    "rollbackActionDurationMs": 120,
+    "totalDrillDurationMs": 209,
+    "postRollbackHealthStatus": "UP",
+    "postRollbackDatabaseStatus": "UP",
+    "dataParityConfirmed": true,
+    "encryptedPayloadVerified": true
+  },
+  "assessment": "SUCCESS - Rollback executed and verified in < 1 second with 100% database backward compatibility."
+}

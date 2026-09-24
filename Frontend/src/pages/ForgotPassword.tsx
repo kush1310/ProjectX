@@ -15,6 +15,7 @@ import CharusatNeedsLogo from '@/components/Logo'
 import LightweightBorder from '@/components/LightweightBorder'
 import { toast } from 'react-hot-toast'
 import { validateEmailStrict } from '@/utils/validation'
+import { API_URL } from '@/utils/api'
 
 export default function ForgotPassword() {
   const location = useLocation()
@@ -73,7 +74,7 @@ export default function ForgotPassword() {
     setIsSubmitting(true)
     
     try {
-      const response = await fetch('http://localhost:8000/api/auth/forgot-password', {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

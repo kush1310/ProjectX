@@ -50,6 +50,7 @@ public class SecurityConfig {
                         // Public authentication endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/healthz", "/health").permitAll()
                         .requestMatchers("/api/map/**").permitAll()
                         .requestMatchers("/api/vendor-applications").permitAll()
                         .requestMatchers("/api/password/**").permitAll()

@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut } from 'lucide-react';
+import { API_URL } from '@/utils/api';
 
 interface LogoutConfirmModalProps {
   isOpen: boolean;
@@ -21,11 +22,11 @@ function LogoutLoader() {
     const timer = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) { clearInterval(timer); return 100; }
-        // Ease-out curve: fast start, slow end
-        const increment = Math.max(1, (100 - prev) * 0.08);
+        // Fast, smooth transition for snappy 650ms feedback
+        const increment = Math.max(3, (100 - prev) * 0.16);
         return Math.min(100, prev + increment);
       });
-    }, 30);
+    }, 20);
     return () => clearInterval(timer);
   }, []);
 
@@ -127,7 +128,7 @@ export default function LogoutConfirmModal({ isOpen, onConfirm, onCancel }: Logo
       const session = JSON.parse(localStorage.getItem('charusatneeds_session') || '{}');
       const token = session?.token;
       if (token) {
-        await fetch('http://localhost:8000/api/auth/logout', {
+        await fetch(`${API_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -140,10 +141,10 @@ export default function LogoutConfirmModal({ isOpen, onConfirm, onCancel }: Logo
       // Continue with local logout even if API fails
     }
 
-    // Show the loader for 3.5s, then execute the actual logout
+    // Snappy, professional 650ms transition
     setTimeout(() => {
       onConfirm();
-    }, 3500);
+    }, 650);
   };
 
   return (

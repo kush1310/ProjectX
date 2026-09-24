@@ -6,13 +6,16 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.UUID;
+import org.slf4j.MDC;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 /**
- * Security Headers Configuration - Adds essential security headers to all
- * responses
+ * Security Headers Configuration - Adds essential security headers and request correlation
+ * to all incoming and outgoing requests.
  * 
  * Headers Implemented:
  * - Content-Security-Policy: Prevents XSS attacks
@@ -21,8 +24,9 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
  * - X-XSS-Protection: Additional XSS protection
  * - Referrer-Policy: Controls referrer information
  * - Permissions-Policy: Controls browser features
+ * - X-Request-Id: Distributed request correlation identifier
  * 
- * Standards: OWASP Security Headers
+ * Standards: OWASP Security Headers & SRE Request Correlation Standards
  */
 @Configuration
 public class SecurityHeadersConfig {
@@ -42,7 +46,19 @@ public class SecurityHeadersConfig {
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {
 
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
             HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+            // Distributed Request Correlation (X-Request-Id)
+            String requestId = httpRequest.getHeader("X-Request-Id");
+            if (requestId == null || requestId.isBlank()) {
+                requestId = httpRequest.getHeader("X-Request-ID");
+            }
+            if (requestId == null || requestId.isBlank()) {
+                requestId = UUID.randomUUID().toString();
+            }
+            httpResponse.setHeader("X-Request-Id", requestId);
+            MDC.put("requestId", requestId);
 
             // Prevent clickjacking
             httpResponse.setHeader("X-Frame-Options", "DENY");
@@ -65,7 +81,6 @@ public class SecurityHeadersConfig {
                     "max-age=31536000; includeSubDomains; preload");
 
             // Content Security Policy - Prevent XSS
-            // Note: Adjust based on your frontend needs
             httpResponse.setHeader("Content-Security-Policy",
                     "default-src 'self'; " +
                             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com; " +
@@ -84,7 +99,11 @@ public class SecurityHeadersConfig {
             httpResponse.setHeader("Pragma", "no-cache");
             httpResponse.setHeader("Expires", "0");
 
-            chain.doFilter(request, response);
+            try {
+                chain.doFilter(request, response);
+            } finally {
+                MDC.remove("requestId");
+            }
         }
 
         @Override

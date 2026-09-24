@@ -86,6 +86,60 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * handleAccessDeniedException
+     *
+     * Intercepts Spring Security access control rejections triggered by @PreAuthorize
+     * annotations and method security rules. Returns a standardized HTTP 403 Forbidden
+     * response without masking the authorization failure as an internal server error.
+     *
+     * @param  ex  - AccessDeniedException thrown by Spring Security authorization interceptors.
+     * @returns    - HTTP 403 response with standardized error body.
+     */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(
+            org.springframework.security.access.AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("Access denied: Insufficient privileges"));
+    }
+
+    /**
+     * handleNoResourceFoundException
+     *
+     * Intercepts requests to non-existent API endpoints and missing resources in Spring Boot 3.2+.
+     * Returns an RFC 7231 compliant HTTP 404 Not Found response instead of an unhandled 500 error.
+     *
+     * @param  ex  - NoResourceFoundException thrown when no handler mapping exists.
+     * @returns    - HTTP 404 response with standardized error body.
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("Resource not found"));
+    }
+
+    /**
+     * handleHttpMessageNotReadableException
+     *
+     * Intercepts malformed JSON payloads, unparseable enum values, and syntax errors.
+     * Returns an HTTP 400 Bad Request response with a sanitized message instead of a 500 error.
+     *
+     * @param  ex  - HttpMessageNotReadableException thrown by Jackson during deserialization.
+     * @returns    - HTTP 400 response with sanitized error message.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn("Malformed request payload: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("Malformed request payload or invalid parameter format"));
+    }
+
+    /**
      * Handle all other exceptions
      */
     @ExceptionHandler(Exception.class)

@@ -13,6 +13,7 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import CharusatNeedsLogo from '@/components/Logo'
 import LightweightBorder from '@/components/LightweightBorder'
+import { API_URL } from '@/utils/api'
 import PasswordStrength from '@/components/PasswordStrength'
 import { toast } from 'react-hot-toast'
 import { validatePasswordStrict } from '@/utils/validation'
@@ -64,7 +65,7 @@ export default function ResetPassword() {
       }
       
       try {
-        const response = await fetch(`http://localhost:8000/api/auth/validate-token?token=${token}`)
+        const response = await fetch(`${API_URL}/auth/validate-token?token=${token}`)
         const data = await response.json()
         
         if (data.valid) {
@@ -112,7 +113,7 @@ export default function ResetPassword() {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('http://localhost:8000/api/auth/reset-password', {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password: formData.password })

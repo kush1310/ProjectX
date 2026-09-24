@@ -42,6 +42,7 @@ public class CouponController {
     // ===== CREATE =====
 
     @PostMapping("/create")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CANTEEN_OWNER', 'ADMIN')")
     public ResponseEntity<?> createCoupon(@Valid @RequestBody CreateCouponRequest request) {
         log.info("Creating coupon: {} (type: {})", request.getCouponCode(), request.getCouponType());
         try {
@@ -50,6 +51,8 @@ public class CouponController {
         } catch (com.charusat.canteen.exception.BadRequestException e) {
             log.warn("Coupon creation rejected: {}", e.getMessage());
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+        } catch (org.springframework.security.access.AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Coupon creation failed for code '{}': {}", request.getCouponCode(), e.getMessage(), e);
             String msg = e.getMessage() != null ? e.getMessage() : "Internal server error creating coupon";
@@ -60,6 +63,7 @@ public class CouponController {
     // ===== UPDATE =====
 
     @PutMapping("/{id}/update")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CANTEEN_OWNER', 'ADMIN')")
     public ResponseEntity<?> updateCoupon(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCouponRequest request) {
@@ -67,6 +71,8 @@ public class CouponController {
         try {
             CouponResponse response = couponService.updateCoupon(id, request);
             return ResponseEntity.ok(response);
+        } catch (org.springframework.security.access.AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Coupon update failed for id '{}': {}", id, e.getMessage(), e);
             String msg = e.getMessage() != null ? e.getMessage() : "Internal server error updating coupon";
@@ -153,6 +159,7 @@ public class CouponController {
     // ===== DELETE =====
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CANTEEN_OWNER', 'ADMIN')")
     public ResponseEntity<Void> deleteCoupon(@PathVariable UUID id) {
         log.info("Deleting coupon: {}", id);
         couponService.deleteCoupon(id);
@@ -162,6 +169,7 @@ public class CouponController {
     // ===== TOGGLE =====
 
     @PutMapping("/{id}/toggle")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CANTEEN_OWNER', 'ADMIN')")
     public ResponseEntity<CouponResponse> toggleCoupon(@PathVariable UUID id) {
         log.info("Toggling coupon: {}", id);
         CouponResponse response = couponService.toggleCoupon(id);

@@ -26,10 +26,17 @@ public class CanteenService {
     private final com.charusat.canteen.repository.OrderRepository orderRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final WebSocketService webSocketService;
+    private final RedisCacheService redisCacheService;
     
     // Canteen CRUD
     public List<Canteen> findAllCanteens() {
-        return canteenRepository.findAll();
+        var cached = redisCacheService.get("canteens:all", new com.fasterxml.jackson.core.type.TypeReference<List<Canteen>>() {});
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+        List<Canteen> canteens = canteenRepository.findAll();
+        redisCacheService.set("canteens:all", canteens);
+        return canteens;
     }
     
     public List<Canteen> findOpenCanteens() {
@@ -118,9 +125,15 @@ public class CanteenService {
         return canteenRepository.save(canteen);
     }
 
-    // Menu Item CRUD
+    // Menu Item CRUD with Redis Cache-Aside
     public List<MenuItem> getMenuItems(Long canteenId) {
-        return menuItemRepository.findByCanteenId(canteenId);
+        var cached = redisCacheService.get("menu:" + canteenId, new com.fasterxml.jackson.core.type.TypeReference<List<MenuItem>>() {});
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+        List<MenuItem> items = menuItemRepository.findByCanteenId(canteenId);
+        redisCacheService.set("menu:" + canteenId, items);
+        return items;
     }
     
     public List<MenuItem> getAvailableMenuItems(Long canteenId) {
@@ -194,7 +207,9 @@ public class CanteenService {
             item.getAddonGroups().addAll(addonGroups);
         }
         
-        return menuItemRepository.save(item);
+        MenuItem saved = menuItemRepository.save(item);
+        redisCacheService.evictMenu(canteenId);
+        return saved;
     }
     
     @Transactional
@@ -258,12 +273,22 @@ public class CanteenService {
             }
         }
         
-        return menuItemRepository.save(item);
+        MenuItem saved = menuItemRepository.save(item);
+        if (item.getCanteen() != null) {
+            redisCacheService.evictMenu(item.getCanteen().getId());
+        }
+        return saved;
     }
     
     @Transactional
     public void deleteMenuItem(Long id) {
-        menuItemRepository.deleteById(id);
+        menuItemRepository.findById(id).ifPresent(item -> {
+            Long canteenId = item.getCanteen() != null ? item.getCanteen().getId() : null;
+            menuItemRepository.deleteById(id);
+            if (canteenId != null) {
+                redisCacheService.evictMenu(canteenId);
+            }
+        });
     }
     
     @Transactional
@@ -271,6 +296,9 @@ public class CanteenService {
         menuItemRepository.findById(id).ifPresent(item -> {
             item.setIsAvailable(available);
             menuItemRepository.save(item);
+            if (item.getCanteen() != null) {
+                redisCacheService.evictMenu(item.getCanteen().getId());
+            }
         });
     }
 

@@ -44,15 +44,14 @@ const desktopNavItems = [
 ];
 
 /**
- * Mobile bottom nav items — rendered in the fixed bottom bar on mobile.
- * Cart icon shows badge when activeCartCount > 0.
+ * Mobile bottom nav items — strictly 4 tabs per 2026 design reference.
+ * Cart is removed from bottom navigation and positioned exclusively in the top header.
  */
 const mobileBottomNav = [
-  { label: 'Home',      path: '/customer/dashboard', icon: Home         },
-  { label: 'Offers',    path: '/customer/offers',    icon: Tag          },
-  { label: 'Orders',   path: '/customer/history',   icon: Clock        },
-  { label: 'Cart',     path: '/cart',               icon: ShoppingCart },
-  { label: 'Profile',  path: '/customer/profile',   icon: User         },
+  { label: 'Home',      path: '/customer/dashboard', icon: Home  },
+  { label: 'Offers',    path: '/customer/offers',    icon: Tag   },
+  { label: 'Orders',    path: '/customer/history',   icon: Clock },
+  { label: 'Profile',   path: '/customer/profile',   icon: User  },
 ];
 
 interface ActiveOrder {
@@ -324,39 +323,40 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
               </AnimatePresence>
             </div>
 
-            {/* Mobile: Cart icon with badge */}
+            {/* Cart icon with badge (Header on both mobile & desktop per 2026 reference) */}
             <button
               onClick={() => navigate('/cart')}
-              className="md:hidden relative p-2 rounded-xl hover:bg-neutral-100 transition-colors"
+              className="relative p-2 rounded-xl hover:bg-neutral-100 transition-colors"
               aria-label="Cart"
             >
               <ShoppingCart className="w-5 h-5 text-[#1C1C1C]" />
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-[#E23744] text-white text-[9px] font-extrabold rounded-full flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 bg-[#E23744] text-white text-[9px] font-extrabold rounded-full flex items-center justify-center shadow-sm">
                   {cartCount > 9 ? '9+' : cartCount}
                 </span>
               )}
             </button>
 
-            {/* Desktop: Profile dropdown */}
-            <div ref={dropdownRef} className="relative hidden md:block">
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-neutral-50 transition-all"
-              >
-                {/* Avatar circle */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFE5E7] to-[#FECDD3] border-2 border-white shadow-sm flex items-center justify-center flex-shrink-0">
-                  <span className="text-[#E23744] font-bold text-xs">{userInitial}</span>
-                </div>
-                <span className="text-[13px] font-semibold text-[#1C1C1C] max-w-[100px] truncate">
-                  {userName}
-                </span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-[#9C9C9C] transition-transform duration-200 ${
-                    showDropdown ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+            {/* Desktop: Profile dropdown or Guest Sign In */}
+            {session ? (
+              <div ref={dropdownRef} className="relative hidden md:block">
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-neutral-50 transition-all"
+                >
+                  {/* Avatar circle */}
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFE5E7] to-[#FECDD3] border-2 border-white shadow-sm flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#E23744] font-bold text-xs">{userInitial}</span>
+                  </div>
+                  <span className="text-[13px] font-semibold text-[#1C1C1C] max-w-[100px] truncate">
+                    {userName}
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-[#9C9C9C] transition-transform duration-200 ${
+                      showDropdown ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
 
               <AnimatePresence>
                 {showDropdown && (
@@ -430,6 +430,14 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
                 )}
               </AnimatePresence>
             </div>
+            ) : (
+              <button
+                onClick={() => navigate('/login')}
+                className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white bg-[#E23744] hover:bg-[#C53030] shadow-sm transition-all"
+              >
+                Sign In
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -493,15 +501,17 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E8E8E8] shadow-[0_-1px_12px_rgba(0,0,0,0.08)]">
         <div className="grid grid-cols-4 h-16">
           {mobileBottomNav.map((item) => {
+            const destination = (item.path === '/customer/profile' || item.path === '/customer/history') && !session
+              ? '/login'
+              : item.path;
             const active = isActive(item.path);
             const Icon   = item.icon;
-            const isCart = item.path === '/cart';
 
             return (
               <Link
                 key={item.path}
-                to={item.path}
-                className="flex flex-col items-center justify-center gap-0.5 transition-colors relative"
+                to={destination}
+                className="flex flex-col items-center justify-center gap-0.5 transition-colors relative py-1"
               >
                 <div className="relative">
                   <Icon
@@ -510,12 +520,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
                     }`}
                     strokeWidth={active ? 2.5 : 2}
                   />
-                  {/* Cart badge */}
-                  {isCart && cartCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#E23744] text-white text-[9px] font-extrabold rounded-full flex items-center justify-center">
-                      {cartCount > 9 ? '9+' : cartCount}
-                    </span>
-                  )}
                 </div>
                 <span
                   className={`text-[10px] font-semibold transition-colors ${
@@ -524,11 +528,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
                 >
                   {item.label}
                 </span>
-                {/* Active dot indicator */}
+                {/* Active dot indicator — positioned directly below label per reference */}
                 {active && (
                   <motion.div
                     layoutId="bottom-nav-dot"
-                    className="absolute top-1 w-1 h-1 bg-[#E23744] rounded-full"
+                    className="w-1.5 h-1.5 bg-[#E23744] rounded-full mt-0.5"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}

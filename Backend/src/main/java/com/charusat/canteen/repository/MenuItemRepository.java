@@ -11,7 +11,10 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -61,41 +64,41 @@ public class MenuItemRepository {
 
     public List<MenuItem> findAll() {
         List<MenuItem> items = jdbc.query("SELECT * FROM menu_items", ROW_MAPPER);
-        items.forEach(this::loadTags);
+        loadTagsBulk(items);
         return items;
     }
 
     public List<MenuItem> findByCanteenId(Long canteenId) {
         List<MenuItem> items = jdbc.query("SELECT * FROM menu_items WHERE canteen_id = ?", ROW_MAPPER, canteenId);
-        items.forEach(this::loadTags);
+        loadTagsBulk(items);
         return items;
     }
 
     public List<MenuItem> findByCanteenIdAndIsAvailableTrue(Long canteenId) {
         List<MenuItem> items = jdbc.query("SELECT * FROM menu_items WHERE canteen_id = ? AND is_available = true",
                 ROW_MAPPER, canteenId);
-        items.forEach(this::loadTags);
+        loadTagsBulk(items);
         return items;
     }
 
     public List<MenuItem> findByCanteenIdAndCategory(Long canteenId, String category) {
         List<MenuItem> items = jdbc.query("SELECT * FROM menu_items WHERE canteen_id = ? AND category = ?", ROW_MAPPER,
                 canteenId, category);
-        items.forEach(this::loadTags);
+        loadTagsBulk(items);
         return items;
     }
 
     public List<MenuItem> findByCanteenIdAndIsVeg(Long canteenId, Boolean isVeg) {
         List<MenuItem> items = jdbc.query("SELECT * FROM menu_items WHERE canteen_id = ? AND is_veg = ?", ROW_MAPPER,
                 canteenId, isVeg);
-        items.forEach(this::loadTags);
+        loadTagsBulk(items);
         return items;
     }
 
     public List<MenuItem> findByNameContainingIgnoreCase(String name) {
         List<MenuItem> items = jdbc.query("SELECT * FROM menu_items WHERE LOWER(name) LIKE LOWER(?)", ROW_MAPPER,
                 "%" + name + "%");
-        items.forEach(this::loadTags);
+        loadTagsBulk(items);
         return items;
     }
 
@@ -156,6 +159,30 @@ public class MenuItemRepository {
         List<String> tags = jdbc.queryForList("SELECT tag FROM menu_item_tags WHERE menu_item_id = ?", String.class,
                 m.getId());
         m.setTags(tags);
+    }
+
+    private void loadTagsBulk(List<MenuItem> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        Map<Long, MenuItem> itemMap = new HashMap<>();
+        for (MenuItem item : items) {
+            itemMap.put(item.getId(), item);
+        }
+        List<Long> ids = new ArrayList<>(itemMap.keySet());
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        jdbc.query(
+            "SELECT menu_item_id, tag FROM menu_item_tags WHERE menu_item_id IN (" + placeholders + ")",
+            rs -> {
+                Long menuItemId = rs.getLong("menu_item_id");
+                String tag = rs.getString("tag");
+                MenuItem item = itemMap.get(menuItemId);
+                if (item != null) {
+                    item.getTags().add(tag);
+                }
+            },
+            ids.toArray()
+        );
     }
 
     private void saveTags(MenuItem m) {

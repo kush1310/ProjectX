@@ -112,11 +112,9 @@ function App() {
           <Route
             path="/canteen/:id/menu"
             element={
-              <ProtectedRoute allowedRoles={["USER", "ADMIN", "CANTEEN_OWNER"]}>
-                <ClientLayout>
-                  <CustomerMenuPage />
-                </ClientLayout>
-              </ProtectedRoute>
+              <ClientLayout>
+                <CustomerMenuPage />
+              </ClientLayout>
             }
           />
           <Route
@@ -132,11 +130,9 @@ function App() {
           <Route
             path="/customer/offers"
             element={
-              <ProtectedRoute allowedRoles={["USER", "ADMIN", "CANTEEN_OWNER"]}>
-                <ClientLayout>
-                  <CustomerOffers />
-                </ClientLayout>
-              </ProtectedRoute>
+              <ClientLayout>
+                <CustomerOffers />
+              </ClientLayout>
             }
           />
           {/* Redirect old /customer/orders to /customer/history */}
@@ -154,11 +150,9 @@ function App() {
           <Route
             path="/cart"
             element={
-              <ProtectedRoute allowedRoles={["USER"]}>
-                <ClientLayout>
-                  <CartPage />
-                </ClientLayout>
-              </ProtectedRoute>
+              <ClientLayout>
+                <CartPage />
+              </ClientLayout>
             }
           />
           {/* /checkout now redirects to /cart — checkout logic is embedded in CartPage */}

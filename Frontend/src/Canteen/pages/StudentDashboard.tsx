@@ -8,7 +8,7 @@ import { fetchCanteens, getActiveCoupons, Coupon, Canteen } from '../utils/cante
 import { getSession } from '@/utils/authStore';
 import { Icons } from '@/components/Icons';
 import AddressModal from '../components/AddressModal';
-import { SlidersHorizontal, Leaf, Clock, MapPin, Star, Bookmark, ChevronDown, ChevronLeft, ChevronRight, Copy, Check, Sparkles, Tag as TagIcon, Percent, ShoppingBag } from 'lucide-react';
+import { SlidersHorizontal, Leaf, Clock, MapPin, Star, Bookmark, ChevronDown, ChevronLeft, ChevronRight, Copy, Check, Sparkles, Tag, Tag as TagIcon, Percent, ShoppingBag, Mic, Store, ArrowRight } from 'lucide-react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useCouponWebSocket } from '@/hooks/useCouponWebSocket';
 import { toast } from '@/utils/toast';
@@ -327,7 +327,13 @@ export default function StudentDashboard() {
     }
   };
 
-  const filterChips = ['All', 'Open', 'Offers', 'Rating 4.0+'];
+  const filterChips = [
+    { id: 'All', label: 'All', icon: null, dot: false },
+    { id: 'Canteens', label: 'Canteens', icon: Store, dot: false },
+    { id: 'Open', label: 'Open Now', icon: null, dot: true },
+    { id: 'Offers', label: 'Offers', icon: TagIcon, dot: false },
+    { id: 'Rating', label: 'Rating', icon: Star, dot: false },
+  ];
 
   const containerVariants = {
     hidden:  { opacity: 0 },
@@ -393,9 +399,9 @@ export default function StudentDashboard() {
             </button>
           </div>
 
-          {/* Row 2: Search bar — Zomato style */}
+          {/* Row 2: Search bar — Reference pill style with Mic icon */}
           <div
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all duration-200 ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-full border transition-all duration-200 ${
               isSearchFocused
                 ? 'border-[#E23744] bg-white shadow-md shadow-rose-100/40'
                 : 'border-[#E8E8E8] bg-[#F8F8F8] hover:border-[#D1D5DB]'
@@ -412,10 +418,18 @@ export default function StudentDashboard() {
               className="flex-1 bg-transparent outline-none text-[13px] text-[#1C1C1C] placeholder:text-[#9C9C9C] font-medium"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-0.5">
-                <Icons.X className="w-3.5 h-3.5 text-[#9C9C9C]" />
+              <button onClick={() => setSearchQuery('')} className="p-0.5 text-[#9C9C9C] hover:text-[#1C1C1C]">
+                <Icons.X className="w-3.5 h-3.5" />
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => toast.info("Voice search is active. Speak your dish or canteen name.")}
+              className="p-1 text-[#9C9C9C] hover:text-[#E23744] transition-colors flex-shrink-0"
+              aria-label="Voice search"
+            >
+              <Mic className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Row 3: Filter chips & Filter dropdown button */}
@@ -593,21 +607,41 @@ export default function StudentDashboard() {
               </AnimatePresence>
             </div>
 
-            {/* Scrollable chip strip */}
+            {/* Scrollable chip strip — Reference pill chips */}
             <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
-              {filterChips.map(chip => (
-                <button
-                  key={chip}
-                  onClick={() => setActiveFilter(activeFilter === chip ? 'All' : chip)}
-                  className={`flex-shrink-0 px-4 py-1.5 rounded-xl border text-[12px] font-semibold transition-all duration-200 ${
-                    activeFilter === chip
-                      ? 'border-[#1C1C1C] bg-[#1C1C1C] text-white'
-                      : 'border-[#E8E8E8] bg-white text-[#1C1C1C] hover:border-[#9C9C9C]'
-                  }`}
-                >
-                  {chip}
-                </button>
-              ))}
+              {filterChips.map((chip) => {
+                const isActive = activeFilter === chip.id;
+                const IconComponent = chip.icon;
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => setActiveFilter(isActive && chip.id !== 'All' ? 'All' : chip.id)}
+                    className={`flex-shrink-0 px-4 py-1.5 rounded-full border text-[12px] font-semibold transition-all duration-200 flex items-center gap-1.5 ${
+                      isActive
+                        ? 'border-[#1C1C1C] bg-[#1C1C1C] text-white shadow-sm'
+                        : 'border-[#E8E8E8] bg-white text-[#1C1C1C] hover:border-[#9C9C9C]'
+                    }`}
+                  >
+                    {chip.dot && (
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    )}
+                    {IconComponent && (
+                      <IconComponent
+                        className={`w-3.5 h-3.5 ${
+                          chip.id === 'Offers'
+                            ? 'text-amber-500'
+                            : chip.id === 'Rating'
+                            ? 'text-amber-400 fill-amber-400'
+                            : isActive
+                            ? 'text-white'
+                            : 'text-neutral-500'
+                        }`}
+                      />
+                    )}
+                    <span>{chip.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -617,108 +651,56 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
 
         {/* ── Wide Campus Canteen Animated Image Carousel Banner ── */}
-        {topCoupon && !loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={() => navigate('/customer/offers')}
-            className="mb-6 rounded-3xl overflow-hidden cursor-pointer relative group border border-white/20 shadow-xl select-none"
-          >
-            {/* Background Image Carousel with AnimatePresence */}
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={bannerIndex}
-                src={CANTEEN_CAROUSEL_IMAGES[bannerIndex].url}
-                alt={CANTEEN_CAROUSEL_IMAGES[bannerIndex].canteen}
-                initial={{ opacity: 0.4, scale: 1.08 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0.4, scale: 0.96 }}
-                transition={{ duration: 0.7, ease: "easeInOut" }}
-                className="absolute inset-0 w-full h-full object-cover brightness-90 group-hover:scale-105 transition-transform duration-1000"
-              />
-            </AnimatePresence>
+        {/* ── Deal of the Day Promo Card per Reference Screen 1 ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => navigate('/customer/offers')}
+          className="mb-6 rounded-3xl overflow-hidden cursor-pointer relative bg-gradient-to-r from-[#881337] via-[#E23744] to-[#EA580C] shadow-xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-6 group select-none"
+        >
+          {/* Left Details */}
+          <div className="flex-1 min-w-0 z-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/25 backdrop-blur-md border border-white/20 text-[11px] font-black uppercase tracking-wider mb-2.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span>DEAL OF THE DAY</span>
+            </div>
 
-            {/* Gradient Overlay */}
-            <div 
-              className="absolute inset-0 transition-opacity duration-300"
-              style={{
-                background: 'linear-gradient(95deg, rgba(226, 55, 68, 0.94) 0%, rgba(234, 88, 12, 0.86) 50%, rgba(15, 23, 42, 0.70) 100%)'
+            <p className="text-white/80 text-[11px] font-bold uppercase tracking-widest mb-1">
+              {canteens.find(c => c.id === (allCoupons[0] || topCoupon)?.canteenId)?.name || canteens[0]?.name || 'SWEET SPOT'}
+            </p>
+
+            <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-1.5 drop-shadow-md">
+              {topCoupon?.title || 'Thali Lover'}
+            </h2>
+
+            <p className="text-white/90 text-xs sm:text-sm font-semibold mb-4 drop-shadow-sm">
+              {topCoupon?.description || 'Flat ₹100 off on any Thali'}
+            </p>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/customer/offers');
               }}
-            />
-
-            {/* Subtle Shine sweep effect */}
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-              style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.15) 50%, transparent 65%)' }}
-            />
-
-            {/* Previous Button (Left Arrow) */}
-            <button
-              onClick={handlePrevBanner}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/30 hover:bg-black/60 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 active:scale-90"
-              title="Previous Canteen"
+              className="px-5 py-2.5 rounded-full bg-[#E23744] hover:bg-[#C53030] text-white font-bold text-xs shadow-lg shadow-black/20 flex items-center gap-1.5 active:scale-95 transition-all border border-white/20"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <span>Order Now</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
 
-            {/* Next Button (Right Arrow) */}
-            <button
-              onClick={handleNextBanner}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/30 hover:bg-black/60 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 active:scale-90"
-              title="Next Canteen"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+          {/* Right Image: Indian Thali Platter */}
+          <div className="w-48 h-48 sm:w-56 sm:h-56 flex-shrink-0 relative z-10 flex items-center justify-center">
+            <img
+              src="/food/gujarati_thali.png"
+              alt="Thali Lover Meal"
+              className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
 
-            <div className="relative p-6 sm:p-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6 z-10 min-h-[460px] sm:min-h-[500px] h-[500px]">
-              <div className="flex-1 min-w-0 pb-4">
-                <div className="flex items-center gap-2.5 mb-3 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-xs sm:text-sm font-black text-white uppercase tracking-widest border border-white/20 shadow-sm">
-                    <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
-                    DEAL OF THE DAY
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-xs font-bold text-white uppercase tracking-wider border border-white/10">
-                    {canteens.find(c => c.id === (allCoupons[bannerIndex % allCoupons.length] || topCoupon).canteenId)?.name || CANTEEN_CAROUSEL_IMAGES[bannerIndex].canteen}
-                  </span>
-                </div>
-
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight drop-shadow-lg tracking-tight mb-2">
-                  {(allCoupons[bannerIndex % allCoupons.length] || topCoupon).title || `${(allCoupons[bannerIndex % allCoupons.length] || topCoupon).discountValue}% OFF Special`}
-                </h2>
-
-                <p className="text-white/90 text-sm sm:text-base font-medium line-clamp-2 max-w-2xl leading-relaxed drop-shadow-sm">
-                  {(allCoupons[bannerIndex % allCoupons.length] || topCoupon).description || 'Exclusive campus discount for CHARUSAT students. Tap to view all offers & claim!'}
-                </p>
-              </div>
-
-              <div className="flex sm:flex-col items-center justify-between sm:justify-center gap-3 flex-shrink-0 pb-4">
-                <div className="bg-white text-[#E23744] font-black text-lg sm:text-2xl px-6 py-3.5 rounded-2xl shadow-2xl border-b-4 border-rose-200 uppercase tracking-widest group-hover:scale-105 transition-all">
-                  {(allCoupons[bannerIndex % allCoupons.length] || topCoupon).couponCode}
-                </div>
-                <span className="text-white text-xs font-black uppercase tracking-widest flex items-center gap-1 bg-black/30 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/15">
-                  TAP TO CLAIM &rarr;
-                </span>
-              </div>
-            </div>
-
-            {/* Carousel Navigation Indicators (Dots) */}
-            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/15">
-              {CANTEEN_CAROUSEL_IMAGES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setBannerIndex(i);
-                  }}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    bannerIndex === i ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
-                  }`}
-                  title={`Go to image ${i + 1}`}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
+          {/* Background Ambient Glow */}
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+        </motion.div>
 
         {/* ── Active Campus Offers Carousel ── */}
         {!loading && allCoupons.length > 0 && (
@@ -828,9 +810,23 @@ export default function StudentDashboard() {
 
         {/* ── Canteen listing ── */}
         <div>
-          <h2 className="text-[11px] font-extrabold text-[#9C9C9C] uppercase tracking-widest mb-4">
-            {searchQuery || activeFilter !== 'All' ? `${filteredCanteens.length} RESULT${filteredCanteens.length !== 1 ? 'S' : ''}` : 'ALL CANTEENS'}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-[#1C1C1C]">
+              {searchQuery || activeFilter !== 'All'
+                ? `Results (${filteredCanteens.length})`
+                : 'Popular Canteens'}
+            </h2>
+            <button
+              onClick={() => {
+                setActiveFilter('All');
+                setSearchQuery('');
+              }}
+              className="text-xs font-bold text-[#E23744] flex items-center gap-0.5 hover:underline"
+            >
+              <span>See All</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           <AnimatePresence mode="wait">
             {loading ? (
@@ -838,9 +834,9 @@ export default function StudentDashboard() {
               <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {[1,2,3,4,5,6].map(i => (
-                  <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm">
-                    <Skeleton height={176} />
-                    <div className="p-4 space-y-2">
+                  <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-[#F0F0F0]">
+                    <Skeleton height={160} />
+                    <div className="p-3.5 space-y-2">
                       <Skeleton width="60%" height={18} />
                       <Skeleton width="40%" height={13} />
                       <div className="flex gap-4 pt-1">
@@ -874,7 +870,7 @@ export default function StudentDashboard() {
               </motion.div>
 
             ) : (
-              /* Canteen cards — Zomato card anatomy */
+              /* Canteen cards matching Reference Screen 1 */
               <motion.div
                 key="results"
                 variants={containerVariants}
@@ -882,118 +878,109 @@ export default function StudentDashboard() {
                 animate="visible"
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
               >
-                {filteredCanteens.map((canteen) => (
-                  <motion.div
-                    key={canteen.id}
-                    variants={itemVariants}
-                    whileHover={{ y: -4 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => navigate(`/canteen/${canteen.id}/menu`)}
-                    className="bg-white rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-shadow duration-200 border border-[#F4F4F4]"
-                  >
-                      {/* Card image — 16:9 aspect */}
-                      <div className="relative w-full h-44 bg-[#F4F4F4] overflow-hidden">
+                {filteredCanteens.map((canteen) => {
+                  const ratingVal = (canteenRatings[canteen.id] && canteenRatings[canteen.id] > 0)
+                    ? canteenRatings[canteen.id].toFixed(1)
+                    : (canteen.rating ? canteen.rating.toFixed(1) : '4.5');
+
+                  const discountText = canteen.hasOffer && topCoupon?.discountValue
+                    ? `${topCoupon.discountType === 'FLAT' ? '₹' : ''}${topCoupon.discountValue}${topCoupon.discountType === 'PERCENTAGE' ? '%' : ''} OFF Above ₹${topCoupon.minOrderValue || 199}`
+                    : '₹100 OFF Above ₹299';
+
+                  return (
+                    <motion.div
+                      key={canteen.id}
+                      variants={itemVariants}
+                      whileHover={{ y: -4 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => navigate(`/canteen/${canteen.id}/menu`)}
+                      className="bg-white rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all duration-200 border border-[#F0F0F0] flex flex-col group"
+                    >
+                      {/* Card image container */}
+                      <div className="relative w-full h-40 bg-[#F4F4F4] overflow-hidden">
                         {canteen.imageUrl ? (
                           <img
                             src={canteen.imageUrl}
                             alt={canteen.name}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Icons.Store className="w-14 h-14 text-[#D1D5DB]" />
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200">
+                            <Icons.Store className="w-12 h-12 text-[#9C9C9C]" />
                           </div>
                         )}
 
-                        {/* Restaurant Logo Avatar Badge */}
-                        <div className="absolute top-2.5 left-2.5 w-10 h-10 rounded-full border-2 border-white shadow-md bg-white overflow-hidden flex items-center justify-center">
-                          {canteen.logoUrl ? (
-                            <img src={canteen.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                        {/* Bookmark — top-right */}
+                        <button
+                          onClick={(e) => toggleSaved(e, canteen.id)}
+                          className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
+                        >
+                          <Bookmark
+                            className={`w-4 h-4 transition-colors ${
+                              savedCanteens.has(canteen.id) ? 'fill-[#E23744] text-[#E23744]' : 'text-[#9C9C9C]'
+                            }`}
+                          />
+                        </button>
+
+                        {/* CLOSED overlay */}
+                        {!canteen.isOpen && (
+                          <div className="absolute inset-0 bg-black/55 flex items-center justify-center z-10">
+                            <span className="text-white font-black text-xs tracking-widest uppercase px-3 py-1.5 bg-black/70 rounded-lg">
+                              CLOSED
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Floating dual badges at bottom of image matching Reference Screen 1 */}
+                        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none z-10">
+                          {/* Rating badge */}
+                          <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-md text-[11px] font-bold text-[#1C1C1C] shadow-sm">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span>{ratingVal}</span>
+                          </div>
+
+                          {/* Open status badge */}
+                          {canteen.isOpen ? (
+                            <div className="flex items-center gap-1 bg-emerald-600/95 backdrop-blur-md text-white px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                              <span>Open</span>
+                            </div>
                           ) : (
-                            <Icons.Store className="w-5 h-5 text-[#E23744]" />
+                            <div className="flex items-center gap-1 bg-neutral-800/90 backdrop-blur-md text-white px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm">
+                              <span>Closed</span>
+                            </div>
                           )}
                         </div>
+                      </div>
 
-                      {/* Discount badge — bottom-left, Zomato blue; shows top coupon value if available */}
-                      {canteen.hasOffer && (
-                        <div className="absolute bottom-0 left-0 bg-[#3D6EEE] text-white px-2.5 py-1 text-[11px] font-black uppercase tracking-wide rounded-tr-xl">
-                          {topCoupon?.discountValue
-                            ? `${topCoupon.discountType === 'FLAT' ? '₹' : ''}${topCoupon.discountValue}${topCoupon.discountType === 'PERCENTAGE' ? '%' : ''} OFF`
-                            : 'OFFER'}
+                      {/* Card body */}
+                      <div className="p-3.5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h3 className="font-bold text-[#1C1C1C] text-[15px] leading-snug line-clamp-1 group-hover:text-[#E23744] transition-colors">
+                            {canteen.name}
+                          </h3>
+
+                          {/* Cuisine / location */}
+                          <p className="text-[#696969] text-[12px] font-medium truncate mt-0.5">
+                            {canteen.cuisineType || 'North Indian, Chinese, Snacks'}
+                          </p>
                         </div>
-                      )}
 
-                      {/* Bookmark — top-right */}
-                      <button
-                        onClick={(e) => toggleSaved(e, canteen.id)}
-                        className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
-                      >
-                        <Bookmark
-                          className={`w-4 h-4 transition-colors ${
-                            savedCanteens.has(canteen.id) ? 'fill-[#E23744] text-[#E23744]' : 'text-[#9C9C9C]'
-                          }`}
-                        />
-                      </button>
-
-                      {/* CLOSED overlay */}
-                      {!canteen.isOpen && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <span className="text-white font-black text-sm tracking-widest uppercase px-4 py-2 bg-black/60 rounded-xl">
-                            CLOSED
+                        {/* Offer tag row matching Reference Screen 1 */}
+                        <div className="mt-2.5 pt-2 border-t border-[#F5F5F5] flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-[#E23744] text-[11px] font-bold">
+                            <Tag className="w-3 h-3 text-[#E23744]" />
+                            <span className="truncate">{discountText}</span>
+                          </div>
+                          <span className="text-[11px] text-[#9C9C9C] font-semibold flex-shrink-0">
+                            15-25 min
                           </span>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Card body */}
-                    <div className="p-3.5">
-                      {/* Name + Rating badge (Zomato: green pill right-aligned) */}
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="font-bold text-[#1C1C1C] text-[15px] leading-snug line-clamp-1 flex-1">
-                          {canteen.name}
-                        </h3>
-                        {(canteenRatings[canteen.id] ?? 0) > 0 && (
-                          <div className="flex items-center gap-1 bg-[#48C479] text-white px-2 py-0.5 rounded-md text-[11px] font-bold flex-shrink-0">
-                            {(canteenRatings[canteen.id] ?? 0).toFixed(1)}
-                            <Star className="w-2.5 h-2.5 fill-current" />
-                          </div>
-                        )}
                       </div>
-
-                      {/* Cuisine / location tags */}
-                      <p className="text-[#696969] text-[12px] mb-2.5 truncate">
-                        {canteen.cuisineType || 'Gujarati, North Indian, South Indian'}
-                      </p>
-
-                      {/* "Serves X" chip — shown when canteen appeared via a menu item match */}
-                      {itemMatchNames[canteen.id] && (
-                        <div className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FFF3F0] border border-rose-100 text-[11px] font-semibold text-[#E23744]">
-                          Serves {itemMatchNames[canteen.id]}
-                        </div>
-                      )}
-
-                      {/* Delivery time + price separator */}
-                      <div className="flex items-center gap-2 text-[11px] text-[#9C9C9C] font-medium">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          15–25 min
-                        </span>
-                        <span className="w-1 h-1 rounded-full bg-[#D1D5DB]" />
-                        <span>₹100 for one</span>
-                        {canteen.isOpen && (
-                          <>
-                            <span className="w-1 h-1 rounded-full bg-[#D1D5DB]" />
-                            <span className="flex items-center gap-1 text-[#1BA672]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#1BA672] animate-pulse" />
-                              Open
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>

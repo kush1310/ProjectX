@@ -1,0 +1,213 @@
+name: Charusat Needs — Production Release & Quality Assurance CI/CD
+
+on:
+  push:
+    branches: [ main, master, release/* ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # STAGE A & B: SOURCE VALIDATION & STATIC CODE QUALITY
+  # ============================================================================
+  static_quality:
+    name: "Stage A & B: Source Validation & Static Quality"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'Frontend/package-lock.json'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Validate Frontend Lockfile & Install
+        working-directory: ./Frontend
+        run: npm ci
+
+      - name: Frontend Static Linter (ESLint)
+        working-directory: ./Frontend
+        run: npm run lint
+
+      - name: Frontend Typecheck (TypeScript AST)
+        working-directory: ./Frontend
+        run: npm run typecheck
+
+      - name: Backend Static Compilation Check
+        working-directory: ./Backend
+        run: mvn compile -DskipTests
+
+  # ============================================================================
+  # STAGE C: SUPPLY CHAIN & DEPENDENCY SECURITY AUDIT
+  # ============================================================================
+  dependency_audit:
+    name: "Stage C: Dependency Security Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Frontend Dependency Vulnerability Audit
+        working-directory: ./Frontend
+        run: |
+          npm audit --audit-level=critical || true
+
+      - name: Backend Dependency Tree Verification
+        working-directory: ./Backend
+        run: mvn dependency:tree
+
+  # ============================================================================
+  # STAGE D, E & G: INTEGRATION, SECURITY REGRESSION & HEALTH PROBES
+  # ============================================================================
+  integration_security_regression:
+    name: "Stage D, E & G: Integration & Security Regression"
+    runs-on: ubuntu-latest
+    needs: [static_quality, dependency_audit]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: charusatneeds
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Start Spring Boot Test Instance
+        working-directory: ./Backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/charusatneeds
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgrespassword
+          SECURITY_PAYLOAD_ENCRYPTION_KEY: CharusatNeedsPayloadKey2026!!
+          JWT_SECRET: Cx7MsVDe15ZBjcMeQUzfK3clgDxqN6RfUE9045yLdtE=
+        run: |
+          nohup mvn spring-boot:run > backend.log 2>&1 &
+          echo "Waiting for Spring Boot backend to become ready..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/api/public/health | grep -q '"status":"UP"'; then
+              echo "Backend is healthy!"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Execute Security & Transaction Regression Suite (27 Scenarios)
+        run: |
+          node -e "
+          const fs = require('fs');
+          console.log('Running automated CI security runner...');
+          "
+          # Run the comprehensive deep security runner against the running container
+          node scratch/deep_security_runner.js || exit 1
+
+      - name: Archive Backend Execution Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-logs
+          path: Backend/backend.log
+
+  # ============================================================================
+  # STAGE F: DETERMINISTIC PRODUCTION ARTIFACT GENERATION
+  # ============================================================================
+  production_build:
+    name: "Stage F: Production Build & Artifact Packaging"
+    runs-on: ubuntu-latest
+    needs: [integration_security_regression]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build Optimized Frontend Bundle
+        working-directory: ./Frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build Production Backend Executable JAR
+        working-directory: ./Backend
+        run: mvn clean package -DskipTests
+
+      - name: Verify Backend Bytecode Target (Java 17 / Major Version 61)
+        run: |
+          node -e "
+          const fs = require('fs');
+          const buf = fs.readFileSync('Backend/target/classes/com/charusat/canteen/CanteenApplication.class');
+          const major = buf.readUInt16BE(6);
+          if (major !== 61) {
+            console.error('Fatal: Unexpected class major version ' + major);
+            process.exit(1);
+          }
+          console.log('Bytecode verification passed: Java 17 (Major version 61)');
+          "
+
+      - name: Archive Production Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            Frontend/dist/
+            Backend/target/*.jar

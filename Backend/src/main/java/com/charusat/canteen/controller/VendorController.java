@@ -14,6 +14,7 @@ import java.util.List;
 @RequestMapping("/api/vendor")
 @RequiredArgsConstructor
 @CrossOrigin
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CANTEEN_OWNER', 'ADMIN')")
 public class VendorController {
 
     private final VendorService vendorService;

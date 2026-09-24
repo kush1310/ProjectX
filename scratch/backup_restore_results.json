@@ -1,0 +1,67 @@
+{
+  "timestamp": "2026-09-24T04:13:25.988Z",
+  "sourceDatabase": "charusatneeds",
+  "targetDatabase": "charusatneeds_restore_test",
+  "backup": {
+    "file": "D:\\A_Coding\\A_MainCodes\\CharusatNeeds_SGP_Latest_10_8_26\\CharusatNeeds_SGP_Latest_10_8_26\\scratch\\charusatneeds_drill_backup.sql",
+    "sizeBytes": 141217,
+    "sizeKb": "137.91",
+    "durationMs": 777,
+    "sha256": "583cb4bf4a008756e4f0b0d560cde64489fedaa1e198c6cefaec66d09a4897f3",
+    "status": "SUCCESS"
+  },
+  "restore": {
+    "durationMs": 875,
+    "status": "SUCCESS"
+  },
+  "integrity": {
+    "totalTables": {
+      "source": 32,
+      "restored": 32,
+      "match": true
+    },
+    "tableRowCounts": {
+      "users": {
+        "source": 7,
+        "restored": 7,
+        "match": true
+      },
+      "canteens": {
+        "source": 5,
+        "restored": 5,
+        "match": true
+      },
+      "menu_items": {
+        "source": 258,
+        "restored": 258,
+        "match": true
+      },
+      "orders": {
+        "source": 4,
+        "restored": 4,
+        "match": true
+      },
+      "order_items": {
+        "source": 5,
+        "restored": 5,
+        "match": true
+      },
+      "coupons": {
+        "source": 11,
+        "restored": 11,
+        "match": true
+      }
+    },
+    "allTablesMatched": true
+  },
+  "rpo_rto": {
+    "targetRTO": "15 minutes (900 seconds)",
+    "observedDatabaseRestoreRTO_ms": 875,
+    "observedDatabaseRestoreRTO_sec": "0.88",
+    "overallRTOAssessment": "PASS - Database restore completes in < 2 seconds",
+    "targetRPO": "1 hour (3600 seconds) for periodic dumps; 5 minutes with WAL archiving",
+    "observedBackupDuration_ms": 777,
+    "observedBackupDuration_sec": "0.78",
+    "overallRPOAssessment": "PASS - Logical backup duration < 1 second supports hourly automated snapshots"
+  }
+}

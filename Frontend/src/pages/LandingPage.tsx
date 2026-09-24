@@ -27,6 +27,7 @@ import {
   Search,
   ExternalLink,
   Info,
+  Menu,
   X
 } from 'lucide-react';
 import api from '@/utils/api';
@@ -214,6 +215,7 @@ export default function LandingPage() {
   });
 
   // Modal States
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [vendorSubmitted, setVendorSubmitted] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
@@ -315,22 +317,100 @@ export default function LandingPage() {
             </button>
           </nav>
 
-          {/* Auth CTA Buttons */}
-          <div className="flex items-center gap-3">
+          {/* Auth CTA Buttons & Mobile Toggle */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/login"
-              className="px-4 py-2.5 text-sm font-bold text-slate-700 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+              className="hidden sm:inline-flex px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
             >
               Log In
             </Link>
             <Link
               to="/signup"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white text-sm font-extrabold shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5"
+              className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white text-xs sm:text-sm font-extrabold shadow-md sm:shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1 sm:gap-1.5"
             >
-              Student Register <ChevronRight className="w-4 h-4" />
+              <span className="sm:hidden">Register</span>
+              <span className="hidden sm:inline">Student Register</span>
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
+            {/* Mobile Navigation Toggle Button */}
+            <button
+              onClick={() => setIsMobileNavOpen(prev => !prev)}
+              aria-label="Toggle Navigation Menu"
+              className="lg:hidden p-2 text-slate-700 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+            >
+              {isMobileNavOpen ? <X className="w-5 h-5 text-red-600" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        <AnimatePresence>
+          {isMobileNavOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="lg:hidden border-t border-red-100 mt-3 pt-3 overflow-hidden"
+            >
+              <div className="flex flex-col space-y-1.5 text-sm font-bold text-slate-700 pb-2">
+                <a
+                  href="#home"
+                  onClick={() => setIsMobileNavOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  Home
+                </a>
+                <a
+                  href="#about"
+                  onClick={() => setIsMobileNavOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  About Us
+                </a>
+                <a
+                  href="#canteens"
+                  onClick={() => setIsMobileNavOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  Campus Canteens
+                </a>
+                <a
+                  href="#blogs"
+                  onClick={() => setIsMobileNavOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  Blogs & News
+                </a>
+                <button
+                  onClick={() => {
+                    setIsMobileNavOpen(false);
+                    setIsVendorModalOpen(true);
+                  }}
+                  className="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors flex items-center gap-2"
+                >
+                  <Store className="w-4 h-4 text-red-600" /> Partner Vendor
+                </button>
+                <div className="pt-2 border-t border-red-50 flex gap-2">
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileNavOpen(false)}
+                    className="flex-1 text-center py-2 text-xs font-bold border border-red-200 text-red-600 rounded-lg hover:bg-red-50"
+                  >
+                    Log In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={() => setIsMobileNavOpen(false)}
+                    className="flex-1 text-center py-2 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Register
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* ─── HERO CAROUSEL SECTION ────────────────────────────── */}

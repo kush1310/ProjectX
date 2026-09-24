@@ -97,11 +97,16 @@ public class OrderService {
 
     public List<Order> findActiveOrders(Long canteenId) {
         List<Order.OrderStatus> activeStatuses = List.of(
+                Order.OrderStatus.RELEASED,
                 Order.OrderStatus.PENDING,
                 Order.OrderStatus.CONFIRMED,
                 Order.OrderStatus.PREPARING,
                 Order.OrderStatus.READY);
         return enrichOrders(orderRepository.findByCanteenIdAndStatusIn(canteenId, activeStatuses));
+    }
+
+    public List<Order> findScheduledOrders(Long canteenId) {
+        return enrichOrders(orderRepository.findScheduledOrdersByCanteen(canteenId));
     }
 
     public List<Order> findRecentOrders(Long canteenId, int hours) {
@@ -111,9 +116,27 @@ public class OrderService {
 
     @Transactional
     public Order createOrder(User customer, Canteen canteen, List<Long> menuItemIds,
-            List<Integer> quantities, String paymentMethod, String instructions, String couponCode) {
+            List<Integer> quantities, String paymentMethod, String instructions, String couponCode,
+            String orderType, LocalDateTime scheduledFor) {
 
         String orderNumber = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        boolean isScheduled = "SCHEDULED".equalsIgnoreCase(orderType) && scheduledFor != null;
+        LocalDateTime releaseAt = null;
+        Order.OrderStatus initialStatus = Order.OrderStatus.PENDING;
+
+        if (isScheduled) {
+            LocalDateTime now = LocalDateTime.now();
+            if (scheduledFor.isBefore(now.plusMinutes(10))) {
+                throw new IllegalArgumentException("Scheduled order time must be at least 10 minutes in the future.");
+            }
+            // Release to vendor kitchen 15 minutes before scheduled pickup time
+            releaseAt = scheduledFor.minusMinutes(15);
+            if (releaseAt.isBefore(now)) {
+                releaseAt = now;
+            }
+            initialStatus = Order.OrderStatus.SCHEDULED;
+        }
 
         Order order = Order.builder()
                 .orderNumber(orderNumber)
@@ -123,7 +146,10 @@ public class OrderService {
                 .canteenId(canteen.getId())
                 .paymentMethod(paymentMethod)
                 .specialInstructions(instructions)
-                .status(Order.OrderStatus.PENDING)
+                .status(initialStatus)
+                .orderType(isScheduled ? "SCHEDULED" : "INSTANT")
+                .scheduledFor(scheduledFor)
+                .releaseAt(releaseAt)
                 .items(new ArrayList<>())
                 .build();
 
@@ -198,11 +224,44 @@ public class OrderService {
             couponService.recordUsage(appliedCoupon.getId(), customer.getId(), savedOrder.getId(), discount, subTotal);
         }
 
-        // Notify Vendors via WebSocket — no email here.
-        // Order confirmation email is sent ONLY after payment verification succeeds (PaymentService.verifyPayment).
-        // This prevents confirmation emails being sent on cancelled/failed payments.
-        webSocketService.notifyNewOrder(savedOrder);
+        // Notify Vendors via WebSocket immediately ONLY for INSTANT orders.
+        // SCHEDULED orders are held in isolation and released when release_at arrives.
+        if (!isScheduled) {
+            webSocketService.notifyNewOrder(savedOrder);
+        } else {
+            log.info("Scheduled order {} created; held in isolation until release at {}", savedOrder.getOrderNumber(), releaseAt);
+        }
 
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order createOrder(User customer, Canteen canteen, List<Long> menuItemIds,
+            List<Integer> quantities, String paymentMethod, String instructions, String couponCode) {
+        return createOrder(customer, canteen, menuItemIds, quantities, paymentMethod, instructions, couponCode, "INSTANT", null);
+    }
+
+    @Transactional
+    public Order releaseScheduledOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+
+        if (order.getStatus() != Order.OrderStatus.SCHEDULED) {
+            log.warn("Order {} is not in SCHEDULED status (current: {}), skipping release", orderId, order.getStatus());
+            return order;
+        }
+
+        order.setStatus(Order.OrderStatus.RELEASED);
+        order.setReleasedAt(LocalDateTime.now());
+        order.setUpdatedAt(LocalDateTime.now());
+        Order savedOrder = orderRepository.save(order);
+        enrichOrder(savedOrder);
+
+        // Transition order into active vendor workflow in real time
+        webSocketService.notifyNewOrder(savedOrder);
+        webSocketService.notifyStatusUpdate(savedOrder);
+
+        log.info("Released scheduled order {} to canteen {} kitchen", savedOrder.getOrderNumber(), savedOrder.getCanteenId());
         return savedOrder;
     }
 

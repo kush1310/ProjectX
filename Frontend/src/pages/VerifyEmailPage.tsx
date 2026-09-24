@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2, ShieldCheck, ArrowRight, RefreshCw } from 'lucide-react';
+import { API_URL } from '../utils/api';
 
 /**
  * VerifyEmailPage — Handles the email verification link click.
@@ -30,7 +31,7 @@ export default function VerifyEmailPage() {
   async function verifyEmail(token: string) {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/auth/verify-email?token=${encodeURIComponent(token)}`,
+        `${API_URL}/auth/verify-email?token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
@@ -63,7 +64,7 @@ export default function VerifyEmailPage() {
     if (!resendEmail.trim()) return;
     setResending(true);
     try {
-      const response = await fetch('http://localhost:8000/api/auth/resend-verification', {
+      const response = await fetch(`${API_URL}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resendEmail.trim() }),

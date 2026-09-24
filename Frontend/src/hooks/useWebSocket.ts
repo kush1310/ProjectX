@@ -21,10 +21,20 @@ export const useWebSocket = (url?: string) => {
     // Dynamically calculate broker URL for WebSocket protocol (ws:// or wss://)
     let brokerURL = url;
     if (!brokerURL) {
-      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-      const wsProtocol = isHttps ? 'wss:' : 'ws:';
-      const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-      brokerURL = `${wsProtocol}//${hostname}:8000/ws/websocket`;
+      if (import.meta.env.VITE_WS_URL) {
+        brokerURL = import.meta.env.VITE_WS_URL;
+      } else {
+        const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+        if (apiUrl && apiUrl.startsWith('http')) {
+          const wsBase = apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '');
+          brokerURL = `${wsBase}/ws/websocket`;
+        } else {
+          const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          const wsProtocol = isHttps ? 'wss:' : 'ws:';
+          const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+          brokerURL = `${wsProtocol}//${hostname}:8000/ws/websocket`;
+        }
+      }
     } else if (brokerURL.startsWith("http://")) {
       brokerURL = brokerURL.replace("http://", "ws://") + "/websocket";
     } else if (brokerURL.startsWith("https://")) {

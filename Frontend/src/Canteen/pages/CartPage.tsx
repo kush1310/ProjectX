@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, Trash2, MapPin, Tag, X, ChevronRight, ShieldCheck, Info, Lock, BadgeCheck, ShoppingCart, Receipt, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, MapPin, Tag, X, ChevronRight, ShieldCheck, Info, Lock, BadgeCheck, ShoppingCart, Receipt, ArrowLeft, Calendar, Clock, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import { toast } from "../../utils/toast";
@@ -83,6 +83,35 @@ export default function CartPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [foodOrderId, setFoodOrderId] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'cash'>('upi');
+
+  // ── Scheduled Orders State ──
+  const [orderTiming, setOrderTiming] = useState<'ASAP' | 'SCHEDULED'>('ASAP');
+  const [scheduledDay, setScheduledDay] = useState<'today' | 'tomorrow'>('today');
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('12:30 PM');
+
+  // ── Guest Auth Gate Modal ──
+  const [showAuthGateModal, setShowAuthGateModal] = useState(false);
+
+  const availableSlots = useMemo(() => [
+    '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
+    '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM',
+    '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM'
+  ], []);
+
+  const computeScheduledDateTime = () => {
+    const d = new Date();
+    if (scheduledDay === 'tomorrow') {
+      d.setDate(d.getDate() + 1);
+    }
+    const [timePart, modifier] = selectedTimeSlot.split(' ');
+    const parts = timePart.split(':');
+    let hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    if (modifier === 'PM' && hours < 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+    d.setHours(hours, minutes, 0, 0);
+    return d.toISOString();
+  };
 
   const {
     initPayment,
@@ -208,12 +237,16 @@ export default function CartPage() {
    */
   const placeOrder = async () => {
     if (!cart || cart.items.length === 0) { toast.error('Cart is empty'); return; }
+    if (!getSession()?.id) {
+      setShowAuthGateModal(true);
+      return;
+    }
     let createdOrderId: number | null = null;
     try {
       setIsPlacingOrder(true);
       const resolvedCanteenId = cart.canteen?.id || (cart as any).canteenId ||
         (cart.items.length > 0 ? (cart.items[0].menuItem as any).canteenId : undefined);
-      const orderData = {
+      const orderData: any = {
         canteenId: resolvedCanteenId,
         restaurantId: resolvedCanteenId,
         menuItemIds: cart.items.map(i => i.menuItem.id),
@@ -221,7 +254,13 @@ export default function CartPage() {
         paymentMethod,
         instructions: specialInstructions,
         couponCode: appliedCoupon?.code,
+        orderType: orderTiming,
       };
+
+      if (orderTiming === 'SCHEDULED') {
+        orderData.scheduledFor = computeScheduledDateTime();
+      }
+
       const res = await api.post('/orders', orderData);
       createdOrderId = res.data.id;
       setFoodOrderId(createdOrderId);
@@ -529,6 +568,118 @@ export default function CartPage() {
           </div>
         )}
 
+        {/* ── SCHEDULE ORDER UI ── */}
+        <motion.div variants={iv} initial="hidden" animate="visible"
+          className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#E23744]" />
+              <h3 className="font-bold text-slate-800 text-base">When do you want your order?</h3>
+            </div>
+            {orderTiming === 'SCHEDULED' && (
+              <span className="text-[10px] font-bold text-[#E23744] bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                Scheduled
+              </span>
+            )}
+          </div>
+
+          {/* Segmented controls: ASAP vs Schedule */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-3">
+            <button
+              type="button"
+              onClick={() => setOrderTiming('ASAP')}
+              className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                orderTiming === 'ASAP'
+                  ? 'bg-white text-slate-800 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>ASAP (15-25 min)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderTiming('SCHEDULED')}
+              className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                orderTiming === 'SCHEDULED'
+                  ? 'bg-white text-slate-800 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 text-[#E23744]" />
+              <span>Schedule for later</span>
+            </button>
+          </div>
+
+          {/* Expanded schedule options */}
+          <AnimatePresence>
+            {orderTiming === 'SCHEDULED' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden space-y-3 pt-1"
+              >
+                {/* Date selection pills */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    Select Date
+                  </label>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'today', label: 'Today' },
+                      { id: 'tomorrow', label: 'Tomorrow' },
+                    ].map(d => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setScheduledDay(d.id as any)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                          scheduledDay === d.id
+                            ? 'border-[#E23744] bg-rose-50 text-[#E23744]'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time slot pills */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    Select Delivery Slot
+                  </label>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {availableSlots.map(slot => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setSelectedTimeSlot(slot)}
+                        className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                          selectedTimeSlot === slot
+                            ? 'border-[#E23744] bg-[#E23744] text-white shadow-xs font-bold'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-2.5 bg-amber-50 rounded-xl border border-amber-100 text-[11px] text-amber-800">
+                  <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span>
+                    Order will arrive around {selectedTimeSlot} ({scheduledDay}). Kitchen will prepare fresh right before release.
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
         {/* ── BILL SUMMARY ── */}
         <motion.div variants={iv} initial="hidden" animate="visible"
           className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-5">
@@ -686,6 +837,46 @@ export default function CartPage() {
         selectedMethod={paymentMethod}
         onMethodChange={(m) => setPaymentMethod(m as 'upi' | 'card' | 'cash')}
       />
+
+      {/* ── Guest Auth Gate Modal ── */}
+      <AnimatePresence>
+        {showAuthGateModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center"
+            >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-[#E23744]" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 mb-1.5">Sign In to Continue</h3>
+              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                Please sign in with your CHARUSAT account to complete payment, schedule delivery, and track kitchen prep in real time.
+              </p>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login?redirect=/cart')}
+                  className="w-full py-3.5 rounded-xl font-bold text-white text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #e23744, #f97316)' }}
+                >
+                  <span>Sign In to CHARUSAT</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAuthGateModal(false)}
+                  className="w-full py-2.5 rounded-xl font-bold text-slate-500 text-xs hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -22,7 +22,11 @@ public class PublicStatsController {
     public ResponseEntity<?> getPublicStats() {
         Long totalCanteens = jdbc.queryForObject("SELECT COUNT(*) FROM canteens WHERE is_open = true", Long.class);
         Long totalOrdersServed = jdbc.queryForObject("SELECT COUNT(*) FROM orders WHERE status = 'COMPLETED'", Long.class);
-        Long activeDishes = jdbc.queryForObject("SELECT COUNT(*) FROM menu_items WHERE is_available = true AND (tags IS NULL OR NOT (tags LIKE '%#hidden%'))", Long.class);
+        Long activeDishes = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM menu_items m WHERE m.is_available = true AND NOT EXISTS (" +
+                "SELECT 1 FROM menu_item_tags t WHERE t.menu_item_id = m.id AND t.tag LIKE '%#hidden%')",
+                Long.class
+        );
         Long activeCoupons = jdbc.queryForObject("SELECT COUNT(*) FROM coupons WHERE is_active = true", Long.class);
         Double avgRating = jdbc.queryForObject("SELECT COALESCE(AVG(rating), 4.5) FROM reviews", Double.class);
 

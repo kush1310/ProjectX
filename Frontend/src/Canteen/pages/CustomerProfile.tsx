@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Camera, User, Phone, Mail, X, LogOut, AlertCircle, CircleDot, Trash2, Lock, KeyRound, ShieldCheck, Eye, EyeOff, Check } from 'lucide-react';
 import { getSession, logout } from '@/utils/authStore';
 import { FileUpload } from '@/components/ui/file-upload';
-import api from '@/utils/api';
+import api, { BACKEND_URL } from '@/utils/api';
 import { toast } from '@/utils/toast';
 
 interface ProfileData {
@@ -292,7 +292,7 @@ export default function CustomerProfile() {
   const getProfileImageUrl = () => {
     if (!profileData.profileImage) return '';
     if (profileData.profileImage.startsWith('/api/')) {
-      return `http://localhost:8000${profileData.profileImage}`;
+      return `${BACKEND_URL}${profileData.profileImage}`;
     }
     return profileData.profileImage;
   };

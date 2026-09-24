@@ -2,7 +2,9 @@ import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'ax
 import { getSession, logout } from './authStore';
 import { encryptPayload, decryptPayload } from './payloadCrypto';
 
-const API_URL = 'http://localhost:8000/api';
+const rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+export const BACKEND_URL = rawApiUrl.replace(/\/api\/?$/, '');
+export const API_URL = `${BACKEND_URL}/api`;
 
 /** Endpoints that skip payload encryption (public, no auth) */
 const SKIP_ENCRYPT_PATHS = [

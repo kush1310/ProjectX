@@ -1,0 +1,99 @@
+# ===================================================================
+# CHARUSAT NEEDS — RENDER CLOUD BLUEPRINT SPECIFICATION
+# Infrastructure-as-Code definition for Render Free Web Service (Docker)
+# Docs: https://render.com/docs/blueprint-spec
+# ===================================================================
+
+services:
+  - type: web
+    name: charusatneeds-backend
+    runtime: docker
+    dockerfilePath: ./Backend/Dockerfile
+    dockerContext: ./Backend
+    plan: free
+    region: singapore
+    healthCheckPath: /healthz
+    autoDeploy: true
+
+    envVars:
+      # Profile & Port
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: PORT
+        value: 8000
+
+      # Authoritative Database (Neon Cloud PostgreSQL)
+      - key: SPRING_DATASOURCE_URL
+        sync: false # Set via Render Dashboard: jdbc:postgresql://ep-...neon.tech/neondb?sslmode=require
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false # Set via Render Dashboard
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false # Set via Render Dashboard
+      - key: DB_POOL_MAX
+        value: "10"
+      - key: DB_POOL_MIN_IDLE
+        value: "2"
+
+      # Redis Cache (Upstash Redis)
+      - key: REDIS_ENABLED
+        value: "true"
+      - key: REDIS_URL
+        sync: false # Set via Render Dashboard: rediss://default:...@...upstash.io:6379
+      - key: REDIS_TTL_SECONDS
+        value: "300"
+
+      # Security & Cryptography
+      - key: JWT_SECRET
+        sync: false # 256-bit Base64 secret
+      - key: JWT_EXPIRATION
+        value: "900000"
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false # 32-character AES key
+      - key: PAYLOAD_ENCRYPTION_KEY
+        sync: false # 32-character AES key
+
+      # Transactional Email (Brevo HTTPS API)
+      - key: BREVO_API_KEY
+        sync: false # Brevo API key (bypasses outbound SMTP port block)
+      - key: BREVO_SENDER_EMAIL
+        sync: false # Verified Brevo sender
+      - key: BREVO_SENDER_NAME
+        value: "CharusatNeeds Production"
+
+      # Google OAuth 2.0 (Campus SSO)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false # e.g. https://charusatneeds.vercel.app/auth/callback
+
+      # Payment Gateway (Razorpay Test Mode)
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+
+      # Media Storage (ImageKit CDN + Backblaze B2)
+      - key: IMAGEKIT_PUBLIC_KEY
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      - key: IMAGEKIT_URL_ENDPOINT
+        sync: false
+      - key: B2_ENDPOINT
+        sync: false
+      - key: B2_BUCKET
+        sync: false
+      - key: B2_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+
+      # URLs & CORS
+      - key: FRONTEND_URL
+        sync: false # e.g. https://charusatneeds.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false # e.g. https://charusatneeds.vercel.app

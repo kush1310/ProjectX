@@ -101,8 +101,13 @@ export default function MfaSetupPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6"
+      >
         {/* Header */}
         <div className="flex items-center gap-3">
           <div className={`p-3 rounded-2xl ${mfaEnabled ? 'bg-emerald-50' : 'bg-neutral-100'}`}>
