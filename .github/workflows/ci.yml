@@ -145,7 +145,7 @@ jobs:
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgrespassword
           SECURITY_PAYLOAD_ENCRYPTION_KEY: CharusatNeedsPayloadKey2026!!
-          JWT_SECRET: Cx7MsVDe15ZBjcMeQUzfK3clgDxqN6RfUE9045yLdtE=
+          JWT_SECRET: charusatneedsdevsecretkeyminimum256bitsneededforsecurity
           REDIS_URL: redis://localhost:6379
           REDIS_ENABLED: "true"
           IMAGEKIT_URL_ENDPOINT: https://ik.imagekit.io/cyseckush/
