@@ -58,6 +58,7 @@ public class PayloadEncryptionFilter extends OncePerRequestFilter {
             "/api/auth/captcha",
             "/api/password-reset",
             "/api/public/health",
+            "/api/public/media",
             "/healthz",
             "/health",
             "/ws",

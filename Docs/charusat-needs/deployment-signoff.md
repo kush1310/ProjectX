@@ -190,7 +190,7 @@ Execution of cloud provider dashboard steps requires human credentials and repos
 * **HUMAN-004:** Link GitHub repository to Render Web Service and trigger Docker deploy.
 * **HUMAN-005:** Add production Vercel callback URI to Google Cloud Console OAuth 2.0 client.
 * **HUMAN-006:** Verify sender email in Brevo dashboard.
-* **HUMAN-007:** Retrieve ImageKit API keys.
+* **HUMAN-007:** Retrieve ImageKit API keys [COMPLETED & VERIFIED 2026-09-24].
 * **HUMAN-008:** Create Backblaze B2 bucket & application key.
 * **HUMAN-009:** Configure UptimeRobot monitors.
 
