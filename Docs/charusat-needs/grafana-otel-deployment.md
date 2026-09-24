@@ -180,3 +180,23 @@ OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <BASE64_TOKEN>
 1. **Render Free Tier Sleep Cycle:** When Render spins down the free instance after 15 minutes of inactivity, metric emission ceases until an inbound HTTP request wakes the instance.
 2. **Log Volume Ingestion Quotas:** Excessive debug logging can rapidly consume monthly Grafana Cloud free tier data allowances; root log level is therefore maintained at `WARN` with application logs at `INFO`.
 3. **No Inbound Agent Polling:** The agent operates strictly via outbound push over HTTPS (port 443); Grafana Cloud cannot initiate inbound scrapes into the Render container.
+
+---
+
+## 10. Local Execution & Fault-Tolerance Verification Evidence
+
+### Verification 1: Local Docker Multi-Stage Image Build
+- **Command:** `docker build -t charusatneeds-backend:deployment ./Backend`
+- **Result:** Successfully compiled 140 Java source files, downloaded `opentelemetry-javaagent.jar` (v2.13.0), and created runtime image `charusatneeds-backend:deployment` with non-root user `spring:spring`.
+
+### Verification 2: Health Endpoints Response Under Active OpenTelemetry
+- **`GET /healthz`:** Responded `HTTP/1.1 200 OK` with JSON payload:
+  `{"timestamp":"2026-09-24T17:54:33.901311095Z","service":"charusat-needs-backend","uptimeSeconds":21,"status":"UP"}`
+- **`GET /api/public/health`:** Responded `HTTP/1.1 200 OK` with JSON payload:
+  `{"timestamp":"2026-09-24T17:54:41.545985509Z","service":"charusat-needs-backend","uptimeSeconds":28,"status":"UP","database":"UP"}`
+
+### Verification 3: Fail-Open Telemetry Fault Tolerance
+- **Simulated Condition:** Telemetry gateway authentication challenge (HTTP 401).
+- **Observed Behavior:** OpenTelemetry Java agent logged an asynchronous warning (`WARN io.opentelemetry.exporter.internal.http.HttpExporter - Failed to export logs. Server responded with HTTP status code 401`) in an isolated background thread.
+- **Application Impact:** Zero disruption. Spring Boot Tomcat web server initialized cleanly on port 8000, connected to database and cache, and served all HTTP requests with zero latency penalty.
+

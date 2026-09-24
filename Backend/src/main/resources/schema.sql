@@ -217,6 +217,10 @@ CREATE TABLE IF NOT EXISTS orders (
     customer_id          BIGINT NOT NULL REFERENCES users(id),
     canteen_id           BIGINT NOT NULL REFERENCES canteens(id),
     status               VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    order_type           VARCHAR(20) DEFAULT 'INSTANT',
+    scheduled_for        TIMESTAMP,
+    release_at           TIMESTAMP,
+    released_at          TIMESTAMP,
     total_amount         NUMERIC(10,2) NOT NULL,
     sub_total            NUMERIC(10,2),
     discount_amount      NUMERIC(10,2) DEFAULT 0,
@@ -593,5 +597,33 @@ CREATE INDEX IF NOT EXISTS idx_reviews_canteen_created ON reviews(canteen_id, cr
 CREATE INDEX IF NOT EXISTS idx_reviews_created ON reviews(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_complaints_canteen_created ON complaints(canteen_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_complaints_created ON complaints(created_at DESC);
+
+-- ============================================================
+-- 35. SCHEDULED ORDERS ALTER TABLE & INDEXES (Idempotent)
+-- ============================================================
+ALTER TABLE orders 
+ADD COLUMN IF NOT EXISTS order_type VARCHAR(20) DEFAULT 'INSTANT',
+ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMP,
+ADD COLUMN IF NOT EXISTS release_at TIMESTAMP,
+ADD COLUMN IF NOT EXISTS released_at TIMESTAMP;
+
+CREATE INDEX IF NOT EXISTS idx_orders_scheduled_release 
+ON orders (status, release_at);
+
+CREATE INDEX IF NOT EXISTS idx_orders_canteen_scheduled 
+ON orders (canteen_id, status, scheduled_for);
+
+-- ============================================================
+-- 36. PASSWORD HISTORY TABLE (NIST SP 800-63B Compliance)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS password_history (
+    id            BIGSERIAL PRIMARY KEY,
+    user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at    TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_history_user ON password_history(user_id, created_at DESC);
+
 
 
