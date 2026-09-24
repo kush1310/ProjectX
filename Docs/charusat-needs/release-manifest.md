@@ -7,8 +7,8 @@
 * **Application Name:** Charusat Needs — Campus Canteen Aggregator & Ordering Platform
 * **Release Target:** Public University Testing Deployment (Zero-Cost Cloud Architecture)
 * **Release Type:** Release Candidate (RC-1)
-* **Build Timestamp:** 2026-09-24T18:40:00Z
-* **Source Git Commit SHA:** `849d33949254e1b5cbee529b67fff7531592d229`
+* **Build Timestamp:** 2026-09-24T23:42:00Z
+* **Source Git Commit SHA:** `f24efcee11c2c1cc83492fb5c52d531cda58ec4c`
 * **Release Branch:** `main`
 
 ---
@@ -33,11 +33,11 @@
 * **Security Headers Config:** CSP, X-Frame-Options: DENY, X-Content-Type-Options: nosniff
 
 ### 2.3 Container & Docker Specifications
-* **Backend Image Tag:** `charusatneeds-backend:849d33949254e1b5cbee529b67fff7531592d229`
+* **Backend Image Tag:** `charusatneeds-backend:f24efcee11c2c1cc83492fb5c52d531cda58ec4c`
 * **Base Runtime Image:** `eclipse-temurin:17-jre-jammy`
 * **Execution Privileges:** Non-root (`USER spring:spring`, UID/GID 10001)
 * **Listening Port:** 8000 (routes from HTTPS 443 on Render)
-* **Frontend Local Image Tag:** `charusatneeds-frontend:849d33949254e1b5cbee529b67fff7531592d229`
+* **Frontend Local Image Tag:** `charusatneeds-frontend:f24efcee11c2c1cc83492fb5c52d531cda58ec4c`
 * **Base Web Server Image:** `nginx:1.27-alpine`
 
 ---

@@ -51,7 +51,7 @@ The Charusat Needs platform is architected as a distributed zero-cost cloud topo
 
 ## 4. Deployed Git SHA
 
-* **Commit Identifier:** `849d33949254e1b5cbee529b67fff7531592d229`
+* **Commit Identifier:** `f24efcee11c2c1cc83492fb5c52d531cda58ec4c`
 * **Release Branch:** `main`
 * **Release Tag:** `v1.0.0-rc1`
 
@@ -59,7 +59,7 @@ The Charusat Needs platform is architected as a distributed zero-cost cloud topo
 
 ## 5. Docker Image
 
-* **Backend Image:** `charusatneeds-backend:849d33949254e1b5cbee529b67fff7531592d229`
+* **Backend Image:** `charusatneeds-backend:f24efcee11c2c1cc83492fb5c52d531cda58ec4c`
   - Multi-stage build (Maven builder → Eclipse Temurin JRE 17 runner).
   - Non-root user `spring:spring` (UID/GID 10001).
   - Embedded curl/wget healthcheck probe.
