@@ -22,8 +22,8 @@ FROM eclipse-temurin:17-jre-jammy AS runner
 
 WORKDIR /app
 
-# Security: Create non-root system group and user, install healthcheck utilities
-RUN apt-get update && apt-get install -y --no-install-recommends curl wget && rm -rf /var/lib/apt/lists/* \
+# Security: Create non-root system group and user, install healthcheck utilities and font libraries
+RUN apt-get update && apt-get install -y --no-install-recommends curl wget fontconfig libfreetype6 fonts-dejavu-core && rm -rf /var/lib/apt/lists/* \
     && groupadd -r spring && useradd -r -g spring spring
 
 # Copy packaged jar from builder
@@ -42,7 +42,7 @@ USER spring:spring
 
 EXPOSE 8000
 
-ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-Djava.awt.headless=true -XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 ENV OTEL_SERVICE_NAME="charusatneeds-backend"
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=charusatneeds-backend,service.version=1.0.0,deployment.environment=production"
 ENV OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"

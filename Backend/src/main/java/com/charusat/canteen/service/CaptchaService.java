@@ -35,7 +35,12 @@ public class CaptchaService {
         // Store with 5 minute expiry
         captchaStore.put(id, new CaptchaEntry(code, System.currentTimeMillis() + 300000));
         
-        String imageBase64 = generateCaptchaImage(code);
+        String imageBase64;
+        try {
+            imageBase64 = generateCaptchaImage(code);
+        } catch (Throwable t) {
+            imageBase64 = generateSvgCaptchaImage(code);
+        }
         return new CaptchaResponse(id, imageBase64);
     }
 
@@ -110,5 +115,40 @@ public class CaptchaService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate captcha image", e);
         }
+    }
+
+    private String generateSvgCaptchaImage(String code) {
+        int width = 160;
+        int height = 50;
+        StringBuilder sb = new StringBuilder();
+        sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"50\" viewBox=\"0 0 160 50\">");
+        sb.append("<rect width=\"100%\" height=\"100%\" fill=\"#f5f5f5\" rx=\"10\" stroke=\"#e5e7eb\" stroke-width=\"1.5\"/>");
+
+        // Noise lines
+        for (int i = 0; i < 15; i++) {
+            int x1 = (int) (Math.random() * width);
+            int y1 = (int) (Math.random() * height);
+            int x2 = (int) (Math.random() * width);
+            int y2 = (int) (Math.random() * height);
+            sb.append("<line x1=\"").append(x1).append("\" y1=\"").append(y1)
+              .append("\" x2=\"").append(x2).append("\" y2=\"").append(y2)
+              .append("\" stroke=\"#d1d5db\" stroke-width=\"1\" opacity=\"0.6\"/>");
+        }
+
+        // Characters with rotation and colors
+        String[] colors = {"#1e293b", "#0f172a", "#334155", "#b91c1c", "#1d4ed8", "#047857"};
+        for (int i = 0; i < code.length(); i++) {
+            char c = code.charAt(i);
+            int x = 16 + i * 22;
+            int y = 34 + (int) (Math.random() * 6 - 3);
+            int rotate = (int) (Math.random() * 16 - 8);
+            String color = colors[(int) (Math.random() * colors.length)];
+            sb.append("<text x=\"").append(x).append("\" y=\"").append(y)
+              .append("\" font-family=\"Courier New, monospace, sans-serif\" font-size=\"24\" font-weight=\"bold\" fill=\"")
+              .append(color).append("\" transform=\"rotate(").append(rotate).append(" ").append(x).append(" ").append(y)
+              .append(")\">").append(c).append("</text>");
+        }
+        sb.append("</svg>");
+        return "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }

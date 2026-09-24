@@ -19,9 +19,14 @@ public class CaptchaController {
     @GetMapping
     public ResponseEntity<?> getCaptcha() {
         CaptchaService.CaptchaResponse captcha = captchaService.generateCaptcha();
+        String img = captcha.imageBase64();
+        if (!img.startsWith("data:")) {
+            img = "data:image/png;base64," + img;
+        }
         return ResponseEntity.ok(Map.of(
             "captchaId", captcha.id(),
-            "image", "data:image/png;base64," + captcha.imageBase64()
+            "id", captcha.id(),
+            "image", img
         ));
     }
 }

@@ -187,6 +187,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [captchaImage, setCaptchaImage] = useState<string | null>(null)
   const [captchaId, setCaptchaId] = useState<string | null>(null)
+  const [captchaLoading, setCaptchaLoading] = useState(false)
   const [lockoutSecondsLeft, setLockoutSecondsLeft] = useState(0)
   const [isLockedOut, setIsLockedOut] = useState(false)
 
@@ -201,13 +202,22 @@ export default function Login() {
 
   const fetchCaptcha = async () => {
     try {
+      setCaptchaLoading(true)
       setCaptchaImage(null) // Show loading state
       const response = await api.get('/auth/captcha')
-      setCaptchaImage(response.data.image)
-      setCaptchaId(response.data.id)
+      const data = response.data
+      if (data && (data.image || data.captchaImage)) {
+        setCaptchaImage(data.image || data.captchaImage)
+        setCaptchaId(data.captchaId || data.id)
+        setErrors(prev => ({ ...prev, captcha: undefined }))
+      } else {
+        throw new Error('Empty captcha payload received')
+      }
     } catch (error) {
       console.error('Failed to fetch captcha:', error)
-      setErrors(prev => ({ ...prev, captcha: 'Failed to load security code.' }))
+      setErrors(prev => ({ ...prev, captcha: 'Failed to load security code. Click refresh to retry.' }))
+    } finally {
+      setCaptchaLoading(false)
     }
   }
 
@@ -522,19 +532,41 @@ export default function Login() {
                   {captchaImage ? (
                     <img 
                       src={captchaImage} 
-                      alt="Captcha" 
-                      className="h-[50px] w-[180px] rounded-xl object-cover border-2 border-gray-200" 
+                      alt="Security Code" 
+                      className="h-[50px] w-[180px] rounded-xl object-contain bg-gray-50 border-2 border-gray-200 select-none shadow-inner" 
+                      onError={() => {
+                        console.warn('Captcha image failed to render, refreshing...');
+                        fetchCaptcha();
+                      }}
                     />
                   ) : (
-                    <div className="h-[50px] w-[180px] rounded-xl bg-gray-100 animate-pulse border-2 border-gray-200" />
+                    <button
+                      type="button"
+                      onClick={refreshCaptcha}
+                      className="h-[50px] w-[180px] rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-xs text-gray-500 font-medium hover:bg-gray-200 transition-colors"
+                      title="Click to reload security code"
+                    >
+                      {captchaLoading ? (
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                          </svg>
+                          <span>Loading code...</span>
+                        </div>
+                      ) : (
+                        <span>Click to load code</span>
+                      )}
+                    </button>
                   )}
                   <button
                     type="button"
                     onClick={refreshCaptcha}
-                    className="p-2.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-colors border-2 border-gray-200 hover:border-brand-200"
-                    title="Get new code"
+                    disabled={captchaLoading}
+                    className="p-2.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-colors border-2 border-gray-200 hover:border-brand-200 disabled:opacity-50"
+                    title="Get new security code"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <svg className={`w-5 h-5 ${captchaLoading ? 'animate-spin text-brand-500' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                     </svg>
                   </button>
